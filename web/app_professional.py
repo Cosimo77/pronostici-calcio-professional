@@ -2276,7 +2276,11 @@ if __name__ == '__main__':
         inizializza_sistema_professionale()
         
         # Configurazione per deployment online
-        port = int(os.environ.get('PORT', 5008))
+        try:
+            port = int(os.environ.get('PORT', '5008'))
+        except (ValueError, TypeError):
+            port = 5008
+            
         debug_mode = os.environ.get('FLASK_ENV') == 'development'
         
         logger.info("🚀 Avvio server professionale con sicurezza enterprise...",
