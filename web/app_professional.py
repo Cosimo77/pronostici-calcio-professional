@@ -2289,14 +2289,16 @@ if __name__ == '__main__':
         logger.info("📊 Structured logging abilitato")
         
         # Avvia server Flask con configurazione enterprise
-        app.run(
-            host='0.0.0.0', 
-            port=port, 
-            debug=debug_mode,
-            use_reloader=False,
-            threaded=True
-        )
+        if __name__ == '__main__':
+            app.run(
+                host='0.0.0.0', 
+                port=port, 
+                debug=debug_mode,
+                use_reloader=False,
+                threaded=True
+            )
         
     except Exception as e:
         logger.error("❌ Errore critico avvio", error=str(e))
-        sys.exit(1)
+        if __name__ == '__main__':
+            sys.exit(1)
