@@ -1,0 +1,114 @@
+{
+  "schedule": {
+    "daily_data_update": "06:00",
+    "weekly_model_retrain": "sunday:02:00", 
+    "hourly_live_scores": "*/1 hour",
+    "market_odds_update": "*/30 minutes",
+    "health_check": "*/15 minutes"
+  },
+  "data_sources": {
+    "football_data_api": {
+      "enabled": true,
+      "priority": 1,
+      "endpoint": "https://api.football-data.org/v4/",
+      "api_key": "YOUR_API_KEY_HERE",
+      "rate_limit": 10,
+      "competitions": ["SA", "PD", "PL", "BL1", "FL1"],
+      "data_types": ["matches", "standings", "teams", "players"]
+    },
+    "api_sports": {
+      "enabled": true,
+      "priority": 2,
+      "endpoint": "https://v3.football.api-sports.io/",
+      "api_key": "YOUR_API_KEY_HERE", 
+      "rate_limit": 100,
+      "leagues": [135, 140, 39, 78, 61],
+      "features": ["fixtures", "odds", "predictions", "statistics"]
+    },
+    "rapid_api_football": {
+      "enabled": false,
+      "priority": 3,
+      "endpoint": "https://api-football-v1.p.rapidapi.com/v3/",
+      "api_key": "YOUR_RAPIDAPI_KEY",
+      "rate_limit": 100
+    },
+    "backup_scraper": {
+      "enabled": true,
+      "priority": 99,
+      "script": "aggiornamento_dati_reali.py",
+      "data_type": "REAL",
+      "auto_select_real": true
+    }
+  },
+  "update_policies": {
+    "max_retries": 3,
+    "retry_delay": 300,
+    "data_validation": true,
+    "backup_before_update": true,
+    "rollback_on_failure": true,
+    "min_data_quality_score": 0.85,
+    "max_data_age_hours": 24,
+    "critical_failure_threshold": 3
+  },
+  "data_quality": {
+    "required_fields": [
+      "date", "home_team", "away_team", "home_goals", "away_goals"
+    ],
+    "validation_rules": {
+      "date_format": "YYYY-MM-DD",
+      "score_range": [0, 20],
+      "team_name_min_length": 3,
+      "required_markets": 10
+    },
+    "anomaly_detection": {
+      "enabled": true,
+      "score_deviation_threshold": 3.0,
+      "odds_range_check": true
+    }
+  },
+  "notifications": {
+    "email_alerts": {
+      "enabled": false,
+      "smtp_server": "smtp.gmail.com",
+      "smtp_port": 587,
+      "sender_email": "your-email@gmail.com",
+      "recipients": ["admin@yourcompany.com"],
+      "alert_types": ["critical_failure", "data_quality_issues", "weekly_summary"]
+    },
+    "slack_webhook": {
+      "enabled": false,
+      "webhook_url": "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK",
+      "channel": "#pronostici-alerts",
+      "alert_levels": ["error", "critical"]
+    },
+    "log_level": "INFO",
+    "console_output": true
+  },
+  "performance": {
+    "max_concurrent_requests": 5,
+    "request_timeout": 30,
+    "cache_duration": 3600,
+    "memory_limit_mb": 512,
+    "disk_space_threshold_gb": 1
+  },
+  "security": {
+    "encrypt_api_keys": true,
+    "use_proxy": false,
+    "proxy_url": null,
+    "user_agent": "PronosticiCalcio-Professional/1.0",
+    "rate_limit_safety_margin": 0.8
+  },
+  "database": {
+    "backup_frequency": "daily",
+    "retention_days": 30,
+    "compression": true,
+    "integrity_check": true
+  },
+  "monitoring": {
+    "metrics_collection": true,
+    "performance_tracking": true,
+    "error_tracking": true,
+    "uptime_monitoring": true,
+    "dashboard_updates": true
+  }
+}

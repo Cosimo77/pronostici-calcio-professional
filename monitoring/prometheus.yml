@@ -1,0 +1,52 @@
+# Configurazione Prometheus per Monitoring
+# File: monitoring/prometheus.yml
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+# Regole di alerting
+rule_files:
+  - "alert_rules.yml"
+
+# Configurazione Alertmanager
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+# Jobs di scraping metriche
+scrape_configs:
+  # Prometheus stesso
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # App Pronostici Calcio
+  - job_name: 'pronostici-calcio'
+    static_configs:
+      - targets: ['app:5008']
+    metrics_path: '/api/metrics'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+  # PostgreSQL exporter
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+
+  # Redis exporter  
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+
+  # Nginx exporter
+  - job_name: 'nginx'
+    static_configs:
+      - targets: ['nginx-exporter:9113']
+
+  # Node exporter (sistema)
+  - job_name: 'node'
+    static_configs:
+      - targets: ['node-exporter:9100']

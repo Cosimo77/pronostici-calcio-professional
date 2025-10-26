@@ -1,0 +1,1301 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏆 Sistema Pronostici Serie A</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Plotly -->
+    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+    <!-- Socket.IO -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="#">
+                <i class="fas fa-futbol me-2"></i>
+                Pronostici Serie A
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Attiva/disattiva navigazione" title="Menu di navigazione">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#predizioni" data-section="predizioni">
+                            <i class="fas fa-crystal-ball me-1"></i>Predizioni
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#mercati" data-section="mercati">
+                            <i class="fas fa-dice me-1"></i>Mercati
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#statistiche" data-section="statistiche">
+                            <i class="fas fa-chart-line me-1"></i>Statistiche
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#forma" data-section="forma">
+                            <i class="fas fa-trending-up me-1"></i>Forma Squadre
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <button class="btn btn-outline-light btn-sm ms-2" onclick="testSezioni()">
+                            <i class="fas fa-bug me-1"></i>Test
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#info" data-section="info">
+                            <i class="fas fa-info-circle me-1"></i>Info
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Status Bar -->
+    <div id="status-bar" class="alert alert-info alert-dismissible fade show mb-0" role="alert">
+        <div class="container">
+            <i class="fas fa-cog fa-spin me-2"></i>
+            <span id="status-text">Inizializzazione sistema...</span>
+            <div class="progress mt-2 progress-sm d-none" id="progress-container">
+                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" id="progress-bar" aria-label="Avanzamento caricamento" title="Barra di avanzamento caricamento sistema"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container-fluid">
+        <!-- Sezione Predizioni -->
+        <section id="predizioni" class="content-section active">
+            <div class="row justify-content-center">
+                <div class="col-xl-10">
+                    <div class="text-center mb-5">
+                        <h1 class="display-4 fw-bold text-primary mb-3">
+                            <i class="fas fa-crystal-ball me-3"></i>
+                            Predizioni Calcistiche
+                        </h1>
+                        <p class="lead text-muted">
+                            Sistema AI per predire i risultati della Serie A italiana
+                        </p>
+                    </div>
+
+                    <!-- Form Predizione -->
+                    <div class="card shadow-lg border-0 mb-4">
+                        <div class="card-header bg-gradient-primary text-white">
+                            <h4 class="mb-0">
+                                <i class="fas fa-futbol me-2"></i>
+                                Nuova Predizione
+                            </h4>
+                        </div>
+                        <div class="card-body p-4">
+                            <form id="predizione-form">
+                                <div class="row">
+                                    <div class="col-md-5">
+                                        <label for="squadra-casa" class="form-label fw-semibold">
+                                            <i class="fas fa-home me-1 text-success"></i>
+                                            Squadra di Casa
+                                        </label>
+                                        <select class="form-select form-select-lg" id="squadra-casa" required>
+                                            <option value="">Seleziona squadra...</option>
+                                            {% for squadra in squadre %}
+                                            <option value="{{ squadra }}">{{ squadra }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="col-md-2 d-flex align-items-end justify-content-center">
+                                        <div class="text-center">
+                                            <span class="badge bg-secondary fs-6 px-3 py-2">VS</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-5">
+                                        <label for="squadra-trasferta" class="form-label fw-semibold">
+                                            <i class="fas fa-plane me-1 text-warning"></i>
+                                            Squadra in Trasferta
+                                        </label>
+                                        <select class="form-select form-select-lg" id="squadra-trasferta" required>
+                                            <option value="">Seleziona squadra...</option>
+                                            {% for squadra in squadre %}
+                                            <option value="{{ squadra }}">{{ squadra }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div class="text-center mt-4">
+                                    <button type="submit" class="btn btn-primary btn-lg px-5" id="btn-predici">
+                                        <i class="fas fa-magic me-2"></i>
+                                        Genera Predizione
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Risultato Predizione -->
+                    <div id="risultato-predizione" class="card shadow-lg border-0 d-none">
+                        <div class="card-header bg-gradient-success text-white">
+                            <h4 class="mb-0">
+                                <i class="fas fa-trophy me-2"></i>
+                                Risultato Predizione
+                            </h4>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="row">
+                                <div class="col-lg-6">
+                                    <div class="text-center mb-4">
+                                        <h2 class="match-title text-primary mb-3" id="match-title"></h2>
+                                        <div class="prediction-result">
+                                            <div class="prediction-badge mb-3" id="prediction-badge">
+                                                <i class="fas fa-crown me-2"></i>
+                                                <span id="prediction-text"></span>
+                                            </div>
+                                            <div class="confidence-meter mb-3">
+                                                <label class="form-label">Livello di Confidenza</label>
+                                                <div class="progress progress-large">
+                                                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                                         id="confidence-bar" role="progressbar" 
+                                                         aria-label="Livello di confidenza predizione"
+                                                         aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"
+                                                         title="Barra di confidenza per la predizione">
+                                                        <span id="confidence-text"></span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="recommendation" id="recommendation">
+                                                <i class="fas fa-lightbulb me-2"></i>
+                                                <span id="recommendation-text"></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-lg-6">
+                                    <h5 class="mb-3">
+                                        <i class="fas fa-percentage me-2"></i>
+                                        Probabilità Dettagliate
+                                    </h5>
+                                    <div class="probability-chart">
+                                        <canvas id="probability-chart"></canvas>
+                                    </div>
+                                    
+                                    <div class="probability-details mt-3">
+                                        <div class="row text-center">
+                                            <div class="col-4">
+                                                <div class="prob-item">
+                                                    <div class="prob-value text-success" id="prob-casa">-</div>
+                                                    <div class="prob-label">Casa</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-4">
+                                                <div class="prob-item">
+                                                    <div class="prob-value text-warning" id="prob-pareggio">-</div>
+                                                    <div class="prob-label">Pareggio</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-4">
+                                                <div class="prob-item">
+                                                    <div class="prob-value text-danger" id="prob-trasferta">-</div>
+                                                    <div class="prob-label">Trasferta</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sezione Mercati Multipli -->
+        <section id="mercati" class="content-section">
+            <div class="row justify-content-center">
+                <div class="col-xl-10">
+                    <div class="text-center mb-5">
+                        <h1 class="display-4 fw-bold text-primary mb-3">
+                            <i class="fas fa-dice me-3"></i>
+                            Mercati Multipli
+                        </h1>
+                        <p class="lead text-muted">
+                            Analisi completa di tutti i mercati di scommesse
+                        </p>
+                    </div>
+
+                    <!-- Form Mercati -->
+                    <div class="card shadow-lg border-0 mb-4">
+                        <div class="card-header bg-gradient-primary text-white">
+                            <h4 class="mb-0">
+                                <i class="fas fa-search me-2"></i>
+                                Seleziona Partita per Analisi Mercati
+                            </h4>
+                        </div>
+                        <div class="card-body p-4">
+                            <form id="mercati-form">
+                                <div class="row g-3">
+                                    <div class="col-md-5">
+                                        <label for="mercati-squadra-casa" class="form-label fw-bold">
+                                            <i class="fas fa-home me-2"></i>Squadra di Casa
+                                        </label>
+                                        <select class="form-select form-select-lg" id="mercati-squadra-casa" required>
+                                            <option value="">Seleziona squadra casa...</option>
+                                            {% for squadra in squadre %}
+                                            <option value="{{ squadra }}">{{ squadra }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="col-md-2 d-flex align-items-end justify-content-center">
+                                        <span class="fw-bold fs-3 text-muted">VS</span>
+                                    </div>
+                                    
+                                    <div class="col-md-5">
+                                        <label for="mercati-squadra-trasferta" class="form-label fw-bold">
+                                            <i class="fas fa-plane me-2"></i>Squadra in Trasferta
+                                        </label>
+                                        <select class="form-select form-select-lg" id="mercati-squadra-trasferta" required>
+                                            <option value="">Seleziona squadra trasferta...</option>
+                                            {% for squadra in squadre %}
+                                            <option value="{{ squadra }}">{{ squadra }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div class="text-center mt-4">
+                                    <button type="submit" class="btn btn-primary btn-lg px-5 py-3">
+                                        <i class="fas fa-calculator me-2"></i>
+                                        Analizza Tutti i Mercati
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Risultati Mercati -->
+                    <div id="risultati-mercati" class="mt-4 d-none">
+                        <!-- Panoramica -->
+                        <div class="card shadow border-0 mb-4">
+                            <div class="card-header bg-white">
+                                <h5 class="card-title mb-0" id="mercati-partita-title">
+                                    <i class="fas fa-futbol me-2"></i>
+                                    Analisi Mercati
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row text-center">
+                                    <div class="col-md-3">
+                                        <div class="stat-item">
+                                            <div class="stat-value" id="mercati-confidence">-</div>
+                                            <div class="stat-label">Confidence Generale</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="stat-item">
+                                            <div class="stat-value" id="mercati-count">-</div>
+                                            <div class="stat-label">Mercati Analizzati</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="stat-item">
+                                            <div class="stat-value" id="mercati-raccomandazioni">-</div>
+                                            <div class="stat-label">Raccomandazioni</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="stat-item">
+                                            <div class="stat-value text-success" id="mercati-timestamp">-</div>
+                                            <div class="stat-label">Aggiornato</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Mercati Grid -->
+                        <div class="row g-4">
+                            <!-- 1X2 Classico -->
+                            <div class="col-lg-6">
+                                <div class="card shadow border-0 h-100">
+                                    <div class="card-header bg-primary text-white">
+                                        <h6 class="mb-0"><i class="fas fa-trophy me-2"></i>1X2 Classico</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <div class="fw-bold text-primary" id="m1x2-predizione">-</div>
+                                            <div class="text-muted small" id="m1x2-confidence">-</div>
+                                        </div>
+                                        <div class="probability-bars">
+                                            <div class="prob-row">
+                                                <span class="prob-label">Casa:</span>
+                                                <div class="progress flex-grow-1 mx-2">
+                                                    <div class="progress-bar bg-success" id="m1x2-casa-bar"></div>
+                                                </div>
+                                                <span class="prob-value" id="m1x2-casa-val">-</span>
+                                            </div>
+                                            <div class="prob-row">
+                                                <span class="prob-label">Pareggio:</span>
+                                                <div class="progress flex-grow-1 mx-2">
+                                                    <div class="progress-bar bg-warning" id="m1x2-pareggio-bar"></div>
+                                                </div>
+                                                <span class="prob-value" id="m1x2-pareggio-val">-</span>
+                                            </div>
+                                            <div class="prob-row">
+                                                <span class="prob-label">Trasferta:</span>
+                                                <div class="progress flex-grow-1 mx-2">
+                                                    <div class="progress-bar bg-danger" id="m1x2-trasferta-bar"></div>
+                                                </div>
+                                                <span class="prob-value" id="m1x2-trasferta-val">-</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Over/Under 2.5 -->
+                            <div class="col-lg-6">
+                                <div class="card shadow border-0 h-100">
+                                    <div class="card-header bg-info text-white">
+                                        <h6 class="mb-0"><i class="fas fa-futbol me-2"></i>Over/Under 2.5</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <div class="fw-bold text-info" id="mou-predizione">-</div>
+                                            <div class="text-muted small" id="mou-confidence">-</div>
+                                            <div class="text-muted small">Gol attesi: <span id="mou-gol-attesi">-</span></div>
+                                        </div>
+                                        <div class="probability-bars">
+                                            <div class="prob-row">
+                                                <span class="prob-label">Over 2.5:</span>
+                                                <div class="progress flex-grow-1 mx-2">
+                                                    <div class="progress-bar bg-success" id="mou-over-bar"></div>
+                                                </div>
+                                                <span class="prob-value" id="mou-over-val">-</span>
+                                            </div>
+                                            <div class="prob-row">
+                                                <span class="prob-label">Under 2.5:</span>
+                                                <div class="progress flex-grow-1 mx-2">
+                                                    <div class="progress-bar bg-danger" id="mou-under-bar"></div>
+                                                </div>
+                                                <span class="prob-value" id="mou-under-val">-</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Over/Under 1.5 -->
+                            <div class="col-lg-6">
+                                <div class="card shadow border-0 h-100">
+                                    <div class="card-header text-white bg-gradient-success">
+                                        <h6 class="mb-0"><i class="fas fa-arrow-down me-2"></i>Over/Under 1.5</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <div class="fw-bold text-success" id="mou15-predizione">-</div>
+                                            <div class="text-muted small" id="mou15-confidence">-</div>
+                                            <div class="text-muted small">Gol attesi: <span id="mou15-gol-attesi">-</span></div>
+                                        </div>
+                                        <div class="probability-bars">
+                                            <div class="prob-row">
+                                                <span class="prob-label">Over 1.5:</span>
+                                                <div class="progress flex-grow-1 mx-2">
+                                                    <div class="progress-bar bg-success" id="mou15-over-bar"></div>
+                                                </div>
+                                                <span class="prob-value" id="mou15-over-val">-</span>
+                                            </div>
+                                            <div class="prob-row">
+                                                <span class="prob-label">Under 1.5:</span>
+                                                <div class="progress flex-grow-1 mx-2">
+                                                    <div class="progress-bar bg-danger" id="mou15-under-bar"></div>
+                                                </div>
+                                                <span class="prob-value" id="mou15-under-val">-</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Over/Under 3.5 -->
+                            <div class="col-lg-6">
+                                <div class="card shadow border-0 h-100">
+                                    <div class="card-header text-white bg-gradient-danger">
+                                        <h6 class="mb-0"><i class="fas fa-arrow-up me-2"></i>Over/Under 3.5</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <div class="fw-bold text-danger" id="mou35-predizione">-</div>
+                                            <div class="text-muted small" id="mou35-confidence">-</div>
+                                            <div class="text-muted small">Gol attesi: <span id="mou35-gol-attesi">-</span></div>
+                                        </div>
+                                        <div class="probability-bars">
+                                            <div class="prob-row">
+                                                <span class="prob-label">Over 3.5:</span>
+                                                <div class="progress flex-grow-1 mx-2">
+                                                    <div class="progress-bar bg-success" id="mou35-over-bar"></div>
+                                                </div>
+                                                <span class="prob-value" id="mou35-over-val">-</span>
+                                            </div>
+                                            <div class="prob-row">
+                                                <span class="prob-label">Under 3.5:</span>
+                                                <div class="progress flex-grow-1 mx-2">
+                                                    <div class="progress-bar bg-danger" id="mou35-under-bar"></div>
+                                                </div>
+                                                <span class="prob-value" id="mou35-under-val">-</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Terza riga: Gol e Clean Sheet -->
+                        <div class="row g-4 mt-3">
+                            <!-- Both Teams to Score -->
+                            <div class="col-lg-6">
+                                <div class="card shadow border-0 h-100">
+                                    <div class="card-header bg-warning text-dark">
+                                        <h6 class="mb-0"><i class="fas fa-bullseye me-2"></i>Both Teams to Score</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <div class="fw-bold text-warning" id="mbtts-predizione">-</div>
+                                            <div class="text-muted small" id="mbtts-confidence">-</div>
+                                        </div>
+                                        <div class="probability-bars">
+                                            <div class="prob-row">
+                                                <span class="prob-label">BTTS Sì:</span>
+                                                <div class="progress flex-grow-1 mx-2">
+                                                    <div class="progress-bar bg-success" id="mbtts-si-bar"></div>
+                                                </div>
+                                                <span class="prob-value" id="mbtts-si-val">-</span>
+                                            </div>
+                                            <div class="prob-row">
+                                                <span class="prob-label">BTTS No:</span>
+                                                <div class="progress flex-grow-1 mx-2">
+                                                    <div class="progress-bar bg-danger" id="mbtts-no-bar"></div>
+                                                </div>
+                                                <span class="prob-value" id="mbtts-no-val">-</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Prima Squadra a Segnare -->
+                            <div class="col-lg-6">
+                                <div class="card shadow border-0 h-100">
+                                    <div class="card-header text-white bg-gradient-info">
+                                        <h6 class="mb-0"><i class="fas fa-trophy me-2"></i>Prima Squadra Gol</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <div class="fw-bold text-info" id="mpsg-predizione">-</div>
+                                            <div class="text-muted small" id="mpsg-confidence">-</div>
+                                        </div>
+                                        <div class="probability-bars">
+                                            <div class="prob-row">
+                                                <span class="prob-label" id="mpsg-casa-label">Casa:</span>
+                                                <div class="progress flex-grow-1 mx-2">
+                                                    <div class="progress-bar bg-primary" id="mpsg-casa-bar"></div>
+                                                </div>
+                                                <span class="prob-value" id="mpsg-casa-val">-</span>
+                                            </div>
+                                            <div class="prob-row">
+                                                <span class="prob-label" id="mpsg-trasferta-label">Trasferta:</span>
+                                                <div class="progress flex-grow-1 mx-2">
+                                                    <div class="progress-bar bg-danger" id="mpsg-trasferta-bar"></div>
+                                                </div>
+                                                <span class="prob-value" id="mpsg-trasferta-val">-</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quarta riga: Clean Sheet -->
+                        <div class="row g-4 mt-3">
+                            <!-- Clean Sheet Casa -->
+                            <div class="col-lg-6">
+                                <div class="card shadow border-0 h-100">
+                                    <div class="card-header text-white bg-gradient-success">
+                                        <h6 class="mb-0"><i class="fas fa-shield-alt me-2"></i>Clean Sheet</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <div class="fw-bold text-success" id="mcs-predizione">-</div>
+                                            <div class="text-muted small" id="mcs-confidence">-</div>
+                                        </div>
+                                        <div class="probability-bars">
+                                            <div class="prob-row">
+                                                <span class="prob-label" id="mcs-casa-label">Casa Clean:</span>
+                                                <div class="progress flex-grow-1 mx-2">
+                                                    <div class="progress-bar bg-primary" id="mcs-casa-bar"></div>
+                                                </div>
+                                                <span class="prob-value" id="mcs-casa-val">-</span>
+                                            </div>
+                                            <div class="prob-row">
+                                                <span class="prob-label" id="mcs-trasferta-label">Trasferta Clean:</span>
+                                                <div class="progress flex-grow-1 mx-2">
+                                                    <div class="progress-bar bg-danger" id="mcs-trasferta-bar"></div>
+                                                </div>
+                                                <span class="prob-value" id="mcs-trasferta-val">-</span>
+                                            </div>
+                                            <div class="prob-row">
+                                                <span class="prob-label">Entrambe subiscono:</span>
+                                                <div class="progress flex-grow-1 mx-2">
+                                                    <div class="progress-bar bg-warning" id="mcs-entrambe-bar"></div>
+                                                </div>
+                                                <span class="prob-value" id="mcs-entrambe-val">-</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Double Chance -->
+                            <div class="col-lg-6">
+                                <div class="card shadow border-0 h-100">
+                                    <div class="card-header bg-secondary text-white">
+                                        <h6 class="mb-0"><i class="fas fa-shield-alt me-2"></i>Double Chance</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <div class="fw-bold text-secondary" id="mdc-predizione">-</div>
+                                            <div class="text-muted small" id="mdc-confidence">-</div>
+                                        </div>
+                                        <div class="probability-bars">
+                                            <div class="prob-row">
+                                                <span class="prob-label">1X:</span>
+                                                <div class="progress flex-grow-1 mx-2">
+                                                    <div class="progress-bar bg-primary" id="mdc-1x-bar"></div>
+                                                </div>
+                                                <span class="prob-value" id="mdc-1x-val">-</span>
+                                            </div>
+                                            <div class="prob-row">
+                                                <span class="prob-label">X2:</span>
+                                                <div class="progress flex-grow-1 mx-2">
+                                                    <div class="progress-bar bg-info" id="mdc-x2-bar"></div>
+                                                </div>
+                                                <span class="prob-value" id="mdc-x2-val">-</span>
+                                            </div>
+                                            <div class="prob-row">
+                                                <span class="prob-label">12:</span>
+                                                <div class="progress flex-grow-1 mx-2">
+                                                    <div class="progress-bar bg-success" id="mdc-12-bar"></div>
+                                                </div>
+                                                <span class="prob-value" id="mdc-12-val">-</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Asian Handicap -->
+                            <div class="col-lg-6">
+                                <div class="card shadow border-0 h-100">
+                                    <div class="card-header bg-dark text-white">
+                                        <h6 class="mb-0"><i class="fas fa-balance-scale me-2"></i>Asian Handicap</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <div class="fw-bold text-dark" id="mah-predizione">-</div>
+                                            <div class="text-muted small" id="mah-confidence">-</div>
+                                        </div>
+                                        <div class="text-center">
+                                            <div class="handicap-display">
+                                                <span class="handicap-value" id="mah-handicap">-</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Exact Score -->
+                            <div class="col-lg-6">
+                                <div class="card shadow border-0 h-100">
+                                    <div class="card-header bg-success text-white">
+                                        <h6 class="mb-0"><i class="fas fa-crosshairs me-2"></i>Exact Score</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <div class="fw-bold text-success" id="mes-predizione">-</div>
+                                            <div class="text-muted small" id="mes-confidence">-</div>
+                                        </div>
+                                        <div class="exact-scores" id="mes-scores">
+                                            <!-- Popolato dinamicamente -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quinta riga: Mercati Primo Tempo -->
+                        <div class="row g-4 mt-3">
+                            <!-- Primo Tempo 1X2 -->
+                            <div class="col-lg-6">
+                                <div class="card shadow border-0 h-100">
+                                    <div class="card-header text-white bg-gradient-purple">
+                                        <h6 class="mb-0"><i class="fas fa-clock me-2"></i>Primo Tempo 1X2</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <div class="fw-bold text-purple" id="mpt1x2-predizione">-</div>
+                                            <div class="text-muted small" id="mpt1x2-confidence">-</div>
+                                        </div>
+                                        <div class="probability-bars">
+                                            <div class="prob-row">
+                                                <span class="prob-label" id="mpt1x2-casa-label">1T Casa:</span>
+                                                <div class="progress flex-grow-1 mx-2">
+                                                    <div class="progress-bar bg-primary" id="mpt1x2-casa-bar"></div>
+                                                </div>
+                                                <span class="prob-value" id="mpt1x2-casa-val">-</span>
+                                            </div>
+                                            <div class="prob-row">
+                                                <span class="prob-label">1T Pareggio:</span>
+                                                <div class="progress flex-grow-1 mx-2">
+                                                    <div class="progress-bar bg-warning" id="mpt1x2-pareggio-bar"></div>
+                                                </div>
+                                                <span class="prob-value" id="mpt1x2-pareggio-val">-</span>
+                                            </div>
+                                            <div class="prob-row">
+                                                <span class="prob-label" id="mpt1x2-trasferta-label">1T Trasferta:</span>
+                                                <div class="progress flex-grow-1 mx-2">
+                                                    <div class="progress-bar bg-danger" id="mpt1x2-trasferta-bar"></div>
+                                                </div>
+                                                <span class="prob-value" id="mpt1x2-trasferta-val">-</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Primo Tempo Over/Under -->
+                            <div class="col-lg-6">
+                                <div class="card shadow border-0 h-100">
+                                    <div class="card-header text-white bg-gradient-orange">
+                                        <h6 class="mb-0"><i class="fas fa-clock me-2"></i>Primo Tempo Over/Under</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <div class="fw-bold text-warning" id="mptou-predizione">-</div>
+                                            <div class="text-muted small" id="mptou-confidence">-</div>
+                                            <div class="text-muted small">Gol 1T attesi: <span id="mptou-gol-attesi">-</span></div>
+                                        </div>
+                                        <div class="probability-bars">
+                                            <div class="prob-row">
+                                                <span class="prob-label">1T Over 0.5:</span>
+                                                <div class="progress flex-grow-1 mx-2">
+                                                    <div class="progress-bar bg-success" id="mptou-over-bar"></div>
+                                                </div>
+                                                <span class="prob-value" id="mptou-over-val">-</span>
+                                            </div>
+                                            <div class="prob-row">
+                                                <span class="prob-label">1T Under 0.5:</span>
+                                                <div class="progress flex-grow-1 mx-2">
+                                                    <div class="progress-bar bg-danger" id="mptou-under-bar"></div>
+                                                </div>
+                                                <span class="prob-value" id="mptou-under-val">-</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- NUOVI MERCATI -->
+                        
+                        <!-- Over/Under 1.5 -->
+                        <div class="row g-4 mt-3">
+                            <div class="col-lg-6">
+                                <div class="card shadow border-0 h-100">
+                                    <div class="card-header bg-info text-white">
+                                        <h6 class="mb-0"><i class="fas fa-chart-line me-2"></i>Over/Under 1.5</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <div class="fw-bold text-info" id="mou15-predizione">-</div>
+                                            <div class="text-muted small" id="mou15-confidence">-</div>
+                                        </div>
+                                        <div class="probability-bars">
+                                            <div class="prob-row">
+                                                <span class="prob-label">Over 1.5:</span>
+                                                <div class="progress flex-grow-1 mx-2">
+                                                    <div class="progress-bar bg-success" id="mou15-over-bar"></div>
+                                                </div>
+                                                <span class="prob-value" id="mou15-over-val">-</span>
+                                            </div>
+                                            <div class="prob-row">
+                                                <span class="prob-label">Under 1.5:</span>
+                                                <div class="progress flex-grow-1 mx-2">
+                                                    <div class="progress-bar bg-danger" id="mou15-under-bar"></div>
+                                                </div>
+                                                <span class="prob-value" id="mou15-under-val">-</span>
+                                            </div>
+                                        </div>
+                                        <div class="mt-2 small text-muted">
+                                            Gol attesi: <span id="mou15-gol-attesi">-</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Over/Under 3.5 -->
+                            <div class="col-lg-6">
+                                <div class="card shadow border-0 h-100">
+                                    <div class="card-header bg-dark text-white">
+                                        <h6 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Over/Under 3.5</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <div class="fw-bold text-dark" id="mou35-predizione">-</div>
+                                            <div class="text-muted small" id="mou35-confidence">-</div>
+                                        </div>
+                                        <div class="probability-bars">
+                                            <div class="prob-row">
+                                                <span class="prob-label">Over 3.5:</span>
+                                                <div class="progress flex-grow-1 mx-2">
+                                                    <div class="progress-bar bg-success" id="mou35-over-bar"></div>
+                                                </div>
+                                                <span class="prob-value" id="mou35-over-val">-</span>
+                                            </div>
+                                            <div class="prob-row">
+                                                <span class="prob-label">Under 3.5:</span>
+                                                <div class="progress flex-grow-1 mx-2">
+                                                    <div class="progress-bar bg-danger" id="mou35-under-bar"></div>
+                                                </div>
+                                                <span class="prob-value" id="mou35-under-val">-</span>
+                                            </div>
+                                        </div>
+                                        <div class="mt-2 small text-muted">
+                                            Gol attesi: <span id="mou35-gol-attesi">-</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Prima Squadra a Segnare e Clean Sheet -->
+                        <div class="row g-4 mt-3">
+                            <div class="col-lg-6">
+                                <div class="card shadow border-0 h-100">
+                                    <div class="card-header bg-warning text-dark">
+                                        <h6 class="mb-0"><i class="fas fa-star me-2"></i>Prima Squadra a Segnare</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <div class="fw-bold text-info" id="mpsg-predizione">-</div>
+                                            <div class="text-muted small" id="mpsg-confidence">-</div>
+                                        </div>
+                                        <div class="probability-bars">
+                                            <div class="prob-row">
+                                                <span class="prob-label" id="mpsg-casa-label">Casa:</span>
+                                                <div class="progress flex-grow-1 mx-2">
+                                                    <div class="progress-bar bg-primary" id="mpsg-casa-bar"></div>
+                                                </div>
+                                                <span class="prob-value" id="mpsg-casa-val">-</span>
+                                            </div>
+                                            <div class="prob-row">
+                                                <span class="prob-label" id="mpsg-trasferta-label">Trasferta:</span>
+                                                <div class="progress flex-grow-1 mx-2">
+                                                    <div class="progress-bar bg-danger" id="mpsg-trasferta-bar"></div>
+                                                </div>
+                                                <span class="prob-value" id="mpsg-trasferta-val">-</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Primo Tempo -->
+                        <div class="row g-4 mt-3">\n            <div class="col-lg-6">
+                                <div class="card shadow border-0 h-100">
+                                    <div class="card-header bg-purple text-white bg-gradient-purple-alt">
+                                        <h6 class="mb-0"><i class="fas fa-clock me-2"></i>Primo Tempo 1X2</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <div class="fw-bold text-purple" id="mpt1x2-predizione">-</div>
+                                            <div class="text-muted small" id="mpt1x2-confidence">-</div>
+                                        </div>
+                                        <div class="probability-bars">
+                                            <div class="prob-row">
+                                                <span class="prob-label">Casa 1º:</span>
+                                                <div class="progress flex-grow-1 mx-2">
+                                                    <div class="progress-bar bg-success" id="mpt1x2-casa-bar"></div>
+                                                </div>
+                                                <span class="prob-value" id="mpt1x2-casa-val">-</span>
+                                            </div>
+                                            <div class="prob-row">
+                                                <span class="prob-label">Pareggio 1º:</span>
+                                                <div class="progress flex-grow-1 mx-2">
+                                                    <div class="progress-bar bg-warning" id="mpt1x2-pareggio-bar"></div>
+                                                </div>
+                                                <span class="prob-value" id="mpt1x2-pareggio-val">-</span>
+                                            </div>
+                                            <div class="prob-row">
+                                                <span class="prob-label">Trasferta 1º:</span>
+                                                <div class="progress flex-grow-1 mx-2">
+                                                    <div class="progress-bar bg-danger" id="mpt1x2-trasferta-bar"></div>
+                                                </div>
+                                                <span class="prob-value" id="mpt1x2-trasferta-val">-</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Primo Tempo Over/Under -->
+                            <div class="col-lg-6">
+                                <div class="card shadow border-0 h-100">
+                                    <div class="card-header text-white bg-gradient-orange-danger">
+                                        <h6 class="mb-0"><i class="fas fa-stopwatch me-2"></i>Primo Tempo O/U 1.5</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <div class="fw-bold text-orange" id="mptou-predizione">-</div>
+                                            <div class="text-muted small" id="mptou-confidence">-</div>
+                                        </div>
+                                        <div class="probability-bars">
+                                            <div class="prob-row">
+                                                <span class="prob-label">Over 1.5 PT:</span>
+                                                <div class="progress flex-grow-1 mx-2">
+                                                    <div class="progress-bar bg-success" id="mptou-over-bar"></div>
+                                                </div>
+                                                <span class="prob-value" id="mptou-over-val">-</span>
+                                            </div>
+                                            <div class="prob-row">
+                                                <span class="prob-label">Under 1.5 PT:</span>
+                                                <div class="progress flex-grow-1 mx-2">
+                                                    <div class="progress-bar bg-danger" id="mptou-under-bar"></div>
+                                                </div>
+                                                <span class="prob-value" id="mptou-under-val">-</span>
+                                            </div>
+                                        </div>
+                                        <div class="mt-2 small text-muted">
+                                            Gol PT attesi: <span id="mptou-gol-primo-tempo">-</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Raccomandazioni -->
+                        <div class="card shadow border-0 mt-4">
+                            <div class="card-header bg-gradient-primary text-white">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-lightbulb me-2"></i>
+                                    Raccomandazioni
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="mercati-raccomandazioni-list">
+                                    <!-- Popolato dinamicamente -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sezione Statistiche -->
+        <section id="statistiche" class="content-section">
+            <div class="row justify-content-center">
+                <div class="col-xl-11 col-lg-12">
+                    <div class="text-center mb-5">
+                        <h1 class="display-4 fw-bold text-primary mb-3">
+                            <i class="fas fa-chart-line me-3"></i>
+                            Statistiche Serie A
+                        </h1>
+                        <p class="lead text-muted">
+                            Analisi approfondita dei dati storici
+                        </p>
+                    </div>
+
+                    <!-- Stats Cards -->
+                    <div class="row g-4 mb-5">
+                        <div class="col-lg-3 col-md-6 col-sm-6">
+                            <div class="card stat-card border-0 shadow-sm h-100">
+                                <div class="card-body text-center py-4">
+                                    <i class="fas fa-calendar-alt stat-icon text-primary mb-3"></i>
+                                    <h3 class="stat-number" id="stat-partite">-</h3>
+                                    <p class="stat-label mb-0">Partite Analizzate</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6 col-sm-6">
+                            <div class="card stat-card border-0 shadow-sm h-100">
+                                <div class="card-body text-center py-4">
+                                    <i class="fas fa-users stat-icon text-success mb-3"></i>
+                                    <h3 class="stat-number" id="stat-squadre">-</h3>
+                                    <p class="stat-label mb-0">Squadre</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6 col-sm-6">
+                            <div class="card stat-card border-0 shadow-sm h-100">
+                                <div class="card-body text-center py-4">
+                                    <i class="fas fa-futbol stat-icon text-warning mb-3"></i>
+                                    <h3 class="stat-number" id="stat-gol">-</h3>
+                                    <p class="stat-label mb-0">Media Gol/Partita</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6 col-sm-6">
+                            <div class="card stat-card border-0 shadow-sm h-100">
+                                <div class="card-body text-center py-4">
+                                    <i class="fas fa-clock stat-icon text-info mb-3"></i>
+                                    <h3 class="stat-number" id="stat-periodo">-</h3>
+                                    <p class="stat-label mb-0">Periodo</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Charts -->
+                    <div class="row g-4">
+                        <div class="col-lg-4 col-md-6">
+                            <div class="card chart-card border-0 shadow h-100">
+                                <div class="card-header bg-light border-bottom">
+                                    <h5 class="card-title mb-0">
+                                        <i class="fas fa-chart-pie text-primary me-2"></i>
+                                        Distribuzione Risultati
+                                    </h5>
+                                </div>
+                                <div class="card-body d-flex align-items-center justify-content-center">
+                                    <div id="chart-risultati" class="w-100"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 col-md-6">
+                            <div class="card chart-card border-0 shadow h-100">
+                                <div class="card-header bg-light border-bottom">
+                                    <h5 class="card-title mb-0">
+                                        <i class="fas fa-chart-line text-success me-2"></i>
+                                        Gol per Stagione
+                                    </h5>
+                                </div>
+                                <div class="card-body d-flex align-items-center justify-content-center">
+                                    <div id="chart-gol" class="w-100"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 col-md-12">
+                            <div class="card chart-card border-0 shadow h-100">
+                                <div class="card-header bg-light border-bottom">
+                                    <h5 class="card-title mb-0">
+                                        <i class="fas fa-chart-bar text-warning me-2"></i>
+                                        Top Squadre Casa
+                                    </h5>
+                                </div>
+                                <div class="card-body d-flex align-items-center justify-content-center">
+                                    <div id="chart-squadre" class="w-100"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sezione Forma Squadre -->
+        <section id="forma" class="content-section">
+            <div class="row justify-content-center">
+                <div class="col-xl-10">
+                    <div class="text-center mb-5">
+                        <h1 class="display-4 fw-bold text-primary mb-3">
+                            <i class="fas fa-trending-up me-3"></i>
+                            Forma Squadre
+                        </h1>
+                        <p class="lead text-muted">
+                            Analizza la forma recente delle squadre
+                        </p>
+                    </div>
+
+                    <div class="card shadow border-0">
+                        <div class="card-header bg-gradient-info text-white">
+                            <h4 class="mb-0">
+                                <i class="fas fa-search me-2"></i>
+                                Analizza Squadra
+                            </h4>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <label for="squadra-forma" class="form-label fw-semibold">Seleziona Squadra</label>
+                                    <select class="form-select form-select-lg" id="squadra-forma">
+                                        <option value="">Scegli una squadra...</option>
+                                        {% for squadra in squadre %}
+                                        <option value="{{ squadra }}">{{ squadra }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-4 d-flex align-items-end">
+                                    <button class="btn btn-info btn-lg w-100" id="btn-analizza-forma">
+                                        <i class="fas fa-analytics me-2"></i>
+                                        Analizza
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Risultati Forma -->
+                    <div id="risultati-forma" class="mt-4 d-none">
+                        <div class="card shadow border-0">
+                            <div class="card-header bg-white">
+                                <h5 class="card-title mb-0" id="forma-squadra-title">
+                                    <i class="fas fa-shield-alt me-2"></i>
+                                    Forma Squadra
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-lg-4 mb-4">
+                                        <h6 class="fw-bold">Statistiche Generali</h6>
+                                        <div class="forma-stats">
+                                            <div class="stat-row">
+                                                <span class="stat-label">Partite:</span>
+                                                <span class="stat-value" id="forma-partite">-</span>
+                                            </div>
+                                            <div class="stat-row">
+                                                <span class="stat-label">Vittorie:</span>
+                                                <span class="stat-value text-success" id="forma-vittorie">-</span>
+                                            </div>
+                                            <div class="stat-row">
+                                                <span class="stat-label">Pareggi:</span>
+                                                <span class="stat-value text-warning" id="forma-pareggi">-</span>
+                                            </div>
+                                            <div class="stat-row">
+                                                <span class="stat-label">Sconfitte:</span>
+                                                <span class="stat-value text-danger" id="forma-sconfitte">-</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-4 mb-4">
+                                        <h6 class="fw-bold">Statistiche Gol</h6>
+                                        <div class="forma-stats">
+                                            <div class="stat-row">
+                                                <span class="stat-label">Gol Fatti:</span>
+                                                <span class="stat-value" id="forma-gol-fatti">-</span>
+                                            </div>
+                                            <div class="stat-row">
+                                                <span class="stat-label">Gol Subiti:</span>
+                                                <span class="stat-value" id="forma-gol-subiti">-</span>
+                                            </div>
+                                            <div class="stat-row">
+                                                <span class="stat-label">Media Gol Fatti:</span>
+                                                <span class="stat-value" id="forma-media-fatti">-</span>
+                                            </div>
+                                            <div class="stat-row">
+                                                <span class="stat-label">Media Gol Subiti:</span>
+                                                <span class="stat-value" id="forma-media-subiti">-</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-4 mb-4">
+                                        <h6 class="fw-bold">Forma Recente (Ultime 5)</h6>
+                                        <div class="forma-visual" id="forma-visual">
+                                            <!-- Sarà popolato dinamicamente -->
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-4">
+                                    <h6 class="fw-bold">Ultimi Risultati</h6>
+                                    <div class="table-responsive">
+                                        <table class="table table-hover" id="forma-risultati-table">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>Data</th>
+                                                    <th>Avversario</th>
+                                                    <th>Casa/Trasferta</th>
+                                                    <th>Risultato</th>
+                                                    <th>Gol</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="forma-risultati-body">
+                                                <!-- Sarà popolato dinamicamente -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sezione Info -->
+        <section id="info" class="content-section">
+            <div class="row justify-content-center">
+                <div class="col-xl-10">
+                    <div class="text-center mb-5">
+                        <h1 class="display-4 fw-bold text-primary mb-3">
+                            <i class="fas fa-info-circle me-3"></i>
+                            Informazioni Sistema
+                        </h1>
+                        <p class="lead text-muted">
+                            Come funziona il sistema di predizioni
+                        </p>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-lg-6 mb-4">
+                            <div class="card info-card border-0 shadow">
+                                <div class="card-body p-4">
+                                    <div class="text-center mb-3">
+                                        <i class="fas fa-robot info-icon text-primary"></i>
+                                    </div>
+                                    <h4 class="card-title text-center">Modelli AI</h4>
+                                    <p class="card-text">
+                                        Il sistema utilizza un ensemble di 3 modelli di Machine Learning:
+                                        Random Forest, Gradient Boosting e Logistic Regression per
+                                        predizioni accurate.
+                                    </p>
+                                    <ul class="list-unstyled">
+                                        <li><i class="fas fa-check text-success me-2"></i>Accuracy ~50%</li>
+                                        <li><i class="fas fa-check text-success me-2"></i>32 Features engineered</li>
+                                        <li><i class="fas fa-check text-success me-2"></i>Cross-validation 5-fold</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-6 mb-4">
+                            <div class="card info-card border-0 shadow">
+                                <div class="card-body p-4">
+                                    <div class="text-center mb-3">
+                                        <i class="fas fa-database info-icon text-success"></i>
+                                    </div>
+                                    <h4 class="card-title text-center">Dataset</h4>
+                                    <p class="card-text">
+                                        Analisi basata su dati storici reali della Serie A italiana
+                                        dal 2020 al 2025, con oltre 1,900 partite analizzate.
+                                    </p>
+                                    <ul class="list-unstyled">
+                                        <li><i class="fas fa-check text-success me-2"></i>1,940 partite</li>
+                                        <li><i class="fas fa-check text-success me-2"></i>28 squadre</li>
+                                        <li><i class="fas fa-check text-success me-2"></i>5 stagioni complete</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-6 mb-4">
+                            <div class="card info-card border-0 shadow">
+                                <div class="card-body p-4">
+                                    <div class="text-center mb-3">
+                                        <i class="fas fa-cogs info-icon text-warning"></i>
+                                    </div>
+                                    <h4 class="card-title text-center">Features</h4>
+                                    <p class="card-text">
+                                        Ogni predizione utilizza oltre 30 variabili tra forma recente,
+                                        performance casa/trasferta, head-to-head e statistiche avanzate.
+                                    </p>
+                                    <ul class="list-unstyled">
+                                        <li><i class="fas fa-check text-success me-2"></i>Forma ultime 5 partite</li>
+                                        <li><i class="fas fa-check text-success me-2"></i>Performance casa/trasferta</li>
+                                        <li><i class="fas fa-check text-success me-2"></i>Scontri diretti</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-6 mb-4">
+                            <div class="card info-card border-0 shadow">
+                                <div class="card-body p-4">
+                                    <div class="text-center mb-3">
+                                        <i class="fas fa-exclamation-triangle info-icon text-danger"></i>
+                                    </div>
+                                    <h4 class="card-title text-center">Disclaimer</h4>
+                                    <p class="card-text">
+                                        Questo sistema è esclusivamente educativo. Le predizioni sportive
+                                        comportano sempre incertezza e rischi finanziari.
+                                    </p>
+                                    <div class="alert alert-warning">
+                                        <small>
+                                            <i class="fas fa-warning me-1"></i>
+                                            Non garantiamo profitti. Usare con responsabilità.
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white mt-5 py-4">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5><i class="fas fa-futbol me-2"></i>Sistema Pronostici Serie A</h5>
+                    <p class="mb-0">Sviluppato con ❤️ per la community del calcio e del machine learning</p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <p class="mb-0">
+                        <small>
+                            <i class="fas fa-calendar me-1"></i>
+                            © 2025 - Sistema Educativo
+                        </small>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Loading Modal -->
+    <div class="modal fade" id="loadingModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-body text-center p-4">
+                    <div class="spinner-border text-primary mb-3" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <h5 id="loading-text">Generazione predizione...</h5>
+                    <div class="progress mt-3">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                             id="loading-progress" role="progressbar"
+                             aria-label="Progresso generazione predizione"
+                             aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"
+                             title="Barra di avanzamento generazione predizione"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

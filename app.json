@@ -1,0 +1,24 @@
+{
+  "name": "Pronostici Calcio Professional",
+  "description": "Sistema professionale di pronostici calcio con ML",
+  "repository": "https://github.com/your-username/pronostici_calcio",
+  "logo": "https://cdn.iconscout.com/icon/free/png-256/football-1-152755.png",
+  "keywords": ["football", "soccer", "predictions", "ml", "flask"],
+  "env": {
+    "FLASK_ENV": {
+      "description": "Flask environment",
+      "value": "production"
+    }
+  },
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "free"
+    }
+  },
+  "buildpacks": [
+    {
+      "url": "heroku/python"
+    }
+  ]
+}

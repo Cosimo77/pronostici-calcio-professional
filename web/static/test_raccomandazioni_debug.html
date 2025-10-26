@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Raccomandazioni</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="http://localhost:5003/static/css/style.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <div class="container mt-5">
+        <h2>Test Visualizzazione Raccomandazioni</h2>
+        
+        <!-- Test Container Raccomandazioni -->
+        <div class="card shadow border-0 mt-4">
+            <div class="card-header bg-gradient-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-lightbulb me-2"></i>
+                    Raccomandazioni
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="mercati-raccomandazioni-list">
+                    <!-- Test raccomandazioni statiche -->
+                    <div class="mercati-raccomandazione valore">
+                        <div class="racc-header">
+                            <span class="racc-tipo">[Valore]</span>
+                            <span class="racc-mercato">double_chance</span>
+                        </div>
+                        <div class="racc-scommessa">1X</div>
+                        <div class="racc-descrizione">Miglior valore disponibile: 1X (88.4%)</div>
+                        <div class="racc-confidenza">88.4%</div>
+                    </div>
+                    
+                    <div class="mercati-raccomandazione media">
+                        <div class="racc-header">
+                            <span class="racc-tipo">[Media]</span>
+                            <span class="racc-mercato">1X2</span>
+                        </div>
+                        <div class="racc-scommessa">H</div>
+                        <div class="racc-descrizione">Buona opportunità per H (62.1%)</div>
+                        <div class="racc-confidenza">62.1%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-4">
+            <button class="btn btn-primary" onclick="testRaccomandazioni()">Test JavaScript</button>
+            <button class="btn btn-secondary" onclick="clearRaccomandazioni()">Pulisci</button>
+        </div>
+    </div>
+
+    <script>
+        function testRaccomandazioni() {
+            const container = document.getElementById('mercati-raccomandazioni-list');
+            console.log('Container trovato:', container);
+            
+            const testData = [
+                {
+                    tipo: 'Valore',
+                    mercato: 'double_chance',
+                    scommessa: '1X',
+                    descrizione: 'Miglior valore disponibile: 1X (88.4%)',
+                    confidenza: 88.4
+                }
+            ];
+            
+            updateMercatiRaccomandazioni(testData);
+        }
+        
+        function clearRaccomandazioni() {
+            const container = document.getElementById('mercati-raccomandazioni-list');
+            container.innerHTML = '<p class="text-muted">Container pulito</p>';
+        }
+        
+        function updateMercatiRaccomandazioni(raccomandazioni) {
+            console.log('🎯 updateMercatiRaccomandazioni chiamato con:', raccomandazioni);
+            const container = document.getElementById('mercati-raccomandazioni-list');
+            if (!container) {
+                console.error('❌ Container mercati-raccomandazioni-list non trovato!');
+                return;
+            }
+
+            console.log('✅ Container trovato, svuoto contenuto...');
+            container.innerHTML = '';
+
+            raccomandazioni.forEach((racc, index) => {
+                console.log(`📝 Creando raccomandazione ${index + 1}:`, racc);
+                const raccElement = document.createElement('div');
+                raccElement.className = `mercati-raccomandazione ${racc.tipo.toLowerCase().replace('_', '-')}`;
+                raccElement.innerHTML = `
+                    <div class="racc-header">
+                        <span class="racc-tipo">[${racc.tipo}]</span>
+                        <span class="racc-mercato">${racc.mercato}</span>
+                    </div>
+                    <div class="racc-scommessa">${racc.scommessa}</div>
+                    <div class="racc-descrizione">${racc.descrizione}</div>
+                    <div class="racc-confidenza">${racc.confidenza.toFixed(1)}%</div>
+                `;
+                container.appendChild(raccElement);
+                console.log(`✅ Raccomandazione ${index + 1} aggiunta al DOM`);
+            });
+            
+            console.log('🎉 Tutte le raccomandazioni aggiunte!');
+        }
+    </script>
+</body>
+</html>

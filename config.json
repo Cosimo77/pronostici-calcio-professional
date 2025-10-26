@@ -1,0 +1,33 @@
+{
+  "system": {
+    "name": "Pronostici Calcio",
+    "version": "2.0.0",
+    "debug": false,
+    "timezone": "Europe/Rome"
+  },
+  "data": {
+    "update_frequency": "daily",
+    "backup_retention_days": 30,
+    "validation_enabled": true
+  },
+  "automation": {
+    "enabled": true,
+    "daily_update_time": "06:00",
+    "weekly_retrain_day": "sunday",
+    "health_check_interval": 3600
+  },
+  "monitoring": {
+    "enabled": true,
+    "dashboard_port": 5001,
+    "alert_thresholds": {
+      "prediction_accuracy": 0.55,
+      "data_age_hours": 48,
+      "failed_updates_threshold": 3
+    }
+  },
+  "api": {
+    "rate_limit": 100,
+    "timeout": 30,
+    "retry_attempts": 3
+  }
+}

@@ -1,0 +1,131 @@
+# Regole di Alerting per Pronostici Calcio
+# File: monitoring/alert_rules.yml
+
+groups:
+  - name: pronostici_calcio_alerts
+    rules:
+      # ============================================
+      # ALERTING APPLICAZIONE
+      # ============================================
+      
+      - alert: AppDown
+        expr: up{job="pronostici-calcio"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: pronostici-calcio
+        annotations:
+          summary: "Applicazione Pronostici Calcio non raggiungibile"
+          description: "L'applicazione non risponde per più di 1 minuto"
+
+      - alert: HighResponseTime
+        expr: app_response_time_ms > 1000
+        for: 2m
+        labels:
+          severity: warning
+          service: pronostici-calcio
+        annotations:
+          summary: "Response time elevato"
+          description: "Response time medio superiore a 1 secondo per {{ $value }}ms"
+
+      - alert: HighErrorRate  
+        expr: rate(flask_http_request_exceptions_total[5m]) > 0.1
+        for: 1m
+        labels:
+          severity: warning
+          service: pronostici-calcio
+        annotations:
+          summary: "Tasso di errori elevato"
+          description: "{{ $value }} errori al secondo negli ultimi 5 minuti"
+
+      - alert: PredictionAccuracyLow
+        expr: app_accuracy_percentage < 50
+        for: 5m
+        labels:
+          severity: warning
+          service: business-metrics
+        annotations:
+          summary: "Accuratezza predizioni bassa"
+          description: "Accuratezza scesa a {{ $value }}% (sotto soglia 50%)"
+
+      # ============================================
+      # ALERTING INFRASTRUTTURA
+      # ============================================
+
+      - alert: DatabaseDown
+        expr: up{job="postgres"} == 0
+        for: 30s
+        labels:
+          severity: critical
+          service: database
+        annotations:
+          summary: "Database PostgreSQL non raggiungibile"
+          description: "Database offline per più di 30 secondi"
+
+      - alert: RedisDown
+        expr: up{job="redis"} == 0
+        for: 30s
+        labels:
+          severity: warning
+          service: cache
+        annotations:
+          summary: "Redis cache non raggiungibile"
+          description: "Redis offline - rate limiting e cache non funzionanti"
+
+      - alert: HighDatabaseConnections
+        expr: pg_stat_activity_count > 80
+        for: 2m
+        labels:
+          severity: warning
+          service: database
+        annotations:
+          summary: "Troppe connessioni al database"
+          description: "{{ $value }} connessioni attive (soglia: 80)"
+
+      # ============================================
+      # ALERTING SICUREZZA
+      # ============================================
+
+      - alert: HighRateLimitHits
+        expr: rate(flask_limiter_hits_total[5m]) > 10
+        for: 1m
+        labels:
+          severity: warning
+          service: security
+        annotations:
+          summary: "Rate limit colpito frequentemente"
+          description: "{{ $value }} hit al rate limit negli ultimi 5 minuti"
+
+      - alert: SuspiciousActivity
+        expr: increase(security_blocked_requests_total[10m]) > 5
+        for: 1m
+        labels:
+          severity: warning
+          service: security
+        annotations:
+          summary: "Attività sospetta rilevata"
+          description: "{{ $value }} richieste bloccate per attività sospetta"
+
+      # ============================================
+      # ALERTING BUSINESS
+      # ============================================
+
+      - alert: LowPredictionVolume
+        expr: rate(app_predictions_total[1h]) < 0.1
+        for: 10m
+        labels:
+          severity: info
+          service: business-metrics
+        annotations:
+          summary: "Volume predizioni basso"
+          description: "Meno di 6 predizioni all'ora nell'ultima ora"
+
+      - alert: CacheEfficiencyLow
+        expr: (app_cache_hits / (app_cache_hits + app_cache_misses)) < 0.7
+        for: 5m
+        labels:
+          severity: warning
+          service: performance
+        annotations:
+          summary: "Efficienza cache bassa"
+          description: "Cache hit rate: {{ $value }}% (sotto 70%)"
