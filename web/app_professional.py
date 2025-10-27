@@ -2322,7 +2322,7 @@ if __name__ == '__main__':
 if __name__ != '__main__':
     # Inizializzazione per WSGI
     try:
-        inizializza_sistema()
+        inizializza_sistema_professionale()
         logger.info("🚀 Sistema inizializzato per produzione WSGI")
     except Exception as e:
         logger.error("❌ Errore inizializzazione WSGI", error=str(e))
