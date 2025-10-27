@@ -1,1 +1,1 @@
-web: cd web && python app_professional.py
+web: cd web && gunicorn app_professional:app --bind 0.0.0.0:$PORT --workers 1 --timeout 120

@@ -2317,3 +2317,12 @@ if __name__ == '__main__':
         logger.error("❌ Errore critico avvio", error=str(e))
         if __name__ == '__main__':
             sys.exit(1)
+
+# Configurazione per deployment produzione (Gunicorn)
+if __name__ != '__main__':
+    # Inizializzazione per WSGI
+    try:
+        inizializza_sistema()
+        logger.info("🚀 Sistema inizializzato per produzione WSGI")
+    except Exception as e:
+        logger.error("❌ Errore inizializzazione WSGI", error=str(e))
