@@ -436,6 +436,11 @@ def enterprise():
     """Route alternativo per compatibilità"""
     return index()
 
+@app.route('/monitoring')
+def monitoring():
+    """Dashboard di monitoraggio sistema"""
+    return render_template('monitoring.html')
+
 @app.route('/api/squadre')
 @limiter.limit("60 per minute")
 def api_squadre():
