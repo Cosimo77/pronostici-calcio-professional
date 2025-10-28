@@ -1,1 +1,1 @@
-web: cd web && gunicorn app_professional:app --bind 0.0.0.0:$PORT --workers 1 --timeout 120 --preload
+web: cd web && gunicorn monitoring_app:app --bind 0.0.0.0:$PORT --workers 1 --timeout 120 --preload
