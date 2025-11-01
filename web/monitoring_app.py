@@ -2,10 +2,13 @@
 """
 🔧 APP MINIMAL WORKING - Solo per monitoring
 Versione ultra-semplificata per garantire avvio su Render
+DEPLOY FORZATO: 2025-11-01 10:28
 """
 
 import os
 from datetime import datetime
+
+print("🚀 MONITORING_APP LOADING - NOT app_professional!")
 
 try:
     from flask import Flask, jsonify, render_template_string
@@ -18,13 +21,20 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'monitoring-key-2025')
 app.config['DEBUG'] = False
 
-# Configurazione base sicurezza
+# Configurazione base sicurezza - CSP permissivo per inline styles/scripts
 @app.after_request
 def after_request(response):
     response.headers['X-Content-Type-Options'] = 'nosniff'
     response.headers['X-Frame-Options'] = 'DENY'
     response.headers['X-XSS-Protection'] = '1; mode=block'
+    # Permetti inline styles e scripts per dashboard monitoring
+    response.headers['Content-Security-Policy'] = "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline';"
     return response
+
+@app.route('/favicon.ico')
+def favicon():
+    """Favicon placeholder per evitare 500 error"""
+    return '', 204
 
 @app.route('/')
 def home():
