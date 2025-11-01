@@ -115,7 +115,7 @@ Talisman(app,
     strict_transport_security_max_age=31536000,  # 1 anno
     strict_transport_security_include_subdomains=True,
     content_security_policy=csp,
-    content_security_policy_nonce_in=['script-src', 'style-src'],
+    content_security_policy_nonce_in=[],  # DISABILITATO: nonce invalida unsafe-inline!
     referrer_policy='strict-origin-when-cross-origin',
     permissions_policy={
         'geolocation': '()',
