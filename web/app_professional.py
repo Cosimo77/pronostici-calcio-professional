@@ -93,11 +93,11 @@ limiter = Limiter(
 )
 limiter.init_app(app)
 
-# Security Headers COMPLETI con Talisman Enterprise
+# Security Headers COMPLETI con Talisman Enterprise (CSP permissivo per dashboard)
 csp = {
     'default-src': "'self'",
-    'script-src': "'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net",
-    'style-src': "'self' https://fonts.googleapis.com",
+    'script-src': "'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net",
+    'style-src': "'self' 'unsafe-inline' https://fonts.googleapis.com",
     'font-src': "'self' https://fonts.gstatic.com",
     'img-src': "'self' data: https:",
     'connect-src': "'self'",
@@ -424,8 +424,8 @@ def inizializza_sistema_professionale():
 
 @app.route('/favicon.ico')
 def favicon():
-    """Serve favicon"""
-    return app.send_static_file('favicon.ico')
+    """Serve favicon placeholder"""
+    return '', 204  # No content - evita 500 error
 
 @app.route('/')
 def index():
