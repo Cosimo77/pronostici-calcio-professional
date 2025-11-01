@@ -21,14 +21,14 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'monitoring-key-2025')
 app.config['DEBUG'] = False
 
-# Configurazione base sicurezza - CSP permissivo per inline styles/scripts
+# Configurazione base sicurezza - NO CSP per debug
 @app.after_request
 def after_request(response):
     response.headers['X-Content-Type-Options'] = 'nosniff'
     response.headers['X-Frame-Options'] = 'DENY'
     response.headers['X-XSS-Protection'] = '1; mode=block'
-    # Permetti inline styles e scripts per dashboard monitoring
-    response.headers['Content-Security-Policy'] = "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline';"
+    # CSP disabilitato completamente per permettere inline styles/scripts
+    # response.headers['Content-Security-Policy'] = "..."  # COMMENTATO
     return response
 
 @app.route('/favicon.ico')
