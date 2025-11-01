@@ -1,0 +1,94 @@
+# 🧹 PIANO PULIZIA PROGETTO
+Data: 2025-11-01
+
+## FILE DA ELIMINARE (75+ file obsoleti)
+
+### 1. FILE TEST (23 file - 100% obsoleti)
+test_api_mercati_debug.py
+test_correzioni_js.py
+test_csp_fix.py
+test_curl_api.py
+test_endpoint_mercati.py
+test_file_statici.py
+test_frontend_completo.py
+test_integrazione_finale.py
+test_integrazione_scraper.py
+test_mercati_cartellini_corner.py
+test_metriche_complete.py
+test_miglioramenti.py
+test_monitoring_fix.py
+test_nuovi_mercati.py
+test_policy_fix.py
+test_raccomandazioni.py
+test_raccomandazioni_implementate.py
+test_sistema.py
+test_sistema_completo.py
+test_sistema_finale.py
+test_solo_stagione.py
+test_standardizzazione.py
+test_tutte_squadre.py
+
+### 2. WEB APP OBSOLETE (5 file)
+web/app.py (49K - vecchia versione)
+web/app_enterprise.py (20K - superseded)
+web/app_fast_enterprise.py (11K - non usata)
+web/emergency_app.py (7K - backup)
+web/test_server.py (929B - dev only)
+
+### 3. SCRIPT DUPLICATI/OBSOLETI (stima 10-15 file)
+scripts/mercati_multipli_backup.py
+scripts/sistema_pronostici.py (vecchia versione)
+(da verificare altri duplicati)
+
+### 4. FILE DI DEMO/DEBUG
+demo_sistema_professionale.py
+TEST_SISTEMA_PROFESSIONALE.py
+RUN_SISTEMA_PROFESSIONALE.py (duplicato di run_professional_system.py)
+pulisci_file_obsoleti.py
+
+### 5. FILE CONFIGURAZIONE DUPLICATI
+dashboard_stato_sistema.py (duplicato)
+dashboard_monitoring.py (duplicato)
+
+## FILE DA MANTENERE
+
+### APP PRINCIPALE
+✅ web/monitoring_app.py - APP PRODUZIONE RENDER
+✅ web/app_professional.py - App completa (da fix per uso locale)
+✅ web/wsgi.py
+✅ web/__init__.py
+
+### SCRIPT CORE
+✅ aggiorna_tutto_completo.py
+✅ aggiorna_rapido.py
+✅ aggiornamento_veloce.py
+✅ allena_modelli_rapido.py
+✅ monitor_system.py
+✅ automation_master.py
+✅ status_rapido.py
+
+### CONFIGURAZIONE
+✅ Procfile
+✅ requirements.txt
+✅ config.json
+✅ runtime.txt
+✅ docker-compose.yml
+✅ Dockerfile
+
+### DOCS
+✅ README.md
+✅ GUIDA_*.md (tutte)
+
+## AZIONI
+
+1. Creare backup branch su git
+2. Eliminare file test_*.py (23 file)
+3. Eliminare web app obsolete (4 file)
+4. Pulire scripts/ da duplicati
+5. Rimuovere file demo
+6. Fix errori Pylance rimanenti
+7. Commit pulizia
+8. Test deploy Render
+
+TOTALE FILE DA RIMUOVERE: ~45-50 file
+SPAZIO LIBERATO: ~200-300KB
