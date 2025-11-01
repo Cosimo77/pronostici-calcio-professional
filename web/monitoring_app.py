@@ -1,17 +1,22 @@
 #!/usr/bin/env python3
 """
 🔧 APP MINIMAL WORKING - Solo per monitoring
-Versione semplificata che bypassa problemi di inizializzazione
+Versione ultra-semplificata per garantire avvio su Render
 """
 
-from flask import Flask, jsonify, render_template_string
 import os
-import sys
 from datetime import datetime
 
-# Setup Flask
+try:
+    from flask import Flask, jsonify, render_template_string
+except ImportError as e:
+    print(f"ERRORE IMPORT FLASK: {e}")
+    raise
+
+# Setup Flask con configurazione minimal
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'monitoring-key-2025')
+app.config['DEBUG'] = False
 
 # Configurazione base sicurezza
 @app.after_request
