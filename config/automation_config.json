@@ -1,0 +1,69 @@
+{
+  "automation": {
+    "enabled": true,
+    "schedule": {
+      "data_update": {
+        "time": "06:00",
+        "frequency": "daily",
+        "enabled": true,
+        "timezone": "Europe/Rome"
+      },
+      "model_training": {
+        "day": "sunday",
+        "time": "02:00",
+        "frequency": "weekly",
+        "enabled": true,
+        "timezone": "Europe/Rome"
+      },
+      "health_check": {
+        "frequency": "hourly",
+        "enabled": true
+      },
+      "cache_cleanup": {
+        "frequency": "every_3_days",
+        "enabled": true
+      }
+    },
+    "notifications": {
+      "email": {
+        "enabled": false,
+        "recipients": []
+      },
+      "log": {
+        "enabled": true,
+        "level": "INFO",
+        "file": "logs/automation_daemon.log"
+      }
+    },
+    "error_handling": {
+      "retry_attempts": 3,
+      "retry_delay_seconds": 60,
+      "continue_on_error": true
+    },
+    "backup": {
+      "enabled": true,
+      "keep_last_n": 5,
+      "location": "backups/"
+    }
+  },
+  "monitoring": {
+    "dashboard": {
+      "enabled": true,
+      "port": 5001,
+      "auto_refresh_seconds": 30
+    },
+    "api": {
+      "enabled": true,
+      "endpoints": [
+        "/api/automation_status",
+        "/api/dataset_info",
+        "/api/health"
+      ]
+    }
+  },
+  "system": {
+    "version": "1.0.0",
+    "environment": "production",
+    "debug": false
+  }
+}
