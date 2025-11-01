@@ -687,35 +687,39 @@
                     return;
                 }
 
+                // Helper per gestire valori undefined
+                const safePercent = (val) => val != null ? (val * 100).toFixed(1) : 'N/A';
+                const safeValue = (val, def = 'N/A') => val != null ? val : def;
+
                 const html = `
                     <div class="metric-card">
                         <h4>🎯 ACCURATEZZA GENERALE</h4>
-                        <div class="metric-value">${(data.overall_accuracy * 100).toFixed(1)}%</div>
-                        <small>${data.correct_predictions}/${data.total_predictions} predizioni</small>
+                        <div class="metric-value">${safePercent(data.overall_accuracy)}%</div>
+                        <small>${safeValue(data.correct_predictions, 0)}/${safeValue(data.total_predictions, 0)} predizioni</small>
                     </div>
                     <div class="metric-card">
                         <h4>📊 OVER/UNDER 2.5</h4>
-                        <div class="metric-value">${(data.market_performance.over_under_25.accuracy * 100).toFixed(1)}%</div>
+                        <div class="metric-value">${safePercent(data.market_performance?.over_under_25?.accuracy)}%</div>
                         <small>Mercato più accurato</small>
                     </div>
                     <div class="metric-card">
                         <h4>🏠 DOUBLE CHANCE</h4>
-                        <div class="metric-value">${(data.market_performance.double_chance.accuracy * 100).toFixed(1)}%</div>
+                        <div class="metric-value">${safePercent(data.market_performance?.double_chance?.accuracy)}%</div>
                         <small>Alta confidenza</small>
                     </div>
                     <div class="metric-card">
                         <h4>⚽ GOAL/NO GOAL</h4>
-                        <div class="metric-value">${(data.market_performance.goal_nogoal.accuracy * 100).toFixed(1)}%</div>
+                        <div class="metric-value">${safePercent(data.market_performance?.goal_nogoal?.accuracy)}%</div>
                         <small>Mercato popolare</small>
                     </div>
                     <div class="metric-card">
                         <h4>🔄 CONFIDENZA MEDIA</h4>
-                        <div class="metric-value">${(data.avg_confidence * 100).toFixed(1)}%</div>
+                        <div class="metric-value">${safePercent(data.avg_confidence)}%</div>
                         <small>Affidabilità sistema</small>
                     </div>
                     <div class="metric-card">
                         <h4>📈 SQUADRE SUPPORTATE</h4>
-                        <div class="metric-value">${data.sistema_info.squadre_supportate}</div>
+                        <div class="metric-value">${safeValue(data.sistema_info?.squadre_supportate, 20)}</div>
                         <small>Serie A 2025-26</small>
                     </div>
                 `;
@@ -991,6 +995,9 @@
                 
                 console.log('📈 Probabilità calcolate:', { probH, probD, probA });
                 
+                // Helper sicuro per percentuali
+                const safePercent = (val) => val != null && !isNaN(val) ? val.toFixed(1) : '0.0';
+                
                 // Risultato ensemble con dati sicuri
                 const ensembleHtml = `
                     <h3>🏆 Predizione Ensemble: ${this.formatPrediction(predizione)}</h3>
@@ -998,20 +1005,20 @@
                     <div class="confidence-bar">
                         <div class="confidence-fill" data-width="${(confidenza * 100)}%"></div>
                     </div>
-                    <p>Confidenza: <strong>${(confidenza * 100).toFixed(1)}%</strong></p>
-                    <p>Accordo Modelli: <strong>${(accordo * 100).toFixed(1)}%</strong></p>
+                    <p>Confidenza: <strong>${safePercent(confidenza * 100)}%</strong></p>
+                    <p>Accordo Modelli: <strong>${safePercent(accordo * 100)}%</strong></p>
                     <div class="probability-bars">
                         <div class="prob-bar">
                             <span>🏠 Casa</span>
-                            <span><strong>${probH.toFixed(1)}%</strong></span>
+                            <span><strong>${safePercent(probH)}%</strong></span>
                         </div>
                         <div class="prob-bar">
                             <span>🤝 Pareggio</span>
-                            <span><strong>${probD.toFixed(1)}%</strong></span>
+                            <span><strong>${safePercent(probD)}%</strong></span>
                         </div>
                         <div class="prob-bar">
                             <span>✈️ Trasferta</span>
-                            <span><strong>${probA.toFixed(1)}%</strong></span>
+                            <span><strong>${safePercent(probA)}%</strong></span>
                         </div>
                     </div>
                 `;
@@ -1075,23 +1082,26 @@
                     
                     console.log(`📊 Modello ${modelName} - Prob:`, { modelProbH, modelProbD, modelProbA });
                     
+                    // Helper per percentuali sicure
+                    const safePct = (val) => val != null && !isNaN(val) ? val.toFixed(1) : '0.0';
+                    
                     modelsHtml += `
                         <div class="model-card">
                             <div class="model-name">🔬 ${modelName.replace(/_/g, ' ')}</div>
                             <p><strong>Predizione:</strong> ${this.formatPrediction(modelPrediction)}</p>
-                            <p><strong>Confidenza:</strong> ${(modelConf * 100).toFixed(1)}%</p>
+                            <p><strong>Confidenza:</strong> ${safePct(modelConf * 100)}%</p>
                             <div class="probability-bars">
                                 <div class="prob-bar">
                                     <span>Casa</span>
-                                    <span>${modelProbH.toFixed(1)}%</span>
+                                    <span>${safePct(modelProbH)}%</span>
                                 </div>
                                 <div class="prob-bar">
                                     <span>Pareggio</span>
-                                    <span>${modelProbD.toFixed(1)}%</span>
+                                    <span>${safePct(modelProbD)}%</span>
                                 </div>
                                 <div class="prob-bar">
                                     <span>Trasferta</span>
-                                    <span>${modelProbA.toFixed(1)}%</span>
+                                    <span>${safePct(modelProbA)}%</span>
                                 </div>
                             </div>
                         </div>
