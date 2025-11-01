@@ -47,6 +47,7 @@ def home():
         'endpoints': [
             '/api/health',
             '/monitoring', 
+            '/automation',
             '/api/status'
         ]
     })
@@ -294,6 +295,78 @@ def status():
         'problem': 'resolved',
         'message': '🎉 Sistema completamente operativo!'
     })
+
+@app.route('/automation')
+def automation_page():
+    """Pagina stato automazione"""
+    try:
+        from pathlib import Path
+        template_path = Path(__file__).parent / 'templates' / 'automation_status.html'
+        if template_path.exists():
+            with open(template_path, 'r', encoding='utf-8') as f:
+                return f.read()
+        else:
+            return jsonify({'error': 'Template non trovato'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/automation_status')
+def automation_status_api():
+    """API stato automazione"""
+    try:
+        from pathlib import Path
+        import json
+        
+        status_file = Path(__file__).parent.parent / 'logs' / 'automation_status.json'
+        
+        if status_file.exists():
+            with open(status_file, 'r') as f:
+                status_data = json.load(f)
+            return jsonify(status_data)
+        else:
+            return jsonify({
+                'started_at': None,
+                'last_daily_update': None,
+                'last_weekly_retrain': None,
+                'last_backup': None,
+                'last_health_check': None,
+                'errors': [],
+                'running': False
+            })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/dataset_info')
+def dataset_info_api():
+    """API info dataset"""
+    try:
+        from pathlib import Path
+        import csv
+        
+        dataset_file = Path(__file__).parent.parent / 'data' / 'dataset_pulito.csv'
+        
+        if dataset_file.exists():
+            with open(dataset_file, 'r') as f:
+                reader = csv.DictReader(f)
+                rows = list(reader)
+                
+                match_count = len(rows)
+                last_match_date = rows[-1].get('Date', 'N/A') if rows else 'N/A'
+                
+                return jsonify({
+                    'match_count': match_count,
+                    'last_match_date': last_match_date,
+                    'dataset_file': str(dataset_file.name),
+                    'updated_at': datetime.fromtimestamp(dataset_file.stat().st_mtime).isoformat()
+                })
+        else:
+            return jsonify({
+                'match_count': 0,
+                'last_match_date': 'N/A',
+                'error': 'Dataset non trovato'
+            })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 # Per development
 if __name__ == '__main__':

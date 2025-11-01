@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📊 Stato Automazione Sistema</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .header h1 {
+            color: #2d3748;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header .subtitle {
+            color: #718096;
+            font-size: 1.1em;
+        }
+        
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .status-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .status-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+        
+        .status-card h3 {
+            color: #2d3748;
+            font-size: 1.3em;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .status-card .icon {
+            font-size: 1.5em;
+        }
+        
+        .timestamp {
+            background: #f7fafc;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        
+        .timestamp .label {
+            color: #718096;
+            font-size: 0.85em;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+        
+        .timestamp .value {
+            color: #2d3748;
+            font-size: 1.2em;
+            font-weight: 700;
+        }
+        
+        .timestamp.never {
+            opacity: 0.6;
+        }
+        
+        .timestamp.never .value {
+            color: #cbd5e0;
+            font-style: italic;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+        
+        .status-badge.running {
+            background: #48bb78;
+            color: white;
+        }
+        
+        .status-badge.stopped {
+            background: #f56565;
+            color: white;
+        }
+        
+        .schedule-info {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        
+        .schedule-info h2 {
+            color: #2d3748;
+            font-size: 1.8em;
+            margin-bottom: 20px;
+        }
+        
+        .schedule-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background: #f7fafc;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .schedule-item .time {
+            background: #667eea;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-weight: 700;
+            margin-right: 15px;
+            min-width: 120px;
+            text-align: center;
+        }
+        
+        .schedule-item .description {
+            color: #2d3748;
+            font-size: 1.05em;
+        }
+        
+        .refresh-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        .refresh-btn:hover {
+            background: #5568d3;
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+        
+        .auto-refresh {
+            color: white;
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.9em;
+        }
+        
+        .dataset-info {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .dataset-info h2 {
+            color: #2d3748;
+            font-size: 1.8em;
+            margin-bottom: 20px;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        
+        .info-row .label {
+            color: #718096;
+            font-weight: 600;
+        }
+        
+        .info-row .value {
+            color: #2d3748;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 Stato Automazione Sistema</h1>
+            <p class="subtitle">Monitoraggio in tempo reale degli aggiornamenti automatici</p>
+        </div>
+        
+        <div class="status-grid">
+            <div class="status-card">
+                <h3><span class="icon">🟢</span> Sistema</h3>
+                <span class="status-badge running" id="system-status">● RUNNING</span>
+                <div class="timestamp">
+                    <div class="label">Avviato il</div>
+                    <div class="value" id="started-at">Caricamento...</div>
+                </div>
+            </div>
+            
+            <div class="status-card">
+                <h3><span class="icon">📅</span> Aggiornamento Dati</h3>
+                <div class="timestamp" id="update-timestamp">
+                    <div class="label">Ultimo aggiornamento</div>
+                    <div class="value">Caricamento...</div>
+                </div>
+                <div class="timestamp">
+                    <div class="label">Prossimo aggiornamento</div>
+                    <div class="value">Domani alle 06:00</div>
+                </div>
+            </div>
+            
+            <div class="status-card">
+                <h3><span class="icon">📊</span> Allenamento Modelli</h3>
+                <div class="timestamp" id="training-timestamp">
+                    <div class="label">Ultimo allenamento</div>
+                    <div class="value">Caricamento...</div>
+                </div>
+                <div class="timestamp">
+                    <div class="label">Prossimo allenamento</div>
+                    <div class="value">Domenica alle 02:00</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="schedule-info">
+            <h2>📋 Pianificazione Automatica</h2>
+            <div class="schedule-item">
+                <div class="time">Ogni giorno 06:00</div>
+                <div class="description">🔄 Aggiornamento dati da football-data.co.uk e rigenerazione features</div>
+            </div>
+            <div class="schedule-item">
+                <div class="time">Domenica 02:00</div>
+                <div class="description">🎯 Ritraining completo di tutti i modelli ML</div>
+            </div>
+            <div class="schedule-item">
+                <div class="time">Ogni ora</div>
+                <div class="description">💚 Health check e monitoraggio sistema</div>
+            </div>
+            <div class="schedule-item">
+                <div class="time">Ogni 3 giorni</div>
+                <div class="description">🧹 Pulizia cache e backup rotazione</div>
+            </div>
+        </div>
+        
+        <div class="dataset-info">
+            <h2>📊 Stato Dataset e Modelli</h2>
+            <div class="info-row">
+                <span class="label">Dataset attivo</span>
+                <span class="value">data/dataset_pulito.csv</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Numero partite</span>
+                <span class="value" id="match-count">Caricamento...</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Ultima partita</span>
+                <span class="value" id="last-match">Caricamento...</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Modelli attivi</span>
+                <span class="value">RandomForest, LightGBM, XGBoost</span>
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 30px;">
+            <button class="refresh-btn" onclick="loadStatus()">🔄 Aggiorna Stato</button>
+            <p class="auto-refresh">⏱️ Aggiornamento automatico ogni 30 secondi</p>
+        </div>
+    </div>
+    
+    <script>
+        function formatTimestamp(isoString) {
+            if (!isoString) return 'Mai eseguito';
+            
+            const date = new Date(isoString);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+            
+            let timeAgo = '';
+            if (diffMins < 1) timeAgo = 'Proprio ora';
+            else if (diffMins < 60) timeAgo = `${diffMins} minuti fa`;
+            else if (diffHours < 24) timeAgo = `${diffHours} ore fa`;
+            else timeAgo = `${diffDays} giorni fa`;
+            
+            const formatted = date.toLocaleString('it-IT', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            
+            return `${formatted}<br><small style="color: #718096;">(${timeAgo})</small>`;
+        }
+        
+        async function loadStatus() {
+            try {
+                // Carica stato automazione
+                const statusResponse = await fetch('/api/automation_status');
+                const status = await statusResponse.json();
+                
+                // Aggiorna timestamp
+                document.getElementById('started-at').innerHTML = formatTimestamp(status.started_at);
+                
+                const updateTimestamp = document.getElementById('update-timestamp');
+                if (status.last_daily_update) {
+                    updateTimestamp.innerHTML = `
+                        <div class="label">Ultimo aggiornamento</div>
+                        <div class="value">${formatTimestamp(status.last_daily_update)}</div>
+                    `;
+                    updateTimestamp.classList.remove('never');
+                } else {
+                    updateTimestamp.innerHTML = `
+                        <div class="label">Ultimo aggiornamento</div>
+                        <div class="value">Mai eseguito</div>
+                    `;
+                    updateTimestamp.classList.add('never');
+                }
+                
+                const trainingTimestamp = document.getElementById('training-timestamp');
+                if (status.last_weekly_retrain) {
+                    trainingTimestamp.innerHTML = `
+                        <div class="label">Ultimo allenamento</div>
+                        <div class="value">${formatTimestamp(status.last_weekly_retrain)}</div>
+                    `;
+                    trainingTimestamp.classList.remove('never');
+                } else {
+                    trainingTimestamp.innerHTML = `
+                        <div class="label">Ultimo allenamento</div>
+                        <div class="value">Mai eseguito</div>
+                    `;
+                    trainingTimestamp.classList.add('never');
+                }
+                
+                // Aggiorna stato sistema
+                const systemStatus = document.getElementById('system-status');
+                if (status.running) {
+                    systemStatus.textContent = '● RUNNING';
+                    systemStatus.className = 'status-badge running';
+                } else {
+                    systemStatus.textContent = '● STOPPED';
+                    systemStatus.className = 'status-badge stopped';
+                }
+                
+                // Carica info dataset
+                const datasetResponse = await fetch('/api/dataset_info');
+                const dataset = await datasetResponse.json();
+                
+                document.getElementById('match-count').textContent = dataset.match_count || 'N/A';
+                document.getElementById('last-match').textContent = dataset.last_match_date || 'N/A';
+                
+            } catch (error) {
+                console.error('Errore caricamento stato:', error);
+            }
+        }
+        
+        // Carica stato all'avvio
+        loadStatus();
+        
+        // Auto-refresh ogni 30 secondi
+        setInterval(loadStatus, 30000);
+    </script>
+</body>
+</html>
