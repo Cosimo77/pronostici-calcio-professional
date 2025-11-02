@@ -1,192 +1,382 @@
-# 🏆 Sistema di Pronostici Calcio - Versione Completa
+# ⚽ Sistema Pronostici Calcio Professional# 🏆 Sistema di Pronostici Calcio - Versione Completa
 
-Sistema avanzato e completamente automatizzato per l'analisi e previsione dei risultati calcistici utilizzando machine learning, automazione intelligente e monitoraggio in tempo reale.
 
-## � Avvio Rapido
 
-```bash
+Sistema professionale di pronostici calcio con Machine Learning, automazione completa e deployment su Render.Sistema avanzato e completamente automatizzato per l'analisi e previsione dei risultati calcistici utilizzando machine learning, automazione intelligente e monitoraggio in tempo reale.
+
+
+
+## 🚀 Quick Start## � Avvio Rapido
+
+
+
+### Installazione```bash
+
 # Setup completo del sistema
-python launcher.py --setup
 
-# Avvio sistema completo
-python launcher.py
+```bashpython launcher.py --setup
 
-# Oppure avvia servizi singoli
-python launcher.py --service web
+# Clone repository
+
+git clone https://github.com/Cosimo77/pronostici-calcio-professional.git# Avvio sistema completo
+
+cd pronostici-calcio-professionalpython launcher.py
+
+
+
+# Installa dipendenze# Oppure avvia servizi singoli
+
+pip install -r requirements.txtpython launcher.py --service web
+
 python launcher.py --service monitoring
-python launcher.py --service automation
-```
 
-Accedi all'applicazione:
+# Avvia sistemapython launcher.py --service automation
 
-- **App Principale**: <http://localhost:5000>
+python automation_master.py  # Daemon automazione```
+
+python -m web.app_professional  # Web server
+
+```Accedi all'applicazione:
+
+
+
+### Accesso Dashboard- **App Principale**: <http://localhost:5000>
+
 - **Dashboard Monitoraggio**: <http://localhost:5001>
 
-## ✨ Caratteristiche Principali
+- **Web App**: <http://localhost:5008>
 
-### 🎯 Core Features
+- **Monitoring**: <http://localhost:5008/monitoring>## ✨ Caratteristiche Principali
 
-- **14 Mercati di Scommesse**: 1X2, Over/Under, Goal/NoGoal, Asian Handicap, ecc.
+- **Automazione**: <http://localhost:5008/automation>
+
+- **Produzione**: <https://pronostici-calcio-professional.onrender.com>### 🎯 Core Features
+
+
+
+## 📊 Funzionalità- **14 Mercati di Scommesse**: 1X2, Over/Under, Goal/NoGoal, Asian Handicap, ecc.
+
 - **Machine Learning Avanzato**: Random Forest, Gradient Boosting, Logistic Regression
-- **Interface Web Responsive**: Dashboard moderna con grafici interattivi
+
+### Predizioni ML- **Interface Web Responsive**: Dashboard moderna con grafici interattivi
+
 - **API RESTful Completa**: Endpoint per tutti i mercati e analisi
 
-### 🤖 Automazione Intelligente
+- **3 Modelli**: RandomForest, GradientBoosting, LogisticRegression
 
-- **Aggiornamento Automatico**: Dati aggiornati quotidianamente da fonti multiple
+- **Mercati**: 1X2, Over/Under, GG/NG, Doppia Chance### 🤖 Automazione Intelligente
+
+- **Ensemble**: Combinazione modelli con voting
+
+- **Confidenza**: Score 0-100% per ogni predizione- **Aggiornamento Automatico**: Dati aggiornati quotidianamente da fonti multiple
+
 - **Riaddestramento Modelli**: Modelli ML riaddestrati settimanalmente
-- **Backup Automatici**: Backup incrementali di dati e modelli
+
+### Automazione- **Backup Automatici**: Backup incrementali di dati e modelli
+
 - **Health Checks**: Monitoraggio continuo dello stato del sistema
 
-### 📊 Monitoraggio e Analytics
+- ✅ **Aggiornamento dati**: Quotidiano ore 06:00
 
-- **Dashboard Real-time**: Stato sistema, accuratezza predizioni, performance
+- ✅ **Training modelli**: Domenica ore 02:00### 📊 Monitoraggio e Analytics
+
+- ✅ **Backup automatici**: Dopo ogni operazione
+
+- ✅ **Health check**: Ogni ora- **Dashboard Real-time**: Stato sistema, accuratezza predizioni, performance
+
 - **Log Centralizzati**: Logging strutturato di tutte le operazioni
-- **Metriche Avanzate**: Tracking accuratezza, tempi di risposta, errori
+
+### Dashboard- **Metriche Avanzate**: Tracking accuratezza, tempi di risposta, errori
+
 - **Alerting**: Notifiche automatiche per anomalie
 
-## 🏗️ Struttura del Progetto
+- **Enterprise**: Interface completa predizioni
+
+- **Monitoring**: Metriche sistema real-time## 🏗️ Struttura del Progetto
+
+- **Automation**: Stato automazione e timestamp
 
 ```text
-pronostici_calcio/
+
+## 🏗️ Architetturapronostici_calcio/
+
 ├── data/                          # Dati storici e processati
-│   ├── I1_2021.csv               # Dati Serie A 2020-21
+
+### Sistema Ibrido (Locale + Cloud)│   ├── I1_2021.csv               # Dati Serie A 2020-21
+
 │   ├── I1_2122.csv               # Dati Serie A 2021-22
-│   ├── I1_2223.csv               # Dati Serie A 2022-23
-│   ├── I1_2324.csv               # Dati Serie A 2023-24
-│   ├── I1_2425.csv               # Dati Serie A 2024-25
-│   ├── I1_2526.csv               # Dati Serie A 2025-26
-│   ├── I1_2526.csv               # Dati Serie A 2025-26
-│   ├── dataset_pulito.csv        # Dataset unificato e pulito
-│   └── dataset_features.csv      # Dataset con features engineered
-├── models/                        # Modelli addestrati
-│   ├── randomforest_model.pkl
-│   ├── gradientboosting_model.pkl
-│   ├── logisticregression_model.pkl
-│   ├── scaler.pkl
-│   └── metadata.pkl
-├── scripts/                       # Script Python
-│   ├── scarica_dati_storici.py   # Download dati da football-data.co.uk
-│   ├── analizza_dati.py          # Analisi esplorativa
-│   ├── feature_engineering.py    # Creazione features
-│   ├── modelli_predittivi.py     # Training modelli ML
-│   └── sistema_pronostici.py     # Interfaccia utente
-├── main.py                        # Script principale
+
+```text│   ├── I1_2223.csv               # Dati Serie A 2022-23
+
+┌─────────────────────────────────────────┐│   ├── I1_2324.csv               # Dati Serie A 2023-24
+
+│  MAC (Locale)                           ││   ├── I1_2425.csv               # Dati Serie A 2024-25
+
+│  ├─ automation_master.py (daemon)       ││   ├── I1_2526.csv               # Dati Serie A 2025-26
+
+│  ├─ Aggiornamento dati: 06:00 daily     ││   ├── I1_2526.csv               # Dati Serie A 2025-26
+
+│  ├─ Training modelli: 02:00 domenica    ││   ├── dataset_pulito.csv        # Dataset unificato e pulito
+
+│  └─ Backup: automatico                  ││   └── dataset_features.csv      # Dataset con features engineered
+
+└─────────────────────────────────────────┘├── models/                        # Modelli addestrati
+
+                    ↓ git push│   ├── randomforest_model.pkl
+
+┌─────────────────────────────────────────┐│   ├── gradientboosting_model.pkl
+
+│  GITHUB                                 ││   ├── logisticregression_model.pkl
+
+│  └─ Codice + Dati + Modelli             ││   ├── scaler.pkl
+
+└─────────────────────────────────────────┘│   └── metadata.pkl
+
+                    ↓ auto-deploy├── scripts/                       # Script Python
+
+┌─────────────────────────────────────────┐│   ├── scarica_dati_storici.py   # Download dati da football-data.co.uk
+
+│  RENDER (Cloud)                         ││   ├── analizza_dati.py          # Analisi esplorativa
+
+│  ├─ app_professional.py (web server)    ││   ├── feature_engineering.py    # Creazione features
+
+│  └─ Dashboard 24/7                      ││   ├── modelli_predittivi.py     # Training modelli ML
+
+└─────────────────────────────────────────┘│   └── sistema_pronostici.py     # Interfaccia utente
+
+```├── main.py                        # Script principale
+
 └── README.md                      # Questo file
+
+## 📁 Struttura Progetto```
+
+
+
+```text## 🚀 Installazione e Setup
+
+pronostici_calcio/
+
+├── web/                      # Web application### 1. Prerequisiti
+
+│   ├── app_professional.py   # Main Flask app
+
+│   ├── templates/            # HTML templates```bash
+
+│   └── static/               # CSS/JS assets# Python 3.8+
+
+├── scripts/                  # ML scriptspython3 --version
+
+│   ├── analizza_dati.py      # Data analysis
+
+│   ├── feature_engineering.py# Installa le dipendenze
+
+│   └── mercati_multipli.py   # Market predictionspip install pandas numpy scikit-learn matplotlib seaborn requests joblib
+
+├── data/                     # Datasets```
+
+│   ├── dataset_pulito.csv    # Clean dataset
+
+│   └── I1_*.csv              # Historical data### 2. Setup Automatico
+
+├── models/                   # Trained models
+
+│   └── enterprise/           # Production models```bash
+
+├── logs/                     # System logs# Esegui lo script principale
+
+│   └── automation_status.jsonpython3 main.py
+
+└── automation_master.py      # Automation daemon
+
+```# Seleziona l'opzione 1 per il setup completo
+
 ```
 
-## 🚀 Installazione e Setup
-
-### 1. Prerequisiti
-
-```bash
-# Python 3.8+
-python3 --version
-
-# Installa le dipendenze
-pip install pandas numpy scikit-learn matplotlib seaborn requests joblib
-```
-
-### 2. Setup Automatico
-
-```bash
-# Esegui lo script principale
-python3 main.py
-
-# Seleziona l'opzione 1 per il setup completo
-```
+## 🔧 Configurazione
 
 ### 3. Setup Manuale (step-by-step)
 
-```bash
-# 1. Scarica dati storici
-python3 scripts/scarica_dati_storici.py
+### Environment Variables
 
-# 2. Analisi esplorativa
+```bash
+
+```bash# 1. Scarica dati storici
+
+# Web Serverpython3 scripts/scarica_dati_storici.py
+
+PORT=5008
+
+FLASK_ENV=production# 2. Analisi esplorativa
+
 python3 scripts/analizza_dati.py
 
-# 3. Feature engineering
-python3 scripts/feature_engineering.py
+# Data Sources
 
-# 4. Training modelli
+FOOTBALL_DATA_URL=https://www.football-data.co.uk# 3. Feature engineering
+
+```python3 scripts/feature_engineering.py
+
+
+
+### Automazione# 4. Training modelli
+
 python3 scripts/modelli_predittivi.py
 
+File: `config/automation_config.json`
+
 # 5. Avvia sistema pronostici
-python3 scripts/sistema_pronostici.py
-```
 
-## 🎯 Utilizzo
+```jsonpython3 scripts/sistema_pronostici.py
 
-### Menu Principale
+{```
 
-Il sistema offre diverse opzioni:
+  "daily_update": "06:00",
 
-1. **🔮 Predici una partita** - Predizione interattiva
+  "weekly_retrain": "Sunday 02:00",## 🎯 Utilizzo
+
+  "backup_rotation": 3,
+
+  "health_check": "hourly"### Menu Principale
+
+}
+
+```Il sistema offre diverse opzioni:
+
+
+
+## 📈 Performance Modelli1. **🔮 Predici una partita** - Predizione interattiva
+
 2. **🏟️ Mostra squadre** - Lista squadre disponibili
-3. **📈 Analizza forma** - Analisi forma recente squadre
+
+Dataset: 1990 partite (2020-2025)3. **📈 Analizza forma** - Analisi forma recente squadre
+
 4. **❌ Esci** - Chiude il sistema
 
-### Esempio di Predizione
+| Modello | Accuracy | Precision | Recall |
 
-```text
-🔮 PREDIZIONE PARTITA
+|---------|----------|-----------|--------|### Esempio di Predizione
 
-Seleziona la squadra di CASA:
+| RandomForest | 50.1% | 48.2% | 51.3% |
+
+| GradientBoosting | 52.6% | 50.8% | 53.1% |```text
+
+| LogisticRegression | 56.5% | 54.2% | 57.8% |🔮 PREDIZIONE PARTITA
+
+
+
+## 🛠️ TecnologieSeleziona la squadra di CASA:
+
 1. Atalanta
-2. Bologna
-...
-20. Juventus
-...
 
-Inserisci il numero della squadra di casa: 20
+- **Backend**: Python 3.11, Flask 3.1.02. Bologna
 
-Seleziona la squadra in TRASFERTA:
+- **ML**: scikit-learn, pandas, numpy...
+
+- **Frontend**: HTML5, CSS3, Vanilla JavaScript20. Juventus
+
+- **Deploy**: Render.com (Free Tier)...
+
+- **Automation**: schedule library, daemon process
+
+- **Security**: Flask-Talisman, rate limitingInserisci il numero della squadra di casa: 20
+
+
+
+## 📝 API EndpointsSeleziona la squadra in TRASFERTA:
+
 1. Atalanta
-...
+
+### Predizioni...
+
 13. Inter
-...
 
-Inserisci il numero della squadra in trasferta: 13
+```bash...
 
-⚽ PARTITA: Juventus vs Inter
-🤖 Calcolo predizione in corso...
+# Predizione Enterprise
+
+POST /api/predict_enterpriseInserisci il numero della squadra in trasferta: 13
+
+{
+
+  "squadra_casa": "Juventus",⚽ PARTITA: Juventus vs Inter
+
+  "squadra_ospite": "Milan"🤖 Calcolo predizione in corso...
+
+}
 
 🎯 PREDIZIONE: Vittoria Juventus
-🎲 Confidenza: 67.5%
+
+# Health Check🎲 Confidenza: 67.5%
+
+GET /api/health
 
 📊 PROBABILITÀ DETTAGLIATE:
-   Casa: 67.5%
-   Trasferta: 20.1%
-   Pareggio: 12.4%
 
-💡 CONSIGLI SCOMMESSE:
+# Performance Modelli   Casa: 67.5%
+
+GET /api/model_performance   Trasferta: 20.1%
+
+```   Pareggio: 12.4%
+
+
+
+## 🤝 Contribuire💡 CONSIGLI SCOMMESSE:
+
 🟢 ALTA CONFIDENZA - Consigliato scommettere
-⚽ SUGGERIMENTO: Possibile Over 2.5 gol
-```
 
-## 📊 Features Utilizzate
+1. Fork il progetto⚽ SUGGERIMENTO: Possibile Over 2.5 gol
+
+2. Crea branch (`git checkout -b feature/AmazingFeature`)```
+
+3. Commit (`git commit -m 'Add AmazingFeature'`)
+
+4. Push (`git push origin feature/AmazingFeature`)## 📊 Features Utilizzate
+
+5. Apri Pull Request
 
 Il sistema utilizza oltre 30 features per ogni predizione:
 
+## 📄 Licenza
+
 ### Features di Forma
 
+Questo progetto è privato. Tutti i diritti riservati.
+
 - Media punti ultime 5 partite
-- Gol fatti/subiti ultime 5 partite
+
+## 👤 Autore- Gol fatti/subiti ultime 5 partite
+
 - Performance specifica casa/trasferta
+
+**Cosimo Massaro**
 
 ### Features Comparative
 
-- Differenza di forma tra le squadre
+- GitHub: [@Cosimo77](https://github.com/Cosimo77)
+
+- Progetto: [pronostici-calcio-professional](https://github.com/Cosimo77/pronostici-calcio-professional)- Differenza di forma tra le squadre
+
 - Differenza attacco vs difesa
-- Performance head-to-head storica
 
-### Features Derivate
+## 🙏 Ringraziamenti- Performance head-to-head storica
 
-- Rapporto casa-home vs trasferta-away
-- Trend di performance recente
+
+
+- [football-data.co.uk](https://www.football-data.co.uk) - Dati storici Serie A### Features Derivate
+
+- [scikit-learn](https://scikit-learn.org) - Machine Learning
+
+- [Flask](https://flask.palletsprojects.com) - Web Framework- Rapporto casa-home vs trasferta-away
+
+- [Render](https://render.com) - Cloud Hosting- Trend di performance recente
+
 - Statistiche scontri diretti
 
+---
+
 ## 🤖 Modelli Utilizzati
+
+*Sistema Professional v2.0 - Aggiornato il 2 Novembre 2025*
 
 ### 1. Random Forest
 
