@@ -1,1 +1,1 @@
-web: cd web && gunicorn monitoring_app:app --bind 0.0.0.0:$PORT --workers 1 --timeout 120 --preload
+web: gunicorn --bind 0.0.0.0:$PORT --workers 2 --threads 2 --timeout 120 --worker-class gevent web.app_professional:app

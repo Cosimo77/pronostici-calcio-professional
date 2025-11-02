@@ -1,0 +1,43 @@
+services:
+  # Web Service Principale - App Professional
+  - type: web
+    name: pronostici-calcio-pro
+    env: docker
+    region: frankfurt
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: PORT
+        value: 5008
+      - key: PYTHONUNBUFFERED
+        value: 1
+      - key: LOG_LEVEL
+        value: INFO
+    healthCheckPath: /api/health
+    numInstances: 1
+    
+  # Cron Job - Aggiornamento Dati Quotidiano
+  - type: cron
+    name: aggiorna-dati-quotidiano
+    env: docker
+    region: frankfurt
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    schedule: "0 2 * * *"  # Ogni giorno alle 2:00 AM
+    command: python3 scripts/aggiorna_quotidiano.py
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: PYTHONUNBUFFERED
+        value: 1
+
+databases:
+  # Opzionale: PostgreSQL per logging e cache
+  # - name: pronostici-db
+  #   plan: free
+  #   databaseName: pronostici_calcio
+  #   user: pronostici_user

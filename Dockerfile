@@ -58,8 +58,8 @@ USER appuser
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:${PORT:-5008}/api/health || exit 1
 
-# Esponi porta
+# Esponi porta (Render usa variabile $PORT dinamica)
 EXPOSE ${PORT:-5008}
 
-# Script di avvio
-CMD ["gunicorn", "--bind", "0.0.0.0:5008", "--workers", "4", "--threads", "2", "--timeout", "30", "--worker-class", "gevent", "--worker-connections", "1000", "web.app_professional:app"]
+# Script di avvio - Usa $PORT di Render
+CMD gunicorn --bind 0.0.0.0:$PORT --workers 2 --threads 2 --timeout 120 --worker-class gevent --worker-connections 1000 web.app_professional:app
