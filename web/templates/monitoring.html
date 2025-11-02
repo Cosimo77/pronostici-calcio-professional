@@ -154,6 +154,14 @@
         let autoRefreshInterval = null;
         let autoRefreshEnabled = false;
 
+        <script>
+        // Soppressore warning estensioni browser
+        if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.lastError) {
+            try { chrome.runtime.lastError; } catch(e) {}
+        }
+        
+        let autoRefreshEnabled = false;
+
         function updateLastUpdate() {
             document.getElementById('last-update').textContent = 
                 `Ultimo aggiornamento: ${new Date().toLocaleString('it-IT')}`;
@@ -288,6 +296,14 @@
                 btn.textContent = '⏸️ Stop Auto-Refresh';
             }
         }
+
+        // Gestione errori globali (previene warning estensioni browser)
+        window.addEventListener('error', function(e) {
+            if (e.message && e.message.includes('runtime.lastError')) {
+                e.preventDefault();
+                return true;
+            }
+        });
 
         // Caricamento iniziale
         refreshAll();

@@ -162,9 +162,9 @@ class PronosticiCalculator:
         ensemble_pred = []
         ensemble_prob = np.zeros((len(X), 3))  # 3 classi: A, D, H (ordine alfabetico)
         
-        # Calcola pesi basati su accuracy
-        total_accuracy = sum([info['accuracy'] for info in self.models.values()])
-        weights = {name: info['accuracy']/total_accuracy for name, info in self.models.items()}
+        # Calcola pesi basati su accuracy (compatibilità con entrambi i formati)
+        total_accuracy = sum([info.get('accuracy', info.get('test_accuracy', 0.5)) for info in self.models.values()])
+        weights = {name: info.get('accuracy', info.get('test_accuracy', 0.5))/total_accuracy for name, info in self.models.items()}
         
         for i in range(len(X)):
             # Voto pesato per la classe
@@ -430,11 +430,22 @@ class PronosticiCalculator:
         metadata = joblib.load(f'{cartella}/metadata.pkl')
         self.feature_columns = metadata['feature_columns']
         
-        # Carica modelli
-        for model_name in metadata['models_info'].keys():
-            model = joblib.load(f'{cartella}/{model_name.lower()}_model.pkl')
-            self.models[model_name] = metadata['models_info'][model_name]
-            self.models[model_name]['model'] = model
+        # Carica modelli - compatibilità con nuovo formato
+        if 'models_info' in metadata:
+            # Formato vecchio
+            for model_name in metadata['models_info'].keys():
+                model = joblib.load(f'{cartella}/{model_name.lower()}_model.pkl')
+                self.models[model_name] = metadata['models_info'][model_name]
+                self.models[model_name]['model'] = model
+        else:
+            # Formato nuovo
+            for model_name in metadata['models']:
+                model = joblib.load(f'{cartella}/{model_name.lower()}_model.pkl')
+                self.models[model_name] = {
+                    'model': model,
+                    'train_accuracy': metadata['results'][model_name]['train_accuracy'],
+                    'test_accuracy': metadata['results'][model_name]['test_accuracy']
+                }
         
         print(f"Modelli caricati da {cartella}/")
 

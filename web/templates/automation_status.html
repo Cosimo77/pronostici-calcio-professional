@@ -223,6 +223,15 @@
             color: #2d3748;
             font-weight: 700;
         }
+        
+        .actions-container {
+            text-align: center;
+            margin-top: 30px;
+        }
+        
+        .time-ago {
+            color: #718096;
+        }
     </style>
 </head>
 <body>
@@ -307,13 +316,18 @@
             </div>
         </div>
         
-        <div style="text-align: center; margin-top: 30px;">
+        <div class="actions-container">
             <button class="refresh-btn" onclick="loadStatus()">🔄 Aggiorna Stato</button>
             <p class="auto-refresh">⏱️ Aggiornamento automatico ogni 30 secondi</p>
         </div>
     </div>
     
     <script>
+        // Soppressore warning estensioni browser
+        if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.lastError) {
+            try { chrome.runtime.lastError; } catch(e) {}
+        }
+        
         function formatTimestamp(isoString) {
             if (!isoString) return 'Mai eseguito';
             
@@ -339,7 +353,7 @@
                 second: '2-digit'
             });
             
-            return `${formatted}<br><small style="color: #718096;">(${timeAgo})</small>`;
+            return `${formatted}<br><small class="time-ago">(${timeAgo})</small>`;
         }
         
         async function loadStatus() {
@@ -421,6 +435,14 @@
                 console.error('Errore caricamento stato:', error);
             }
         }
+        
+        // Gestione errori globali (previene warning estensioni browser)
+        window.addEventListener('error', function(e) {
+            if (e.message && e.message.includes('runtime.lastError')) {
+                e.preventDefault();
+                return true;
+            }
+        });
         
         // Carica stato all'avvio
         loadStatus();
