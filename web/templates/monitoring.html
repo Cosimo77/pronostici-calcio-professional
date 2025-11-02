@@ -237,21 +237,36 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        home_team: 'Juventus',
-                        away_team: 'Milan'
+                        squadra_casa: 'Juventus',
+                        squadra_ospite: 'Milan'
                     })
                 });
                 
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Errore nella richiesta');
+                }
+                
                 const data = await response.json();
+                
+                // Mostra risultato completo enterprise
+                const predizione = data.predizione_enterprise || data.predizione;
+                const confidenza = data.confidenza || 0;
+                const accordo = data.accordo_modelli || 0;
+                const prob = data.probabilita_ensemble || {};
+                
                 content.innerHTML = `
                     <div class="metric"><span>Test Match:</span><span class="value">Juventus vs Milan</span></div>
-                    <div class="metric"><span>Predizione:</span><span class="value">${data.predizione}</span></div>
-                    <div class="metric"><span>Probabilità:</span><span class="value">${data.probabilita.toFixed(1)}%</span></div>
-                    <div class="metric"><span>Confidenza:</span><span class="value">${data.confidenza}</span></div>
-                    <button class="refresh-btn" onclick="testPrediction()">🔄 Riresta</button>
+                    <div class="metric"><span>Predizione:</span><span class="value">${predizione}</span></div>
+                    <div class="metric"><span>Probabilità Casa:</span><span class="value">${(prob.H * 100 || 0).toFixed(1)}%</span></div>
+                    <div class="metric"><span>Probabilità Pareggio:</span><span class="value">${(prob.D * 100 || 0).toFixed(1)}%</span></div>
+                    <div class="metric"><span>Probabilità Ospite:</span><span class="value">${(prob.A * 100 || 0).toFixed(1)}%</span></div>
+                    <div class="metric"><span>Confidenza:</span><span class="value">${(confidenza * 100).toFixed(1)}%</span></div>
+                    <div class="metric"><span>Accordo Modelli:</span><span class="value">${(accordo * 100).toFixed(1)}%</span></div>
+                    <button class="refresh-btn" onclick="testPrediction()">🔄 Ritest</button>
                 `;
             } catch (error) {
-                content.innerHTML = `<div class="error">Errore test: ${error.message}</div>`;
+                content.innerHTML = `<div class="error">❌ Errore test: ${error.message}</div>`;
             }
         }
 
