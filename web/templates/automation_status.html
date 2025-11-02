@@ -348,13 +348,27 @@
                 const statusResponse = await fetch('/api/automation_status');
                 const status = await statusResponse.json();
                 
+                // Mostra info sistema ibrido se in cloud
+                const systemStatusElement = document.getElementById('system-status');
+                if (status.mode === 'hybrid_system') {
+                    systemStatusElement.textContent = '● HYBRID (Local + Cloud)';
+                    systemStatusElement.className = 'status-badge running';
+                    systemStatusElement.title = 'Automazione locale, Web server su Render';
+                }
+                
                 // Aggiorna timestamp
+                const startedAtText = status.environment === 'cloud' 
+                    ? 'Ultima sincronizzazione dati' 
+                    : 'Avviato il';
                 document.getElementById('started-at').innerHTML = formatTimestamp(status.started_at);
                 
                 const updateTimestamp = document.getElementById('update-timestamp');
                 if (status.last_daily_update) {
+                    const label = status.environment === 'cloud' 
+                        ? 'Dati sincronizzati il' 
+                        : 'Ultimo aggiornamento';
                     updateTimestamp.innerHTML = `
-                        <div class="label">Ultimo aggiornamento</div>
+                        <div class="label">${label}</div>
                         <div class="value">${formatTimestamp(status.last_daily_update)}</div>
                     `;
                     updateTimestamp.classList.remove('never');
@@ -368,8 +382,11 @@
                 
                 const trainingTimestamp = document.getElementById('training-timestamp');
                 if (status.last_weekly_retrain) {
+                    const label = status.environment === 'cloud' 
+                        ? 'Modelli sincronizzati il' 
+                        : 'Ultimo allenamento';
                     trainingTimestamp.innerHTML = `
-                        <div class="label">Ultimo allenamento</div>
+                        <div class="label">${label}</div>
                         <div class="value">${formatTimestamp(status.last_weekly_retrain)}</div>
                     `;
                     trainingTimestamp.classList.remove('never');
@@ -381,14 +398,16 @@
                     trainingTimestamp.classList.add('never');
                 }
                 
-                // Aggiorna stato sistema
+                // Aggiorna stato sistema (solo se non già fatto per hybrid)
                 const systemStatus = document.getElementById('system-status');
-                if (status.running) {
-                    systemStatus.textContent = '● RUNNING';
-                    systemStatus.className = 'status-badge running';
-                } else {
-                    systemStatus.textContent = '● STOPPED';
-                    systemStatus.className = 'status-badge stopped';
+                if (status.mode !== 'hybrid_system') {
+                    if (status.running) {
+                        systemStatus.textContent = '● RUNNING';
+                        systemStatus.className = 'status-badge running';
+                    } else {
+                        systemStatus.textContent = '● STOPPED';
+                        systemStatus.className = 'status-badge stopped';
+                    }
                 }
                 
                 // Carica info dataset
