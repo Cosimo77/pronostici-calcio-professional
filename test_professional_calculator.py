@@ -4,13 +4,15 @@ Test completo ProfessionalCalculator per validazione presentazione
 """
 import sys
 import os
-sys.path.insert(0, 'web')
+
+# Aggiungi directory root al path
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import pandas as pd
 from datetime import datetime
 
 # Import classe dalla webapp
-from app_professional import ProfessionalCalculator
+from web.app_professional import ProfessionalCalculator
 
 print('🧪 TEST PROFESSIONAL CALCULATOR')
 print('=' * 70)
