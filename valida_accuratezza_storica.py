@@ -8,7 +8,7 @@ sys.path.insert(0, 'web')
 
 import pandas as pd
 from datetime import datetime
-from app_professional import ProfessionalCalculator
+from web.app_professional import ProfessionalCalculator
 
 print('📊 VALIDAZIONE ACCURATEZZA STORICA')
 print('=' * 70)
