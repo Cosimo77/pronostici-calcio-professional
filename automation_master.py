@@ -115,9 +115,9 @@ class AutomationMaster:
         success_count = 0
         total_tasks = 3
         
-        # 1. Aggiornamento dati
+        # 1. Aggiornamento dati (versione automatica non-interattiva)
         success, output = self.run_script(
-            'aggiorna_quotidiano.py',
+            'aggiorna_quotidiano_auto.py',
             'Aggiornamento dati quotidiano',
             timeout=600
         )
