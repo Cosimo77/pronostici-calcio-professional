@@ -151,15 +151,12 @@
     </div>
 
     <script>
-        let autoRefreshInterval = null;
-        let autoRefreshEnabled = false;
-
-        <script>
         // Soppressore warning estensioni browser
         if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.lastError) {
             try { chrome.runtime.lastError; } catch(e) {}
         }
         
+        let autoRefreshInterval = null;
         let autoRefreshEnabled = false;
 
         function updateLastUpdate() {
