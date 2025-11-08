@@ -66,4 +66,4 @@ temp/
 # data/large_dataset.csv
 
 # Model files (se troppo grandi per Git)
-# models/*.pkl
+# models/*.pklbackup_*.zip
