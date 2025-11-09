@@ -146,7 +146,7 @@ class ValueBettingSystem:
         
         # Best EV
         best_ev = max(ev_h, ev_d, ev_a)
-        best_ev_idx = np.argmax([ev_h, ev_d, ev_a])
+        best_ev_idx = int(np.argmax([ev_h, ev_d, ev_a]))
         best_ev_name = self.outcome_names[best_ev_idx]
         
         # Probabilità bookmaker
@@ -277,8 +277,8 @@ def demo_usage():
     print(f"   Risultato reale: {true_result}")
     print(f"Quote bookmaker: Casa {odds_h:.2f} | Pareggio {odds_d:.2f} | Trasferta {odds_a:.2f}")
     
-    # Predizione
-    result = vbs.predict(features, odds_h, odds_d, odds_a)
+    # Predizione - converti a numpy array per type safety
+    result = vbs.predict(np.array(features), odds_h, odds_d, odds_a)
     
     print(f"\n🤖 PREDIZIONE MODELLO:")
     print(f"   Esito: {result['prediction_name']}")
