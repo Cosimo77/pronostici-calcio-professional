@@ -699,13 +699,14 @@ def api_predict_enterprise():
         roi_expected = calc_ev(pred_prob, pred_odds)
         
         # Raccomandazione (strategia validata: sempre GB)
+        outcome_names = {'H': 'Casa', 'D': 'Pareggio', 'A': 'Trasferta'}
         recommendation = {
-            'bet_outcome': {'H': 'Casa', 'D': 'Pareggio', 'A': 'Trasferta'}[predizione],
+            'bet_outcome': outcome_names[predizione],
             'bet_odds': pred_odds,
             'confidence': confidenza,
             'roi_expected_pct': roi_expected * 100,
             'strategy': 'ALWAYS_MODEL',
-            'reason': f'Modello GB validato ROI +5.98%. Predice {{"H": "Casa", "D": "Pareggio", "A": "Trasferta"}[predizione]} con {confidenza*100:.1f}% confidenza.'
+            'reason': f'Modello GB validato ROI +5.98%. Predice {outcome_names[predizione]} con {confidenza*100:.1f}% confidenza.'
         }
         
         # Formato compatibile con template Enterprise + VALUE BETTING
