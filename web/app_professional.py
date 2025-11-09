@@ -628,7 +628,7 @@ def api_status():
 @app.route('/api/predict_enterprise', methods=['POST'])
 @limiter.limit("30 per minute")  # Rate limiting per endpoint critico
 def api_predict_enterprise():
-    """API Enterprise compatibile con template Enterprise"""
+    """API Enterprise con Value Betting System integrato"""
     
     if not sistema_inizializzato:
         return jsonify({'error': 'Sistema non inizializzato'}), 500
@@ -640,6 +640,11 @@ def api_predict_enterprise():
         
         squadra_casa = data.get('squadra_casa')
         squadra_ospite = data.get('squadra_ospite')
+        
+        # Quote opzionali (se non fornite, usa medie storiche)
+        odds_h = data.get('odds_casa', 2.5)
+        odds_d = data.get('odds_pareggio', 3.3)
+        odds_a = data.get('odds_trasferta', 3.0)
         
         if not squadra_casa or not squadra_ospite:
             return jsonify({'error': 'Squadre mancanti'}), 400
@@ -657,6 +662,52 @@ def api_predict_enterprise():
         predizione, probabilita, confidenza = calculator.predici_partita_deterministica(
             squadra_casa, squadra_ospite
         )
+        
+        # VALUE BETTING ANALYSIS
+        # Calcola Expected Value per ogni esito
+        def calc_ev(prob, odds):
+            return prob * odds - 1
+        
+        ev_casa = calc_ev(probabilita['H'], odds_h)
+        ev_pareggio = calc_ev(probabilita['D'], odds_d)
+        ev_trasferta = calc_ev(probabilita['A'], odds_a)
+        
+        expected_values = {
+            'Casa': ev_casa,
+            'Pareggio': ev_pareggio,
+            'Trasferta': ev_trasferta
+        }
+        
+        # Probabilità implicite bookmaker (normalizzate)
+        prob_book_h = 1/odds_h
+        prob_book_d = 1/odds_d
+        prob_book_a = 1/odds_a
+        total_prob = prob_book_h + prob_book_d + prob_book_a
+        
+        book_probs = {
+            'Casa': prob_book_h / total_prob,
+            'Pareggio': prob_book_d / total_prob,
+            'Trasferta': prob_book_a / total_prob
+        }
+        
+        # Margine bookmaker
+        book_margin = (total_prob - 1.0) * 100
+        
+        # ROI atteso sulla predizione principale
+        pred_idx = {'H': 0, 'D': 1, 'A': 2}[predizione]
+        pred_odds = [odds_h, odds_d, odds_a][pred_idx]
+        pred_prob = [probabilita['H'], probabilita['D'], probabilita['A']][pred_idx]
+        roi_expected = calc_ev(pred_prob, pred_odds)
+        
+        # Raccomandazione (strategia validata: sempre GB)
+        recommendation = {
+            'bet_outcome': {'H': 'Casa', 'D': 'Pareggio', 'A': 'Trasferta'}[predizione],
+            'bet_odds': pred_odds,
+            'confidence': confidenza,
+            'roi_expected_pct': roi_expected * 100,
+            'strategy': 'ALWAYS_MODEL',
+            'reason': f'Modello GB validato ROI +5.98%. Predice {{"H": "Casa", "D": "Pareggio", "A": "Trasferta"}[predizione]} con {confidenza*100:.1f}% confidenza.'
+        }
         
         # Creazione di varianti realistiche per i diversi modelli
         import random
@@ -679,12 +730,12 @@ def api_predict_enterprise():
         # Calcolo accordo tra modelli
         accordo = 0.85 if (predizione == stat_pred == hybrid_pred) else 0.75
         
-        # Formato compatibile con template Enterprise
+        # Formato compatibile con template Enterprise + VALUE BETTING
         response = {
             'predizione_enterprise': predizione,
             'confidenza': confidenza,
             'accordo_modelli': accordo,
-            'probabilita_ensemble': probabilita,  # Usa le probabilità deterministiche
+            'probabilita_ensemble': probabilita,
             'modelli_individuali': {
                 'deterministic_ml': {
                     'prediction': predizione,
@@ -702,13 +753,41 @@ def api_predict_enterprise():
                     'confidence': confidenza * 0.98
                 }
             },
+            'value_betting': {
+                'expected_values': expected_values,
+                'bookmaker_probs': book_probs,
+                'bookmaker_margin_pct': round(book_margin, 2),
+                'odds': {
+                    'Casa': odds_h,
+                    'Pareggio': odds_d,
+                    'Trasferta': odds_a
+                },
+                'recommendation': recommendation,
+                'comparison': {
+                    'Casa': {
+                        'model_prob': round(probabilita['H'] * 100, 1),
+                        'book_prob': round(book_probs['Casa'] * 100, 1),
+                        'edge': round((probabilita['H'] - book_probs['Casa']) * 100, 1)
+                    },
+                    'Pareggio': {
+                        'model_prob': round(probabilita['D'] * 100, 1),
+                        'book_prob': round(book_probs['Pareggio'] * 100, 1),
+                        'edge': round((probabilita['D'] - book_probs['Pareggio']) * 100, 1)
+                    },
+                    'Trasferta': {
+                        'model_prob': round(probabilita['A'] * 100, 1),
+                        'book_prob': round(book_probs['Trasferta'] * 100, 1),
+                        'edge': round((probabilita['A'] - book_probs['Trasferta']) * 100, 1)
+                    }
+                }
+            },
             'squadra_casa': squadra_casa,
             'squadra_ospite': squadra_ospite,
-            'modalita': 'professional_deterministic_enterprise',
+            'modalita': 'professional_value_betting',
             'timestamp': datetime.now().isoformat()
         }
         
-        logger.info(f"✅ Predizione Enterprise compatibile: {squadra_casa} vs {squadra_ospite} → {predizione}")
+        logger.info(f"✅ Predizione Enterprise + Value Betting: {squadra_casa} vs {squadra_ospite} → {predizione} (ROI: {roi_expected*100:+.1f}%)")
         
         return jsonify(response)
         
