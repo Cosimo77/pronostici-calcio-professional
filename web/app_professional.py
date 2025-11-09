@@ -815,6 +815,170 @@ def api_consigli_scommessa():
         logger.error(f"❌ Errore API consigli: {e}")
         return jsonify({'error': f'Errore interno: {str(e)}'}), 500
 
+@app.route('/api/upcoming_matches', methods=['GET'])
+@limiter.limit("10 per minute")
+def api_upcoming_matches():
+    """
+    API per ottenere partite future con quote bookmaker REALI da The Odds API
+    
+    ⚠️ RICHIEDE: ODDS_API_KEY configurata come variabile ambiente
+    
+    Setup:
+    1. Registrati su https://the-odds-api.com (500 richieste/mese GRATIS)
+    2. Copia API key
+    3. Imposta variabile: export ODDS_API_KEY="tua_chiave"
+    
+    Returns:
+        Lista partite future Serie A con quote reali e predizioni value betting
+    """
+    try:
+        # Verifica API key configurata
+        api_key = os.getenv('ODDS_API_KEY')
+        if not api_key:
+            return jsonify({
+                'error': 'ODDS_API_KEY non configurata',
+                'setup_instructions': {
+                    'step_1': 'Registrati su https://the-odds-api.com',
+                    'step_2': 'Ottieni API key gratuita (500 req/mese)',
+                    'step_3': 'Configura: export ODDS_API_KEY="tua_chiave"',
+                    'step_4': 'Riavvia applicazione'
+                },
+                'alternative': 'Usa /api/predict_enterprise con quote manuali da Bet365/Snai'
+            }), 400
+        
+        # Import OddsAPIClient
+        sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+        from integrations.odds_api import OddsAPIClient
+        
+        # Inizializza client con API key REALE
+        odds_client = OddsAPIClient(api_key=api_key)
+        
+        # Ottieni partite future REALI da The Odds API
+        logger.info("� Richiesta quote REALI da The Odds API...")
+        upcoming = odds_client.get_upcoming_odds()
+        
+        if not upcoming:
+            return jsonify({
+                'error': 'Nessuna partita Serie A trovata',
+                'hint': 'Verifica che ci siano partite programmate nei prossimi giorni',
+                'api_quota': odds_client.get_quota_usage()
+            }), 404
+        
+        logger.info(f"✅ {len(upcoming)} partite REALI ricevute da The Odds API")
+        
+        # Processa partite con predizioni
+        matches_with_predictions = []
+        
+        for match in upcoming[:10]:  # Max 10 partite
+            try:
+                home = match['home_team']
+                away = match['away_team']
+                
+                # Estrai quote REALI
+                bookmakers = match.get('bookmakers', [])
+                if not bookmakers:
+                    logger.warning(f"⚠️ {home} vs {away}: nessun bookmaker trovato")
+                    continue
+                
+                # Calcola media quote tra tutti i bookmaker REALI
+                h2h_odds = []
+                for bookie in bookmakers:
+                    for market in bookie.get('markets', []):
+                        if market['key'] == 'h2h':
+                            outcomes = market['outcomes']
+                            h2h_odds.append(outcomes)
+                
+                if not h2h_odds:
+                    continue
+                
+                # Media quote REALI
+                odds_h_list = [o[0]['price'] for o in h2h_odds if len(o) >= 3]
+                odds_d_list = [o[1]['price'] for o in h2h_odds if len(o) >= 3]
+                odds_a_list = [o[2]['price'] for o in h2h_odds if len(o) >= 3]
+                
+                if not odds_h_list:
+                    continue
+                
+                odds_h = sum(odds_h_list) / len(odds_h_list)
+                odds_d = sum(odds_d_list) / len(odds_d_list)
+                odds_a = sum(odds_a_list) / len(odds_a_list)
+                
+                # Predizione con value betting
+                if home in calculator.squadre_disponibili and away in calculator.squadre_disponibili:
+                    predizione, probabilita, confidenza = calculator.predici_partita_deterministica(home, away)
+                    
+                    # Value betting analysis
+                    def calc_ev(prob, odds):
+                        return prob * odds - 1
+                    
+                    ev_h = calc_ev(probabilita['H'], odds_h)
+                    ev_d = calc_ev(probabilita['D'], odds_d)
+                    ev_a = calc_ev(probabilita['A'], odds_a)
+                    
+                    # Migliore value bet
+                    evs = {'Casa': ev_h, 'Pareggio': ev_d, 'Trasferta': ev_a}
+                    best_value = max(evs, key=evs.get)
+                    best_ev = evs[best_value]
+                    
+                    match_data = {
+                        'home_team': home,
+                        'away_team': away,
+                        'commence_time': match.get('commence_time'),
+                        'odds_real': {
+                            'home': round(odds_h, 2),
+                            'draw': round(odds_d, 2),
+                            'away': round(odds_a, 2),
+                            'source': 'The Odds API (REAL)',
+                            'n_bookmakers': len(bookmakers)
+                        },
+                        'prediction': {
+                            'outcome': {'H': 'Casa', 'D': 'Pareggio', 'A': 'Trasferta'}[predizione],
+                            'confidence': round(confidenza, 3),
+                            'probabilities': probabilita
+                        },
+                        'value_betting': {
+                            'expected_values': {
+                                'home': round(ev_h * 100, 2),
+                                'draw': round(ev_d * 100, 2),
+                                'away': round(ev_a * 100, 2)
+                            },
+                            'best_value_bet': best_value,
+                            'best_ev_pct': round(best_ev * 100, 2),
+                            'recommendation': 'BET' if best_ev > 0.05 else 'SKIP'
+                        }
+                    }
+                    
+                    matches_with_predictions.append(match_data)
+                else:
+                    logger.warning(f"⚠️ {home} o {away} non in dataset training")
+                    
+            except Exception as e:
+                logger.warning(f"⚠️ Errore processing {match.get('home_team', '?')} vs {match.get('away_team', '?')}: {e}")
+                continue
+        
+        # Quota API rimasta
+        api_quota = odds_client.get_quota_usage()
+        
+        response = {
+            'total_matches': len(matches_with_predictions),
+            'matches': matches_with_predictions,
+            'data_source': 'The Odds API (REAL bookmaker odds)',
+            'api_quota': api_quota,
+            'timestamp': datetime.now().isoformat(),
+            'disclaimer': '100% quote reali da bookmaker verificati'
+        }
+        
+        logger.info(f"✅ API upcoming_matches: {len(matches_with_predictions)} partite REALI processate")
+        
+        return jsonify(response)
+        
+    except Exception as e:
+        logger.error(f"❌ Errore API upcoming_matches: {e}")
+        return jsonify({
+            'error': f'Errore: {str(e)}',
+            'hint': 'Verifica ODDS_API_KEY configurata correttamente'
+        }), 500
+
 @app.route('/consigli')
 def pagina_consigli():
     """Pagina web per visualizzare i consigli di scommessa"""
