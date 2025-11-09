@@ -1,6 +1,6 @@
 """
 Sistema Pronostici Calcio Professionale
-Versione deterministica senza randomizzazione
+100% DATI REALI - Zero simulazioni o randomizzazioni
 """
 
 from flask import Flask, render_template, request, jsonify
@@ -12,7 +12,6 @@ import sys
 import math
 from datetime import datetime
 import hashlib
-import random
 from typing import Dict, Tuple, Any, Optional
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -709,48 +708,19 @@ def api_predict_enterprise():
             'reason': f'Modello GB validato ROI +5.98%. Predice {{"H": "Casa", "D": "Pareggio", "A": "Trasferta"}[predizione]} con {confidenza*100:.1f}% confidenza.'
         }
         
-        # Creazione di varianti realistiche per i diversi modelli
-        import random
-        random.seed(hash(squadra_casa + squadra_ospite) % 10000)  # Seed deterministico basato sulle squadre
-        
-        # Statistical Model - più conservativo
-        stat_prob = probabilita.copy()
-        stat_prob['H'] = max(0.2, min(0.7, probabilita['H'] + random.uniform(-0.05, 0.05)))
-        stat_prob['D'] = max(0.15, min(0.5, probabilita['D'] + random.uniform(-0.03, 0.03)))
-        stat_prob['A'] = 1.0 - stat_prob['H'] - stat_prob['D']
-        stat_pred = max(stat_prob.keys(), key=lambda k: stat_prob[k])
-        
-        # Hybrid Model - approccio bilanciato
-        hybrid_prob = probabilita.copy()
-        hybrid_prob['H'] = max(0.2, min(0.7, probabilita['H'] + random.uniform(-0.03, 0.03)))
-        hybrid_prob['D'] = max(0.15, min(0.5, probabilita['D'] + random.uniform(-0.02, 0.02)))
-        hybrid_prob['A'] = 1.0 - hybrid_prob['H'] - hybrid_prob['D']
-        hybrid_pred = max(hybrid_prob.keys(), key=lambda k: hybrid_prob[k])
-        
-        # Calcolo accordo tra modelli
-        accordo = 0.85 if (predizione == stat_pred == hybrid_pred) else 0.75
-        
         # Formato compatibile con template Enterprise + VALUE BETTING
+        # SOLO DATI REALI: Unico modello GB trained su 1813 partite reali
         response = {
             'predizione_enterprise': predizione,
             'confidenza': confidenza,
-            'accordo_modelli': accordo,
+            'accordo_modelli': 1.0,  # Solo 1 modello reale (GB)
             'probabilita_ensemble': probabilita,
             'modelli_individuali': {
-                'deterministic_ml': {
+                'gradient_boosting': {
                     'prediction': predizione,
                     'probabilities': probabilita,
-                    'confidence': confidenza
-                },
-                'statistical_model': {
-                    'prediction': stat_pred,
-                    'probabilities': stat_prob,
-                    'confidence': confidenza * 0.95
-                },
-                'hybrid_model': {
-                    'prediction': hybrid_pred,
-                    'probabilities': hybrid_prob,
-                    'confidence': confidenza * 0.98
+                    'confidence': confidenza,
+                    'description': 'GradientBoosting trained su 1813 partite Serie A (2020-2025) con 50 feature'
                 }
             },
             'value_betting': {
@@ -1461,12 +1431,8 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
     # Bonus per partite con molti gol previsti
     gol_bonus = min(0.15, (gol_previsti - 2.0) * 0.1) if gol_previsti > 2.0 else 0
     
-    # Variabilità deterministica per BTTS
-    match_seed = int(hashlib.md5(f"{squadra_casa}_{squadra_ospite}_btts".encode()).hexdigest()[:8], 16)
-    random.seed(match_seed)
-    btts_variation = random.uniform(-0.08, 0.12)  # Leggero bias verso SÌ
-    
-    prob_btts_si = (prob_casa_segna * prob_ospite_segna) + gol_bonus + btts_variation
+    # SOLO DATI REALI: calcolo BTTS da statistiche clean sheet
+    prob_btts_si = (prob_casa_segna * prob_ospite_segna) + gol_bonus
     prob_btts_si = max(0.25, min(0.85, prob_btts_si))  # Limiti realistici
     prob_btts_no = 1 - prob_btts_si
     
@@ -1572,12 +1538,6 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
     
     # Limiti realistici più stretti (30%-65%)
     prob_over_corner = max(0.30, min(0.65, prob_over_corner))
-    
-    # Aggiunta di variabilità casuale ridotta per realismo
-    match_seed = int(hashlib.md5(f"{squadra_casa}_{squadra_ospite}_corner".encode()).hexdigest()[:8], 16)
-    random.seed(match_seed)
-    corner_variation = random.uniform(-0.05, 0.05)  # ±5% variazione molto ridotta
-    prob_over_corner = max(0.30, min(0.65, prob_over_corner + corner_variation))
     prob_under_corner = 1 - prob_over_corner
     
     mercati['mcorner'] = {
@@ -1594,9 +1554,7 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
     # Primo Marcatore (basato su forza offensiva dinamica)
     # Calcolo basato sui gol previsti per squadra e probabilità 1X2
     prob_casa_base = prob_base.get('H', 0.33)
-    prob_ospite_base = prob_base.get('A', 0.33)
-    
-    # Distribuzione dei gol previsti tra casa e ospite
+    prob_ospite_base = prob_base.get('A', 0.33)    # Distribuzione dei gol previsti tra casa e ospite
     casa_gol_share = media_gol_casa_totali / (media_gol_casa_totali + media_gol_ospite_totali) if (media_gol_casa_totali + media_gol_ospite_totali) > 0 else 0.5
     
     # Probabilità primo marcatore basata su gol previsti e probabilità vittoria
@@ -1753,11 +1711,8 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
     
     # Variabilità deterministica per cartellini
     match_seed = int(hashlib.md5(f"{squadra_casa}_{squadra_ospite}_cards".encode()).hexdigest()[:8], 16)
-    random.seed(match_seed)
-    card_variation = random.uniform(-0.15, 0.15)  # ±15% variazione
-    
-    # Base probability con variazione realistica (5%-45%)
-    prob_rosso = max(0.05, min(0.45, intensita_match * 0.4 + card_variation))
+    # Base probability realistica (5%-45%)
+    prob_rosso = max(0.05, min(0.45, intensita_match * 0.4))
     prob_no_rosso = 1 - prob_rosso
     
     mercati['mcardrossi'] = {
@@ -1778,12 +1733,7 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
     
     diff_corner_casa = corner_casa - 4.5
     prob_corner_casa_over = 1 / (1 + math.exp(-0.8 * diff_corner_casa))
-    
-    # Variabilità ridotta per corner casa
-    match_seed = int(hashlib.md5(f"{squadra_casa}_corner_home".encode()).hexdigest()[:8], 16)
-    random.seed(match_seed)
-    corner_casa_var = random.uniform(-0.05, 0.05)
-    prob_corner_casa_over = max(0.30, min(0.65, prob_corner_casa_over + corner_casa_var))
+    prob_corner_casa_over = max(0.30, min(0.65, prob_corner_casa_over))
     prob_corner_casa_under = 1 - prob_corner_casa_over
     
     mercati['mcornercasa'] = {
@@ -1805,12 +1755,7 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
     
     diff_corner_ospite = corner_ospite - 4.5
     prob_corner_ospite_over = 1 / (1 + math.exp(-0.8 * diff_corner_ospite))
-    
-    # Variabilità ridotta per corner ospite
-    match_seed = int(hashlib.md5(f"{squadra_ospite}_corner_away".encode()).hexdigest()[:8], 16)
-    random.seed(match_seed)
-    corner_ospite_var = random.uniform(-0.05, 0.05)
-    prob_corner_ospite_over = max(0.30, min(0.65, prob_corner_ospite_over + corner_ospite_var))
+    prob_corner_ospite_over = max(0.30, min(0.65, prob_corner_ospite_over))
     prob_corner_ospite_under = 1 - prob_corner_ospite_over
     
     mercati['mcornerospite'] = {
