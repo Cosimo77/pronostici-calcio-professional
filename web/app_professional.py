@@ -874,34 +874,14 @@ def api_upcoming_matches():
                 home = match['home_team']
                 away = match['away_team']
                 
-                # Estrai quote REALI
-                bookmakers = match.get('bookmakers', [])
-                if not bookmakers:
-                    logger.warning(f"⚠️ {home} vs {away}: nessun bookmaker trovato")
+                # Estrai quote REALI (già processate come medie da OddsAPIClient)
+                odds_home = match.get('odds_home')
+                odds_draw = match.get('odds_draw')
+                odds_away = match.get('odds_away')
+                
+                if not odds_home or not odds_draw or not odds_away:
+                    logger.warning(f"⚠️ {home} vs {away}: quote non disponibili")
                     continue
-                
-                # Calcola media quote tra tutti i bookmaker REALI
-                h2h_odds = []
-                for bookie in bookmakers:
-                    for market in bookie.get('markets', []):
-                        if market['key'] == 'h2h':
-                            outcomes = market['outcomes']
-                            h2h_odds.append(outcomes)
-                
-                if not h2h_odds:
-                    continue
-                
-                # Media quote REALI
-                odds_h_list = [o[0]['price'] for o in h2h_odds if len(o) >= 3]
-                odds_d_list = [o[1]['price'] for o in h2h_odds if len(o) >= 3]
-                odds_a_list = [o[2]['price'] for o in h2h_odds if len(o) >= 3]
-                
-                if not odds_h_list:
-                    continue
-                
-                odds_h = sum(odds_h_list) / len(odds_h_list)
-                odds_d = sum(odds_d_list) / len(odds_d_list)
-                odds_a = sum(odds_a_list) / len(odds_a_list)
                 
                 # Predizione con value betting
                 if home in calculator.squadre_disponibili and away in calculator.squadre_disponibili:
@@ -911,9 +891,9 @@ def api_upcoming_matches():
                     def calc_ev(prob, odds):
                         return prob * odds - 1
                     
-                    ev_h = calc_ev(probabilita['H'], odds_h)
-                    ev_d = calc_ev(probabilita['D'], odds_d)
-                    ev_a = calc_ev(probabilita['A'], odds_a)
+                    ev_h = calc_ev(probabilita['H'], odds_home)
+                    ev_d = calc_ev(probabilita['D'], odds_draw)
+                    ev_a = calc_ev(probabilita['A'], odds_away)
                     
                     # Migliore value bet
                     evs = {'Casa': ev_h, 'Pareggio': ev_d, 'Trasferta': ev_a}
@@ -925,11 +905,11 @@ def api_upcoming_matches():
                         'away_team': away,
                         'commence_time': match.get('commence_time'),
                         'odds_real': {
-                            'home': round(odds_h, 2),
-                            'draw': round(odds_d, 2),
-                            'away': round(odds_a, 2),
+                            'home': round(odds_home, 2),
+                            'draw': round(odds_draw, 2),
+                            'away': round(odds_away, 2),
                             'source': 'The Odds API (REAL)',
-                            'n_bookmakers': len(bookmakers)
+                            'n_bookmakers': match.get('num_bookmakers', 0)
                         },
                         'prediction': {
                             'outcome': {'H': 'Casa', 'D': 'Pareggio', 'A': 'Trasferta'}[predizione],
