@@ -981,8 +981,8 @@ def api_upcoming_matches():
             # FALLBACK: Usa partite REALI dal dataset storico invece di demo
             logger.info("📊 ODDS_API_KEY non configurata - usando partite REALI dal dataset")
             
-            # Carica dataset con quote reali
-            df = pd.read_csv('data/dataset_features.csv')
+            # Carica dataset pulito con quote reali Bet365
+            df = pd.read_csv('data/dataset_pulito.csv')
             
             # Prendi ultimi 10 match con quote disponibili (dati REALI)
             df_recent = df[df['B365H'].notna() & df['B365D'].notna() & df['B365A'].notna()].tail(10)
@@ -999,6 +999,10 @@ def api_upcoming_matches():
                     odds_draw = float(row['B365D'])
                     odds_away = float(row['B365A'])
                     
+                    # Quote Over/Under 2.5 REALI da Bet365 (se disponibili)
+                    odds_over = float(row['B365>2.5']) if pd.notna(row.get('B365>2.5')) else None
+                    odds_under = float(row['B365<2.5']) if pd.notna(row.get('B365<2.5')) else None
+                    
                     # Predizione
                     if home in calculator.squadre_disponibili and away in calculator.squadre_disponibili:
                         predizione, probabilita, confidenza = calculator.predici_partita_deterministica(home, away)
@@ -1012,12 +1016,18 @@ def api_upcoming_matches():
                         ev_d = calc_ev(probabilita['D'], odds_draw)
                         ev_a = calc_ev(probabilita['A'], odds_away)
                         
-                        # Over/Under 2.5
+                        # Over/Under 2.5 con quote REALI o calcolate
                         prob_over = mercati['mou25']['probabilita']['over']
                         prob_under = mercati['mou25']['probabilita']['under']
-                        # Quote simulate per O/U (non sempre disponibili nel dataset)
-                        odds_over = 1 / prob_over * 0.9  # Stima conservativa
-                        odds_under = 1 / prob_under * 0.9
+                        
+                        # Usa quote REALI se disponibili, altrimenti stima
+                        if odds_over is None or odds_under is None:
+                            odds_over = 1 / prob_over * 0.9  # Stima conservativa
+                            odds_under = 1 / prob_under * 0.9
+                            ou_source = 'Stimato'
+                        else:
+                            ou_source = 'Bet365 REALE'
+                            
                         ev_over = calc_ev(prob_over, odds_over)
                         ev_under = calc_ev(prob_under, odds_under)
                         
@@ -1062,7 +1072,8 @@ def api_upcoming_matches():
                             'odds_totals': {
                                 'over_25': round(odds_over, 2),
                                 'under_25': round(odds_under, 2),
-                                'n_bookmakers': 0
+                                'source': ou_source,
+                                'n_bookmakers': 1 if ou_source == 'Bet365 REALE' else 0
                             },
                             'prediction': {
                                 'outcome': {'H': 'Casa', 'D': 'Pareggio', 'A': 'Trasferta'}[predizione],
