@@ -2,10 +2,13 @@
 """
 Script di aggiornamento quotidiano intelligente
 Controlla se ci sono nuovi dati prima di aggiornare tutto
+
+Supporta modalità automatica con --auto flag
 """
 
 import os
 import sys
+import argparse
 import requests
 import pandas as pd
 from datetime import datetime, timedelta
@@ -109,9 +112,15 @@ def aggiornamento_rapido():
     return success == len(scripts)
 
 def main():
-    """Processo principale intelligente"""
+    """Main script con supporto modalità automatica"""
+    # Parse arguments
+    parser = argparse.ArgumentParser(description='Aggiornamento quotidiano dati Serie A')
+    parser.add_argument('--auto', action='store_true', help='Modalità automatica (aggiornamento rapido senza prompt)')
+    parser.add_argument('--full', action='store_true', help='Aggiornamento completo con riqualifica modelli')
+    args = parser.parse_args()
     
-    print("🤖 AGGIORNAMENTO QUOTIDIANO INTELLIGENTE")
+    print("\n" + "=" * 50)
+    print("🔄 AGGIORNAMENTO QUOTIDIANO")
     print(f"⏰ {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
     print("=" * 50)
     
@@ -125,27 +134,43 @@ def main():
     if nuovi_dati or dati_vecchi:
         print("\n🔄 Aggiornamento necessario!")
         
-        # Chiedi se fare aggiornamento completo o rapido
-        print("\nOpzioni:")
-        print("1. 🚀 Aggiornamento RAPIDO (solo dati e features)")
-        print("2. 🎯 Aggiornamento COMPLETO (include riqualifica modelli)")
-        print("3. ❌ Salta aggiornamento")
-        
-        scelta = input("\nScegli (1/2/3): ").strip()
-        
-        if scelta == "1":
-            if aggiornamento_rapido():
-                print("\n🎉 Aggiornamento rapido completato!")
+        # MODALITÀ AUTOMATICA
+        if args.auto or args.full:
+            if args.full:
+                print("\n🎯 Modalità AUTO: Aggiornamento COMPLETO")
+                subprocess.run([sys.executable, 'scripts/aggiorna_tutto.py'])
             else:
-                print("\n💥 Aggiornamento rapido fallito")
-        elif scelta == "2":
-            print("\n🎯 Avvio aggiornamento completo...")
-            subprocess.run([sys.executable, 'scripts/aggiorna_tutto.py'])
+                print("\n🚀 Modalità AUTO: Aggiornamento RAPIDO")
+                if aggiornamento_rapido():
+                    print("\n🎉 Aggiornamento rapido completato!")
+                    return 0
+                else:
+                    print("\n💥 Aggiornamento rapido fallito")
+                    return 1
         else:
-            print("\n⏭️  Aggiornamento saltato")
+            # MODALITÀ INTERATTIVA
+            print("\nOpzioni:")
+            print("1. 🚀 Aggiornamento RAPIDO (solo dati e features)")
+            print("2. 🎯 Aggiornamento COMPLETO (include riqualifica modelli)")
+            print("3. ❌ Salta aggiornamento")
+            
+            scelta = input("\nScegli (1/2/3): ").strip()
+            
+            if scelta == "1":
+                if aggiornamento_rapido():
+                    print("\n🎉 Aggiornamento rapido completato!")
+                else:
+                    print("\n💥 Aggiornamento rapido fallito")
+            elif scelta == "2":
+                print("\n🎯 Avvio aggiornamento completo...")
+                subprocess.run([sys.executable, 'scripts/aggiorna_tutto.py'])
+            else:
+                print("\n⏭️  Aggiornamento saltato")
     else:
         print("\n✅ Nessun aggiornamento necessario")
         print("📊 I dati sono già aggiornati")
+    
+    return 0
 
 if __name__ == "__main__":
     main()
