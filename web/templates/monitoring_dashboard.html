@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitoring Dashboard - Pronostici Calcio</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .metric-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+        
+        .metric-title {
+            font-size: 0.9em;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+        
+        .metric-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .metric-subtitle {
+            font-size: 0.85em;
+            color: #999;
+            margin-top: 5px;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .status-healthy {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-unhealthy {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .status-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .section {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .section-title {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            color: #667eea;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #667eea;
+        }
+        
+        tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .refresh-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 1em;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s;
+        }
+        
+        .refresh-btn:hover {
+            background: #5568d3;
+            transform: scale(1.05);
+        }
+        
+        .last-update {
+            text-align: center;
+            color: white;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: white;
+            font-size: 1.2em;
+        }
+        
+        .error-item {
+            background: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border-left: 4px solid #dc3545;
+        }
+        
+        .error-type {
+            font-weight: bold;
+            color: #dc3545;
+            margin-bottom: 5px;
+        }
+        
+        .error-message {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .error-time {
+            color: #999;
+            font-size: 0.8em;
+            margin-top: 5px;
+        }
+        
+        .component-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        .status-indicator.healthy {
+            background: #28a745;
+        }
+        
+        .status-indicator.unhealthy {
+            background: #dc3545;
+        }
+        
+        .status-indicator.disabled {
+            background: #ffc107;
+        }
+        
+        #dashboard.hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Monitoring Dashboard</h1>
+        <div class="last-update" id="lastUpdate">Caricamento...</div>
+        
+        <div id="loading" class="loading">
+            Caricamento metriche...
+        </div>
+        
+        <div id="dashboard" class="hidden">
+            <!-- Health Status -->
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-title">System Status</div>
+                    <div id="systemStatus"></div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="metric-title">Uptime</div>
+                    <div class="metric-value" id="uptime">--</div>
+                    <div class="metric-subtitle">Sistema attivo</div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="metric-title">Total Errors</div>
+                    <div class="metric-value" id="totalErrors">0</div>
+                    <div class="metric-subtitle">Ultimi errori registrati</div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="metric-title">Cache Hit Rate</div>
+                    <div class="metric-value" id="cacheHitRate">--%</div>
+                    <div class="metric-subtitle">Performance cache</div>
+                </div>
+            </div>
+            
+            <!-- Components Health -->
+            <div class="section">
+                <h2 class="section-title">📦 Componenti Sistema</h2>
+                <div id="componentsHealth"></div>
+            </div>
+            
+            <!-- Performance Metrics -->
+            <div class="section">
+                <h2 class="section-title">⚡ Performance Endpoints</h2>
+                <table id="performanceTable">
+                    <thead>
+                        <tr>
+                            <th>Endpoint</th>
+                            <th>Requests</th>
+                            <th>Avg Time</th>
+                            <th>P95 Time</th>
+                            <th>P99 Time</th>
+                            <th>Error Rate</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            
+            <!-- Recent Errors -->
+            <div class="section">
+                <h2 class="section-title">🚨 Errori Recenti</h2>
+                <div id="recentErrors"></div>
+            </div>
+        </div>
+        
+        <button class="refresh-btn" onclick="loadDashboard()">🔄 Refresh</button>
+    </div>
+    
+    <script>
+        function formatUptime(seconds) {
+            const days = Math.floor(seconds / 86400);
+            const hours = Math.floor((seconds % 86400) / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            
+            if (days > 0) return `${days}d ${hours}h`;
+            if (hours > 0) return `${hours}h ${minutes}m`;
+            return `${minutes}m`;
+        }
+        
+        async function loadDashboard() {
+            try {
+                // Load health data
+                const healthRes = await fetch('/api/monitoring/health_detailed');
+                const health = await healthRes.json();
+                
+                // Load performance data
+                const perfRes = await fetch('/api/monitoring/performance');
+                const perf = await perfRes.json();
+                
+                // Load errors data
+                const errorsRes = await fetch('/api/monitoring/errors');
+                const errors = await errorsRes.json();
+                
+                // Update UI
+                updateHealthMetrics(health);
+                updateComponentsHealth(health.components);
+                updatePerformanceTable(perf.endpoints);
+                updateRecentErrors(errors.recent_errors);
+                
+                // Show dashboard
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('dashboard').classList.remove('hidden');
+                
+                // Update last update time
+                document.getElementById('lastUpdate').textContent = 
+                    `Ultimo aggiornamento: ${new Date().toLocaleTimeString('it-IT')}`;
+                
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+                document.getElementById('loading').innerHTML = 
+                    `<span style="color: #ff6b6b;">❌ Errore caricamento dashboard: ${error.message}</span>`;
+            }
+        }
+        
+        function updateHealthMetrics(health) {
+            // System status
+            const statusHtml = health.status === 'healthy' 
+                ? '<span class="status-badge status-healthy">✅ Healthy</span>'
+                : '<span class="status-badge status-unhealthy">❌ Unhealthy</span>';
+            document.getElementById('systemStatus').innerHTML = statusHtml;
+            
+            // Uptime
+            document.getElementById('uptime').textContent = formatUptime(health.uptime_seconds);
+            
+            // Total errors
+            document.getElementById('totalErrors').textContent = health.metrics.total_errors || 0;
+            
+            // Cache hit rate
+            const hitRate = health.components.cache.hit_rate_percent || 0;
+            document.getElementById('cacheHitRate').textContent = `${hitRate}%`;
+        }
+        
+        function updateComponentsHealth(components) {
+            const html = Object.entries(components).map(([name, data]) => {
+                const statusClass = data.status === 'healthy' ? 'healthy' : 
+                                  data.status === 'disabled' ? 'disabled' : 'unhealthy';
+                
+                let details = '';
+                if (name === 'database') {
+                    details = `${data.records} records, ${data.teams} teams`;
+                } else if (name === 'cache') {
+                    details = `${data.hit_rate_percent}% hit rate, ${data.memory_mb}MB`;
+                } else if (name === 'ml_models') {
+                    details = `${data.models_loaded} models loaded`;
+                }
+                
+                return `
+                    <div class="component-status">
+                        <div class="status-indicator ${statusClass}"></div>
+                        <strong>${name.toUpperCase()}</strong>
+                        <span style="color: #999; margin-left: auto;">${details}</span>
+                    </div>
+                `;
+            }).join('');
+            
+            document.getElementById('componentsHealth').innerHTML = html;
+        }
+        
+        function updatePerformanceTable(endpoints) {
+            const tbody = document.querySelector('#performanceTable tbody');
+            
+            if (!endpoints || Object.keys(endpoints).length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #999;">Nessun dato disponibile</td></tr>';
+                return;
+            }
+            
+            const rows = Object.entries(endpoints)
+                .sort((a, b) => b[1].count - a[1].count)
+                .slice(0, 10) // Top 10 endpoints
+                .map(([endpoint, stats]) => {
+                    const errorRateClass = stats.error_rate > 5 ? 'color: #dc3545' : 
+                                          stats.error_rate > 1 ? 'color: #ffc107' : '';
+                    
+                    return `
+                        <tr>
+                            <td><code>${endpoint}</code></td>
+                            <td>${stats.count}</td>
+                            <td>${stats.avg_duration}s</td>
+                            <td>${stats.p95_duration}s</td>
+                            <td>${stats.p99_duration}s</td>
+                            <td style="${errorRateClass}">${stats.error_rate}%</td>
+                        </tr>
+                    `;
+                }).join('');
+            
+            tbody.innerHTML = rows;
+        }
+        
+        function updateRecentErrors(errorsList) {
+            const container = document.getElementById('recentErrors');
+            
+            if (!errorsList || errorsList.length === 0) {
+                container.innerHTML = '<p style="color: #28a745; text-align: center;">✅ Nessun errore recente</p>';
+                return;
+            }
+            
+            const html = errorsList.slice(0, 5).map(error => `
+                <div class="error-item">
+                    <div class="error-type">${error.error_type}</div>
+                    <div class="error-message">${error.error_message}</div>
+                    <div class="error-time">${new Date(error.timestamp).toLocaleString('it-IT')}</div>
+                </div>
+            `).join('');
+            
+            container.innerHTML = html;
+        }
+        
+        // Auto-refresh every 30 seconds
+        setInterval(loadDashboard, 30000);
+        
+        // Initial load
+        loadDashboard();
+    </script>
+</body>
+</html>
