@@ -36,14 +36,6 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
-# Installa dipendenze enterprise aggiuntive
-RUN pip install --no-cache-dir \
-    gunicorn==21.2.0 \
-    gevent==23.7.0 \
-    psycopg2-binary==2.9.7 \
-    redis==5.0.0 \
-    sentry-sdk[flask]==1.32.0
-
 # Copia codice applicazione
 COPY --chown=appuser:appgroup . .
 
@@ -53,10 +45,6 @@ RUN mkdir -p logs cache models/enterprise && \
 
 # Cambio all'utente non-root
 USER appuser
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:${PORT:-5008}/api/health || exit 1
 
 # Esponi porta (Render usa variabile $PORT dinamica)
 EXPOSE ${PORT:-5008}
