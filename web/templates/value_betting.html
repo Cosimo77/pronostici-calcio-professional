@@ -360,11 +360,11 @@
                 </div>
                 <div class="stat-card">
                     <div class="label">Quote Usate</div>
-                    <div class="value">${data.api_quota.used}</div>
+                    <div class="value">${data.api_quota?.used || 'N/A'}</div>
                 </div>
                 <div class="stat-card">
                     <div class="label">Quote Rimaste</div>
-                    <div class="value">${data.api_quota.remaining}</div>
+                    <div class="value">${data.api_quota?.remaining || 'N/A'}</div>
                 </div>
             `;
             stats.classList.remove('hidden');
