@@ -2,38 +2,22 @@ services:
   # Web Service Principale - App Professional
   - type: web
     name: pronostici-calcio-pro
-    env: docker
+    env: python
     region: frankfurt
     plan: free
-    dockerfilePath: ./Dockerfile
-    dockerContext: .
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --bind 0.0.0.0:$PORT --workers 2 --threads 2 --timeout 120 --worker-class gevent web.app_professional:app
     envVars:
       - key: FLASK_ENV
         value: production
-      - key: PORT
-        value: 5008
       - key: PYTHONUNBUFFERED
-        value: 1
+        value: "1"
       - key: LOG_LEVEL
         value: INFO
+      - key: PYTHON_VERSION
+        value: "3.11.0"
     healthCheckPath: /api/health
     numInstances: 1
-    
-  # Cron Job - Aggiornamento Dati Quotidiano
-  - type: cron
-    name: aggiorna-dati-quotidiano
-    env: docker
-    region: frankfurt
-    plan: free
-    dockerfilePath: ./Dockerfile
-    dockerContext: .
-    schedule: "0 2 * * *"  # Ogni giorno alle 2:00 AM
-    command: python3 scripts/aggiorna_quotidiano.py
-    envVars:
-      - key: FLASK_ENV
-        value: production
-      - key: PYTHONUNBUFFERED
-        value: 1
 
 databases:
   # Opzionale: PostgreSQL per logging e cache
