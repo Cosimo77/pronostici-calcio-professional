@@ -1288,7 +1288,14 @@ def api_upcoming_matches():
                 continue
         
         # Quota API rimasta
-        api_quota = odds_client.get_quota_usage()
+        try:
+            api_quota = odds_client.get_quota_usage()
+            # Assicurati che abbia i campi necessari
+            if 'error' in api_quota:
+                api_quota = {'used': 'N/A', 'remaining': 'N/A', 'error': api_quota['error']}
+        except Exception as e:
+            logger.warning(f"⚠️ Impossibile verificare quota API: {e}")
+            api_quota = {'used': 'N/A', 'remaining': 'N/A', 'error': str(e)}
         
         response = {
             'total_matches': len(matches_with_predictions),
