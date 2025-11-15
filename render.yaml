@@ -10,6 +10,8 @@ services:
     envVars:
       - key: SECRET_KEY
         generateValue: true
+      - key: ODDS_API_KEY
+        value: 7109a3c71a972ef639c56bcf0b13bb4b
       - key: FLASK_ENV
         value: production
       - key: PYTHONUNBUFFERED
