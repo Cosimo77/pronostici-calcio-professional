@@ -978,9 +978,12 @@ def api_upcoming_matches():
         sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
         from integrations.odds_api import OddsAPIClient
         
-        # Inizializza client con API key (se disponibile)
+        # Inizializza client con API key REALE (obbligatoria)
         api_key = os.getenv('ODDS_API_KEY')
+        logger.info(f"🔑 API Key presente: {bool(api_key)} (lunghezza: {len(api_key) if api_key else 0})")
+        
         odds_client = OddsAPIClient(api_key=api_key)
+        logger.info("✅ OddsAPIClient inizializzato con API key REALE")
         
         # Ottieni partite FUTURE REALI da The Odds API
         logger.info("📡 Connessione The Odds API per partite FUTURE...")
@@ -1136,11 +1139,13 @@ def api_upcoming_matches():
         # Quota API rimasta
         try:
             api_quota = odds_client.get_quota_usage()
+            logger.info(f"📊 Quota API ricevuta: {api_quota}")
             # Assicurati che abbia i campi necessari
-            if 'error' in api_quota:
-                api_quota = {'used': 'N/A', 'remaining': 'N/A', 'error': api_quota['error']}
+            if not api_quota or 'error' in api_quota:
+                logger.warning(f"⚠️ Quota API con errore: {api_quota}")
+                api_quota = {'used': 'N/A', 'remaining': 'N/A', 'error': api_quota.get('error', 'Unknown')}
         except Exception as e:
-            logger.warning(f"⚠️ Impossibile verificare quota API: {e}")
+            logger.error(f"❌ Errore verifica quota API: {e}")
             api_quota = {'used': 'N/A', 'remaining': 'N/A', 'error': str(e)}
         
         response = {

@@ -54,19 +54,14 @@ class OddsAPIClient:
         """
         self.api_key = api_key or os.getenv('ODDS_API_KEY')
         if not self.api_key:
-            logger.warning("⚠️ ODDS_API_KEY non configurata - modalità demo attiva")
-            self.demo_mode = True
-        else:
-            self.demo_mode = False
+            raise ValueError("❌ ODDS_API_KEY non configurata! Sistema richiede API key REALE.")
         
         self.session = requests.Session()
         self.cache = {}
+        logger.info(f"✅ OddsAPIClient inizializzato con API key (lunghezza: {len(self.api_key)})")
         
     def get_quota_usage(self) -> Dict:
         """Verifica quante richieste rimangono"""
-        if self.demo_mode:
-            return {'used': 0, 'remaining': 0, 'demo_mode': True}
-        
         try:
             response = self.session.get(
                 f'{self.BASE_URL}/sports',
@@ -74,10 +69,13 @@ class OddsAPIClient:
                 timeout=10
             )
             
+            used = response.headers.get('x-requests-used', '0')
+            remaining = response.headers.get('x-requests-remaining', '500')
+            
             return {
-                'used': response.headers.get('x-requests-used', 0),
-                'remaining': response.headers.get('x-requests-remaining', 500),
-                'demo_mode': False
+                'used': int(used) if used.isdigit() else used,
+                'remaining': int(remaining) if remaining.isdigit() else remaining
+            }
             }
         except Exception as e:
             logger.error(f"Errore verifica quota: {e}")
@@ -94,9 +92,6 @@ class OddsAPIClient:
         Returns:
             Lista di match con quote (h2h + totals quando disponibili)
         """
-        if self.demo_mode:
-            return self._get_demo_odds()
-        
         try:
             response = self.session.get(
                 f'{self.BASE_URL}/sports/{self.SPORT}/odds',
@@ -255,36 +250,6 @@ class OddsAPIClient:
             'bookmaker_margin': margin,
             'total_prob': prob_home_norm + prob_draw_norm + prob_away_norm
         }
-    
-    def _get_demo_odds(self) -> List[Dict]:
-        """Quote demo per testing senza API key"""
-        logger.info("🎭 Modalità DEMO - quote simulate")
-        
-        # Quote realistiche Serie A
-        return [
-            {
-                'home_team': 'Inter',
-                'away_team': 'Milan',
-                'commence_time': (datetime.now() + timedelta(days=2)).isoformat(),
-                'odds_home': 1.85,
-                'odds_draw': 3.60,
-                'odds_away': 4.20,
-                'num_bookmakers': 15,
-                'timestamp': datetime.now().isoformat(),
-                'demo': True
-            },
-            {
-                'home_team': 'Juventus',
-                'away_team': 'Napoli',
-                'commence_time': (datetime.now() + timedelta(days=3)).isoformat(),
-                'odds_home': 2.10,
-                'odds_draw': 3.40,
-                'odds_away': 3.50,
-                'num_bookmakers': 15,
-                'timestamp': datetime.now().isoformat(),
-                'demo': True
-            }
-        ]
     
     def save_odds_to_file(self, odds: List[Dict], filepath: str = 'cache/odds_cache.json'):
         """Salva quote in cache locale"""
