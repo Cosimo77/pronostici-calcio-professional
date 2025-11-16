@@ -974,170 +974,16 @@ def api_upcoming_matches():
     logger.info("❌ Cache MISS: upcoming_matches (chiamata API necessaria)")
     
     try:
-        # Verifica API key configurata
-        api_key = os.getenv('ODDS_API_KEY')
-        
-        if not api_key:
-            # FALLBACK: Usa partite REALI dal dataset storico invece di demo
-            logger.info("📊 ODDS_API_KEY non configurata - usando partite REALI dal dataset")
-            
-            # Carica dataset pulito con quote reali Bet365
-            df = pd.read_csv('data/dataset_pulito.csv')
-            
-            # Prendi ultimi 10 match con quote disponibili (dati REALI)
-            df_recent = df[df['B365H'].notna() & df['B365D'].notna() & df['B365A'].notna()].tail(10)
-            
-            matches_with_predictions = []
-            
-            for _, row in df_recent.iterrows():
-                try:
-                    home = row['HomeTeam']
-                    away = row['AwayTeam']
-                    
-                    # Quote REALI Bet365
-                    odds_home = float(row['B365H'])
-                    odds_draw = float(row['B365D'])
-                    odds_away = float(row['B365A'])
-                    
-                    # Quote Over/Under 2.5 REALI da Bet365 (se disponibili)
-                    odds_over = float(row['B365>2.5']) if pd.notna(row.get('B365>2.5')) else None
-                    odds_under = float(row['B365<2.5']) if pd.notna(row.get('B365<2.5')) else None
-                    
-                    # Predizione
-                    if home in calculator.squadre_disponibili and away in calculator.squadre_disponibili:
-                        predizione, probabilita, confidenza = calculator.predici_partita_deterministica(home, away)
-                        mercati = _calcola_mercati_deterministici(home, away, probabilita)
-                        
-                        # Value betting analysis
-                        def calc_ev(prob, odds):
-                            return prob * odds - 1
-                        
-                        ev_h = calc_ev(probabilita['H'], odds_home)
-                        ev_d = calc_ev(probabilita['D'], odds_draw)
-                        ev_a = calc_ev(probabilita['A'], odds_away)
-                        
-                        # Over/Under 2.5 con quote REALI o calcolate
-                        prob_over = mercati['mou25']['probabilita']['over']
-                        prob_under = mercati['mou25']['probabilita']['under']
-                        
-                        # Usa quote REALI se disponibili, altrimenti stima
-                        if odds_over is None or odds_under is None:
-                            odds_over = 1 / prob_over * 0.9  # Stima conservativa
-                            odds_under = 1 / prob_under * 0.9
-                            ou_source = 'Stimato'
-                        else:
-                            ou_source = 'Bet365 REALE'
-                            
-                        ev_over = calc_ev(prob_over, odds_over)
-                        ev_under = calc_ev(prob_under, odds_under)
-                        
-                        # Trova migliore value bet
-                        all_evs = {
-                            '1X2 Casa': ev_h,
-                            '1X2 Pareggio': ev_d,
-                            '1X2 Trasferta': ev_a,
-                            'Over 2.5': ev_over,
-                            'Under 2.5': ev_under
-                        }
-                        
-                        best_market_key = max(all_evs.keys(), key=lambda k: all_evs[k])
-                        best_ev = all_evs[best_market_key]
-                        
-                        if 'Over' in best_market_key:
-                            best_market = 'Over/Under 2.5'
-                            best_outcome = 'Over 2.5'
-                            best_odds = odds_over
-                        elif 'Under' in best_market_key:
-                            best_market = 'Over/Under 2.5'
-                            best_outcome = 'Under 2.5'
-                            best_odds = odds_under
-                        else:
-                            best_market = '1X2'
-                            best_outcome = best_market_key.split(' ')[1]
-                            best_odds = odds_home if best_outcome == 'Casa' else (odds_draw if best_outcome == 'Pareggio' else odds_away)
-                        
-                        has_value = best_ev > 0.05
-                        
-                        match_data = {
-                            'home_team': home,
-                            'away_team': away,
-                            'commence_time': row.get('Date', 'N/A'),
-                            'odds_real': {
-                                'home': round(odds_home, 2),
-                                'draw': round(odds_draw, 2),
-                                'away': round(odds_away, 2),
-                                'source': 'Bet365 (DATASET REALE)',
-                                'n_bookmakers': 1
-                            },
-                            'odds_totals': {
-                                'over_25': round(odds_over, 2),
-                                'under_25': round(odds_under, 2),
-                                'source': ou_source,
-                                'n_bookmakers': 1 if ou_source == 'Bet365 REALE' else 0
-                            },
-                            'prediction': {
-                                'outcome': {'H': 'Casa', 'D': 'Pareggio', 'A': 'Trasferta'}[predizione],
-                                'confidence': round(confidenza, 3),
-                                'probabilities': {
-                                    **probabilita,
-                                    'over': prob_over,
-                                    'under': prob_under
-                                }
-                            },
-                            'value_betting': {
-                                'expected_values': {
-                                    'home': round(ev_h * 100, 2),
-                                    'draw': round(ev_d * 100, 2),
-                                    'away': round(ev_a * 100, 2),
-                                    'over': round(ev_over * 100, 2),
-                                    'under': round(ev_under * 100, 2)
-                                },
-                                'has_value': has_value,
-                                'best_expected_value': round(best_ev * 100, 2),
-                                'best_market': best_market,
-                                'best_outcome': best_outcome,
-                                'best_odds': round(best_odds, 2),
-                                'recommendation': 'BET' if has_value else 'SKIP',
-                                'best_value_bet': best_outcome,
-                                'best_ev_pct': round(best_ev * 100, 2)
-                            },
-                            'markets': {
-                                'predizione_enterprise': {'H': 'Casa', 'D': 'Pareggio', 'A': 'Trasferta'}[predizione],
-                                'confidenza': round(confidenza, 3),
-                                'mercati': mercati
-                            }
-                        }
-                        
-                        matches_with_predictions.append(match_data)
-                        
-                except Exception as e:
-                    logger.warning(f"⚠️ Errore processing match: {e}")
-                    continue
-            
-            response = {
-                'total_matches': len(matches_with_predictions),
-                'matches': matches_with_predictions,
-                'data_source': 'Dataset Storico REALE (Bet365)',
-                'timestamp': datetime.now().isoformat(),
-                'disclaimer': '100% dati reali da dataset storico Serie A'
-            }
-            
-            cache.set_upcoming_matches(response)
-            return jsonify(response)
-        
-        # Se API key disponibile, usa partite live future
         # Import OddsAPIClient
         sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
         from integrations.odds_api import OddsAPIClient
         
-        # Inizializza client con API key REALE
+        # Inizializza client con API key (se disponibile)
+        api_key = os.getenv('ODDS_API_KEY')
         odds_client = OddsAPIClient(api_key=api_key)
         
-        if odds_client.demo_mode:
-            logger.warning("⚠️ ODDS_API_KEY non configurata - usando modalità DEMO con partite simulate")
-        
-        # Ottieni partite future REALI da The Odds API
-        logger.info("� Richiesta quote REALI da The Odds API...")
+        # Ottieni partite FUTURE REALI da The Odds API
+        logger.info("📡 Connessione The Odds API per partite FUTURE...")
         upcoming = odds_client.get_upcoming_odds()
         
         if not upcoming:
@@ -1147,7 +993,7 @@ def api_upcoming_matches():
                 'api_quota': odds_client.get_quota_usage()
             }), 404
         
-        logger.info(f"✅ {len(upcoming)} partite REALI ricevute da The Odds API")
+        logger.info(f"✅ {len(upcoming)} partite FUTURE ricevute da The Odds API")
         
         # Processa partite con predizioni
         matches_with_predictions = []
