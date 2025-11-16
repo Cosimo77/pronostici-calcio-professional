@@ -948,6 +948,19 @@ def api_consigli_scommessa():
         logger.error(f"❌ Errore API consigli: {e}")
         return jsonify({'error': f'Errore interno: {str(e)}'}), 500
 
+@app.route('/api/debug/env', methods=['GET'])
+def api_debug_env():
+    """Endpoint debug per verificare variabili ambiente (SOLO per troubleshooting)"""
+    api_key = os.getenv('ODDS_API_KEY')
+    return jsonify({
+        'ODDS_API_KEY_present': bool(api_key),
+        'ODDS_API_KEY_length': len(api_key) if api_key else 0,
+        'ODDS_API_KEY_prefix': api_key[:8] + '...' if api_key and len(api_key) > 8 else 'N/A',
+        'SECRET_KEY_present': bool(os.getenv('SECRET_KEY')),
+        'FLASK_ENV': os.getenv('FLASK_ENV', 'not set'),
+        'all_env_keys': [k for k in os.environ.keys() if not k.startswith('_')]
+    })
+
 @app.route('/api/upcoming_matches', methods=['GET'])
 @limiter.limit("10 per minute")
 def api_upcoming_matches():
@@ -1176,8 +1189,11 @@ def api_upcoming_matches():
         
     except Exception as e:
         logger.error(f"❌ Errore API upcoming_matches: {e}")
+        import traceback
+        logger.error(f"Traceback completo:\n{traceback.format_exc()}")
         return jsonify({
             'error': f'Errore: {str(e)}',
+            'type': type(e).__name__,
             'hint': 'Verifica ODDS_API_KEY configurata correttamente'
         }), 500
 
