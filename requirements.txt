@@ -28,6 +28,7 @@ requests==2.31.0
 selenium==4.15.2
 
 # Utilities
+python-dotenv==1.0.0
 structlog==25.4.0
 schedule==1.2.2
 python-dateutil==2.8.2

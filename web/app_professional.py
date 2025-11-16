@@ -19,6 +19,18 @@ from flask_talisman import Talisman
 import structlog
 import time
 
+# === CARICA .env FILE SE PRESENTE (per sviluppo locale e Render) ===
+try:
+    from dotenv import load_dotenv
+    env_path = os.path.join(os.path.dirname(__file__), '..', '.env')
+    if os.path.exists(env_path):
+        load_dotenv(env_path)
+        print(f"✅ File .env caricato da: {env_path}")
+    else:
+        print(f"⚠️ File .env non trovato in: {env_path}")
+except ImportError:
+    print("⚠️ python-dotenv non installato - variabili ambiente da sistema")
+
 # Aggiungi path per importare moduli
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'scripts'))
 # Aggiungi anche la directory web per imports locali
