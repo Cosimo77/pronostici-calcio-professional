@@ -78,7 +78,6 @@ class OddsAPIClient:
                 'used': int(used) if used.isdigit() else used,
                 'remaining': int(remaining) if remaining.isdigit() else remaining
             }
-            }
         except Exception as e:
             logger.error(f"Errore verifica quota: {e}")
             return {'error': str(e)}
