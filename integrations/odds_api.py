@@ -54,11 +54,13 @@ class OddsAPIClient:
         """
         self.api_key = api_key or os.getenv('ODDS_API_KEY')
         if not self.api_key:
-            raise ValueError("❌ ODDS_API_KEY non configurata! Sistema richiede API key REALE.")
+            logger.error("❌ ODDS_API_KEY non configurata! Sistema richiede API key REALE.")
+            # Non sollevo ValueError per evitare crash - gestito nel backend
+        else:
+            logger.info(f"✅ OddsAPIClient inizializzato con API key (lunghezza: {len(self.api_key)})")
         
         self.session = requests.Session()
         self.cache = {}
-        logger.info(f"✅ OddsAPIClient inizializzato con API key (lunghezza: {len(self.api_key)})")
         
     def get_quota_usage(self) -> Dict:
         """Verifica quante richieste rimangono"""

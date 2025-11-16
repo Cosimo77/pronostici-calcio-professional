@@ -978,9 +978,18 @@ def api_upcoming_matches():
         sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
         from integrations.odds_api import OddsAPIClient
         
-        # Inizializza client con API key REALE (obbligatoria)
+        # Verifica API key REALE (obbligatoria)
         api_key = os.getenv('ODDS_API_KEY')
         logger.info(f"🔑 API Key presente: {bool(api_key)} (lunghezza: {len(api_key) if api_key else 0})")
+        
+        if not api_key:
+            logger.error("❌ ODDS_API_KEY non configurata su Render!")
+            return jsonify({
+                'error': 'ODDS_API_KEY non configurata',
+                'hint': 'Configura ODDS_API_KEY nelle variabili ambiente di Render',
+                'total_matches': 0,
+                'matches': []
+            }), 503
         
         odds_client = OddsAPIClient(api_key=api_key)
         logger.info("✅ OddsAPIClient inizializzato con API key REALE")
