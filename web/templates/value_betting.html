@@ -373,15 +373,19 @@
         function displaySummary(matches) {
             const betMatches = matches.filter(m => {
                 const evs = m.value_betting.expected_values;
-                return Math.max(evs.home, evs.draw, evs.away) > 0;
+                const allEvs = [evs.home, evs.draw, evs.away];
+                if (evs.over !== null) allEvs.push(evs.over);
+                if (evs.under !== null) allEvs.push(evs.under);
+                return Math.max(...allEvs) > 0;
             }).sort((a, b) => {
-                const maxA = Math.max(a.value_betting.expected_values.home, 
-                                     a.value_betting.expected_values.draw,
-                                     a.value_betting.expected_values.away);
-                const maxB = Math.max(b.value_betting.expected_values.home,
-                                     b.value_betting.expected_values.draw,
-                                     b.value_betting.expected_values.away);
-                return maxB - maxA;
+                const getMaxEV = (m) => {
+                    const evs = m.value_betting.expected_values;
+                    const allEvs = [evs.home, evs.draw, evs.away];
+                    if (evs.over !== null) allEvs.push(evs.over);
+                    if (evs.under !== null) allEvs.push(evs.under);
+                    return Math.max(...allEvs);
+                };
+                return getMaxEV(b) - getMaxEV(a);
             });
             
             const summary = document.getElementById('summary');
@@ -393,15 +397,16 @@
                 `;
                 
                 betMatches.forEach(match => {
-                    const evs = match.value_betting.expected_values;
-                    const bestEV = Math.max(evs.home, evs.draw, evs.away);
-                    const bestOutcome = evs.home === bestEV ? 'Casa' : (evs.draw === bestEV ? 'Pareggio' : 'Trasferta');
-                    const oddKey = evs.home === bestEV ? 'home' : (evs.draw === bestEV ? 'draw' : 'away');
+                    const vb = match.value_betting;
+                    const bestMarket = vb.best_market;
+                    const bestOutcome = vb.best_outcome;
+                    const bestEV = vb.best_expected_value;
+                    const bestOdds = vb.best_odds;
                     
                     html += `
                         <li class="bet-item">
                             <div class="match">${match.home_team} vs ${match.away_team}</div>
-                            <div class="action">→ Punta su: ${bestOutcome} (quota ${match.odds_real[oddKey].toFixed(2)})</div>
+                            <div class="action">→ Punta su: ${bestOutcome} (quota ${bestOdds.toFixed(2)})</div>
                             <div class="roi">💰 ROI atteso: +${bestEV.toFixed(1)}% | Con 100€ guadagni ${bestEV.toFixed(1)}€ nel lungo periodo</div>
                         </li>
                     `;
@@ -429,10 +434,11 @@
             const container = document.getElementById('matches');
             
             matches.forEach(match => {
-                const evs = match.value_betting.expected_values;
-                const bestEV = Math.max(evs.home, evs.draw, evs.away);
-                const bestOutcome = evs.home === bestEV ? 'Casa' : (evs.draw === bestEV ? 'Pareggio' : 'Trasferta');
-                const isBet = bestEV > 0;
+                const vb = match.value_betting;
+                const evs = vb.expected_values;
+                const isBet = vb.has_value;
+                const bestOutcome = vb.best_outcome;
+                const bestEV = vb.best_expected_value;
                 
                 const date = new Date(match.commence_time);
                 const timeStr = date.toLocaleString('it-IT', { 
@@ -446,12 +452,8 @@
                 const card = document.createElement('div');
                 card.className = `match-card ${isBet ? 'bet' : 'skip'}`;
                 
-                card.innerHTML = `
-                    <div class="match-header">
-                        <div class="match-title">${match.home_team} vs ${match.away_team}</div>
-                        <div class="match-time">🕒 ${timeStr}</div>
-                    </div>
-                    
+                // Quote 1X2
+                let oddsHTML = `
                     <div class="odds-row">
                         <div class="odd-box">
                             <div class="label">Casa</div>
@@ -466,12 +468,26 @@
                             <div class="value">${match.odds_real.away.toFixed(2)}</div>
                         </div>
                     </div>
-                    
-                    <div style="margin-bottom: 15px; text-align: center; color: #666;">
-                        <strong>🤖 Predizione:</strong> ${match.prediction.outcome} 
-                        (${(match.prediction.confidence * 100).toFixed(1)}% confidenza)
-                    </div>
-                    
+                `;
+                
+                // Quote Over/Under se disponibili
+                if (match.odds_totals && match.odds_totals.over_25 && match.odds_totals.under_25) {
+                    oddsHTML += `
+                        <div class="odds-row" style="margin-top: 10px;">
+                            <div class="odd-box" style="grid-column: 1 / 2;">
+                                <div class="label">Over 2.5</div>
+                                <div class="value">${match.odds_totals.over_25.toFixed(2)}</div>
+                            </div>
+                            <div class="odd-box" style="grid-column: 2 / 3;">
+                                <div class="label">Under 2.5</div>
+                                <div class="value">${match.odds_totals.under_25.toFixed(2)}</div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                // EV 1X2
+                let evHTML = `
                     <div class="ev-row">
                         <div class="ev-box ${evs.home > 0 ? 'positive' : 'negative'}">
                             <div class="label">EV Casa</div>
@@ -486,6 +502,38 @@
                             <div class="value">${evs.away > 0 ? '+' : ''}${evs.away.toFixed(1)}%</div>
                         </div>
                     </div>
+                `;
+                
+                // EV Over/Under se disponibili
+                if (evs.over !== null && evs.under !== null) {
+                    evHTML += `
+                        <div class="ev-row" style="margin-top: 10px; grid-template-columns: repeat(2, 1fr);">
+                            <div class="ev-box ${evs.over > 0 ? 'positive' : 'negative'}">
+                                <div class="label">EV Over 2.5</div>
+                                <div class="value">${evs.over > 0 ? '+' : ''}${evs.over.toFixed(1)}%</div>
+                            </div>
+                            <div class="ev-box ${evs.under > 0 ? 'positive' : 'negative'}">
+                                <div class="label">EV Under 2.5</div>
+                                <div class="value">${evs.under > 0 ? '+' : ''}${evs.under.toFixed(1)}%</div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                card.innerHTML = `
+                    <div class="match-header">
+                        <div class="match-title">${match.home_team} vs ${match.away_team}</div>
+                        <div class="match-time">🕒 ${timeStr}</div>
+                    </div>
+                    
+                    ${oddsHTML}
+                    
+                    <div style="margin-bottom: 15px; text-align: center; color: #666;">
+                        <strong>🤖 Predizione:</strong> ${match.prediction.outcome} 
+                        (${(match.prediction.confidence * 100).toFixed(1)}% confidenza)
+                    </div>
+                    
+                    ${evHTML}
                     
                     <div class="recommendation ${isBet ? 'bet' : 'skip'}">
                         <div class="icon">${isBet ? '✅' : '❌'}</div>
