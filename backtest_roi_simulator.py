@@ -24,22 +24,26 @@ class ROIBacktester:
         self.bankroll = initial_bankroll
         self.trades = []
         self.calculator = PronosticiCalculator()
+        self.kelly_fraction = 0.125  # 1/8 Kelly (ultra-conservativo per ridurre drawdown)
         
-    def kelly_criterion(self, prob, odds, fraction=0.25):
+    def kelly_criterion(self, prob, odds, fraction=None):
         """
         Kelly Criterion per sizing ottimale scommesse
         
         Args:
             prob: Probabilità vittoria (modello ML)
             odds: Quote bookmaker
-            fraction: Frazione Kelly (0.25 = quarter Kelly, conservativo)
+            fraction: Frazione Kelly (None = usa self.kelly_fraction)
         """
+        if fraction is None:
+            fraction = self.kelly_fraction
+            
         edge = prob * odds - 1
         if edge <= 0:
             return 0
         
         kelly = edge / (odds - 1)
-        return max(0, min(kelly * fraction, 0.05))  # Max 5% bankroll per bet
+        return max(0, min(kelly * fraction, 0.025))  # Max 2.5% bankroll per bet (ridotto da 5%)
     
     def simulate_bet(self, prediction, prob, odds_real, actual_outcome, date, match):
         """
@@ -51,8 +55,10 @@ class ROIBacktester:
         # Calcola EV
         ev = (prob * odds_real) - 1
         
-        # Solo scommesse con EV positivo >2% (abbassato da 5% per più campione statistico)
-        if ev < 0.02:
+        # Filtri qualità:
+        # 1. EV positivo >5% (più selettivo)
+        # 2. Probabilità >35% (evita scommesse deboli)
+        if ev < 0.05 or prob < 0.35:
             return 0, 0
         
         # Sizing con Kelly

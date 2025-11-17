@@ -4,7 +4,8 @@ from sklearn.model_selection import train_test_split, cross_val_score, GridSearc
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
+from sklearn.calibration import CalibratedClassifierCV
+from sklearn.metrics import classification_report, confusion_matrix, accuracy_score, log_loss
 import joblib
 import os
 from datetime import datetime
@@ -102,22 +103,32 @@ class PronosticiCalculator:
             # Miglior modello
             best_model = grid_search.best_estimator_
             
-            # Predizioni
-            y_pred = best_model.predict(X_test_model)
+            # 🔧 CALIBRAZIONE PROBABILITÀ con Platt Scaling
+            print(f"   Calibrazione probabilità...")
+            calibrated_model = CalibratedClassifierCV(best_model, method='sigmoid', cv=3)
+            calibrated_model.fit(X_train_model, y_train)
+            
+            # Predizioni con modello calibrato
+            y_pred = calibrated_model.predict(X_test_model)
+            y_prob = calibrated_model.predict_proba(X_test_model)
+            
             accuracy = accuracy_score(y_test, y_pred)
+            logloss = log_loss(y_test, y_prob)
             
             # Cross-validation
             cv_scores = cross_val_score(best_model, X_train_model, y_train, cv=5)
             
             print(f"Migliori parametri: {grid_search.best_params_}")
             print(f"Accuracy test: {accuracy:.3f}")
+            print(f"Log Loss: {logloss:.3f} (più basso = probabilità meglio calibrate)")
             print(f"CV Score medio: {cv_scores.mean():.3f} (±{cv_scores.std()*2:.3f})")
             
-            # Salva modello
+            # Salva modello CALIBRATO
             self.models[model_name] = {
-                'model': best_model,
+                'model': calibrated_model,  # USA MODELLO CALIBRATO
                 'accuracy': accuracy,
                 'cv_score': cv_scores.mean(),
+                'log_loss': logloss,
                 'use_scaling': config['use_scaling'],
                 'feature_importance': None
             }
