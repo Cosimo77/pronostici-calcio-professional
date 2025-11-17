@@ -289,6 +289,39 @@
         .hidden {
             display: none;
         }
+        
+        /* Legal Disclaimer Styles */
+        .legal-disclaimer {
+            margin: 40px auto 20px;
+            max-width: 1400px;
+            padding: 20px;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border-radius: 12px;
+            border: 1px solid #ff6b35;
+        }
+        
+        .disclaimer-title {
+            text-align: center;
+            color: #ff6b35;
+            font-size: 1.1em;
+            margin-bottom: 10px;
+        }
+        
+        .disclaimer-content {
+            color: #ddd;
+            font-size: 0.9em;
+            line-height: 1.6;
+            text-align: justify;
+        }
+        
+        .disclaimer-link {
+            color: #ff6b35;
+            text-decoration: none;
+        }
+        
+        .disclaimer-link:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
@@ -575,17 +608,17 @@
     </script>
     
     <!-- Legal Disclaimer -->
-    <div style="margin: 40px auto 20px; max-width: 1400px; padding: 20px; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius: 12px; border: 1px solid #ff6b35;">
-        <div style="text-align: center; color: #ff6b35; font-size: 1.1em; margin-bottom: 10px;">
+    <div class="legal-disclaimer">
+        <div class="disclaimer-title">
             ⚠️ DISCLAIMER LEGALE
         </div>
-        <div style="color: #ddd; font-size: 0.9em; line-height: 1.6; text-align: justify;">
+        <div class="disclaimer-content">
             <strong>Questo sito fornisce analisi statistiche e pronostici calcistici a scopo puramente educativo e di intrattenimento.</strong>
             Le informazioni contenute <u>non costituiscono consulenza finanziaria</u>, invito al gioco d'azzardo o sollecitazione a scommettere denaro.
             <br><br>
             <strong>🔞 Servizio riservato a maggiorenni (+18 anni).</strong> Il gioco può causare dipendenza patologica. 
             Gioca responsabilmente e solo con somme che puoi permetterti di perdere. 
-            Per assistenza: <a href="https://www.sos-azzardo.it" target="_blank" style="color: #ff6b35;">SOS Azzardo</a> - 
+            Per assistenza: <a href="https://www.sos-azzardo.it" target="_blank" rel="noopener noreferrer" class="disclaimer-link">SOS Azzardo</a> - 
             Numero Verde 800.558.822.
             <br><br>
             Le quote mostrate sono indicative e possono variare. Verifica sempre le quote reali sui siti dei bookmaker autorizzati ADM (Agenzia delle Dogane e dei Monopoli).

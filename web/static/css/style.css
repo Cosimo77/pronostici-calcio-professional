@@ -1445,3 +1445,36 @@ footer {
         margin-right: 0;
     }
 }
+
+/* Legal Disclaimer Styles */
+.legal-disclaimer {
+    margin: 40px auto 20px;
+    max-width: 1400px;
+    padding: 20px;
+    background: rgba(0,0,0,0.3);
+    border-radius: 12px;
+    border: 1px solid #ff6b35;
+}
+
+.disclaimer-title {
+    text-align: center;
+    color: #ff6b35;
+    font-size: 1.1em;
+    margin-bottom: 10px;
+}
+
+.disclaimer-content {
+    color: #ddd;
+    font-size: 0.9em;
+    line-height: 1.6;
+    text-align: justify;
+}
+
+.disclaimer-link {
+    color: #ff6b35;
+    text-decoration: none;
+}
+
+.disclaimer-link:hover {
+    text-decoration: underline;
+}

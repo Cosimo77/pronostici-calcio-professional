@@ -6,6 +6,7 @@ Test di sistema predittivo usando SOLO statistiche pure (no data leakage da odds
 import pandas as pd
 import numpy as np
 from datetime import datetime
+from typing import Optional
 from scripts.sistema_pronostici import PronosticiCalculator
 
 class ROIBacktester:
@@ -14,6 +15,7 @@ class ROIBacktester:
         self.bankroll = initial_bankroll
         self.trades = []
         self.kelly_fraction = 0.125  # Ultra-conservativo (1/8 Kelly)
+        self.calculator: Optional[PronosticiCalculator] = None  # Set externally
         
     def kelly_criterion(self, prob, odds):
         """Calcola stake ottimale con Kelly Criterion"""
@@ -102,8 +104,20 @@ class ROIBacktester:
             
             try:
                 # Predizione (SENZA odds!)
-                pred_result, probabilities = self.calculator.ensemble_prediction(features)
-                pred_prob = probabilities[pred_result]
+                assert self.calculator is not None, "Calculator non inizializzato"
+                prediction_result = self.calculator.ensemble_prediction(features)
+                
+                # ensemble_prediction restituisce tupla (pred, probs) o più valori
+                if isinstance(prediction_result, tuple) and len(prediction_result) >= 2:
+                    pred_result = prediction_result[0]
+                    probabilities = prediction_result[1]
+                else:
+                    continue
+                    
+                pred_prob = probabilities.get(pred_result, 0) if isinstance(probabilities, dict) else 0
+                
+                if pred_prob == 0:
+                    continue
                 
                 # Usa odds reali dal dataset ORIGINALE per simulare scommessa
                 # (In produzione usiamo odds bookmaker, qui le carichiamo per backtest)
@@ -121,6 +135,9 @@ class ROIBacktester:
                 
                 match_odds = match_odds.iloc[0]
                 
+                # pred_result potrebbe essere lista, prendi primo elemento
+                prediction_str = pred_result[0] if isinstance(pred_result, (list, np.ndarray)) else pred_result
+                
                 # Odds reali per il risultato predetto
                 odds_map = {
                     'H': match_odds.get('B365H', match_odds.get('BWH', 0)),
@@ -128,14 +145,14 @@ class ROIBacktester:
                     'A': match_odds.get('B365A', match_odds.get('BWA', 0))
                 }
                 
-                odds_real = odds_map.get(pred_result, 0)
+                odds_real = odds_map.get(prediction_str, 0)
                 
                 if odds_real == 0:
                     continue
                 
                 # Simula bet
                 stake, profit = self.simulate_bet(
-                    pred_result,
+                    prediction_str,
                     pred_prob,
                     odds_real,
                     row['FTR'],
