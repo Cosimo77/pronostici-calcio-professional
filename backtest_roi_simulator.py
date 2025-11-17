@@ -260,12 +260,12 @@ class ROIBacktester:
 if __name__ == "__main__":
     print("Caricamento dati...")
     
-    # Carica dataset
-    df = pd.read_csv('data/dataset_pulito.csv')
+    # Carica dataset COMPLETO con features + quote storiche
+    df = pd.read_csv('data/dataset_completo_con_quote.csv')
     df['Date'] = pd.to_datetime(df['Date'])
     
-    # Backtest su ultimo anno (più rilevante)
-    one_year_ago = datetime.now() - pd.Timedelta(days=365)
+    # Backtest su ultimi 2 anni (più dati storici per validazione robusta)
+    two_years_ago = datetime.now() - pd.Timedelta(days=730)
     
     print("\n🔧 Addestramento modelli...")
     
@@ -274,7 +274,7 @@ if __name__ == "__main__":
     calculator = PronosticiCalculator()
     
     # Usa solo dati PRIMA del periodo di backtest per train
-    df_train = df[df['Date'] < one_year_ago]
+    df_train = df[df['Date'] < two_years_ago]
     
     if len(df_train) < 100:
         print("⚠️ Dati insufficienti per training, uso tutto il dataset")
@@ -301,5 +301,5 @@ if __name__ == "__main__":
     backtester.calculator = calculator
     
     # Esegui backtest
-    backtester.run_backtest(df, start_date=one_year_ago.strftime('%Y-%m-%d'))
+    backtester.run_backtest(df, start_date=two_years_ago.strftime('%Y-%m-%d'))
 
