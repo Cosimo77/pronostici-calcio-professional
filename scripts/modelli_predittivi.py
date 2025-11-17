@@ -52,10 +52,10 @@ class PronosticiCalculator:
         # Definisci modelli
         models_config = {
             'RandomForest': {
-                'model': RandomForestClassifier(random_state=random_state),
+                'model': RandomForestClassifier(random_state=random_state, class_weight='balanced'),
                 'params': {
                     'n_estimators': [100, 200],
-                    'max_depth': [10, 15, None],
+                    'max_depth': [None, 10, 20],
                     'min_samples_split': [2, 5],
                     'min_samples_leaf': [1, 2]
                 },
@@ -98,7 +98,13 @@ class PronosticiCalculator:
                 n_jobs=-1
             )
             
-            grid_search.fit(X_train_model, y_train)
+            # Fit con sample_weight per GradientBoosting (bilanciamento classi)
+            if model_name == 'GradientBoosting':
+                from sklearn.utils.class_weight import compute_sample_weight
+                sample_weights = compute_sample_weight('balanced', y_train)
+                grid_search.fit(X_train_model, y_train, sample_weight=sample_weights)
+            else:
+                grid_search.fit(X_train_model, y_train)
             
             # Miglior modello
             best_model = grid_search.best_estimator_
