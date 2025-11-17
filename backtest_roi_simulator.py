@@ -51,8 +51,8 @@ class ROIBacktester:
         # Calcola EV
         ev = (prob * odds_real) - 1
         
-        # Solo scommesse con EV positivo >5%
-        if ev < 0.05:
+        # Solo scommesse con EV positivo >2% (abbassato da 5% per più campione statistico)
+        if ev < 0.02:
             return 0, 0
         
         # Sizing con Kelly
@@ -280,7 +280,17 @@ if __name__ == "__main__":
         print("⚠️ Dati insufficienti per training, uso tutto il dataset")
         df_train = df
     
-    X, y = calculator.prepara_dati(df_train)
+    # Prepara dati - esclude automaticamente colonne non numeriche
+    # ma assicurati che HTR sia esclusa se presente
+    exclude_cols = ['Date', 'HomeTeam', 'AwayTeam', 'FTHG', 'FTAG', 'FTR', 'HTR', 'Referee', 'Div']
+    feature_cols = [col for col in df_train.columns if col not in exclude_cols and df_train[col].dtype in ['int64', 'float64']]
+    
+    calculator.feature_columns = feature_cols
+    X = df_train[feature_cols].fillna(0)
+    y = df_train['FTR']
+    
+    print(f"📊 Features selezionate: {len(feature_cols)}")
+    
     calculator.train_models(X, y, test_size=0.2, random_state=42)
     
     print(f"✅ Modelli addestrati su {len(df_train)} partite")
