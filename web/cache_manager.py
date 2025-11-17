@@ -232,7 +232,7 @@ class CacheManager:
     def cache_odds_api(self, match_id: str) -> Optional[Dict]:
         """
         Recupera odds API da cache
-        TTL: 30 minuti (quote cambiano frequentemente)
+        TTL: 2 ore (allineato con upcoming_matches per ridurre consumo API)
         
         Args:
             match_id: ID univoco partita (es: 'home_vs_away_timestamp')
@@ -255,13 +255,13 @@ class CacheManager:
             True se salvato
         """
         key = self._generate_key('odds', match_id=match_id)
-        ttl = 1800  # 30 minuti
+        ttl = 7200  # 2 ore (era 30 min) - riduce drasticamente consumo API
         return self.set(key, odds_data, ttl)
     
     def cache_upcoming_matches(self) -> Optional[Dict]:
         """
         Recupera lista partite future da cache
-        TTL: 15 minuti (cambiano raramente nel breve)
+        TTL: 2 ore (ottimizzato per ridurre consumo API - quote cambiano poco)
         
         Returns:
             Dict con lista partite o None
@@ -280,7 +280,7 @@ class CacheManager:
             True se salvato
         """
         key = 'upcoming_matches:latest'
-        ttl = 900  # 15 minuti
+        ttl = 7200  # 2 ore (era 15 min) - riduce consumo API da 96 a 12 chiamate/giorno
         return self.set(key, matches_data, ttl)
     
     def cache_dataset_info(self) -> Optional[Dict]:
