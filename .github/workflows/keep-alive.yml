@@ -17,7 +17,7 @@ jobs:
       - name: Ping Render App
         run: |
           echo "🏓 Pinging Render app..."
-          curl -f https://pronostici-calcio-professional.onrender.com/health || echo "⚠️ App might be sleeping"
+          curl -f https://pronostici-calcio-pro.onrender.com/health || echo "⚠️ App might be sleeping"
           
   auto-train:
     runs-on: ubuntu-latest

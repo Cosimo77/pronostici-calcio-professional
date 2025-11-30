@@ -11,7 +11,7 @@ from datetime import datetime
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-RENDER_URL = "https://pronostici-calcio-professional.onrender.com"
+RENDER_URL = "https://pronostici-calcio-pro.onrender.com"
 PING_INTERVAL = 600  # 10 minuti (in secondi)
 
 def ping_server():
