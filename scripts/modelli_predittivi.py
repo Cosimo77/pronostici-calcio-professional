@@ -163,7 +163,8 @@ class PronosticiCalculator:
         
         for model_name, model_info in self.models.items():
             model = model_info['model']
-            use_scaling = model_info['use_scaling']
+            # Compatibilità: use_scaling potrebbe non esistere nei modelli vecchi
+            use_scaling = model_info.get('use_scaling', model_name == 'LogisticRegression')
             
             # Prepara i dati
             X_model = self.scaler.transform(X) if use_scaling else X
@@ -184,21 +185,17 @@ class PronosticiCalculator:
         weights = {name: info.get('accuracy', info.get('test_accuracy', 0.5))/total_accuracy for name, info in self.models.items()}
         
         for i in range(len(X)):
-            # Voto pesato per la classe
-            class_votes = {'H': 0, 'A': 0, 'D': 0}
-            
-            for model_name, pred in predictions.items():
-                weight = weights[model_name]
-                class_votes[pred[i]] += weight
-            
-            # Classe con maggior peso
-            predicted_class = max(class_votes, key=lambda k: class_votes[k])
-            ensemble_pred.append(predicted_class)
-            
             # Probabilità ensemble (media pesata)
             for model_name, prob in probabilities.items():
                 weight = weights[model_name]
                 ensemble_prob[i] += prob[i] * weight
+            
+            # 🔧 CORREZIONE: Predizione basata su probabilità ensemble (più coerente)
+            # Le classi sono in ordine alfabetico: ['A', 'D', 'H']
+            max_prob_idx = np.argmax(ensemble_prob[i])
+            classes = ['A', 'D', 'H']
+            predicted_class = classes[max_prob_idx]
+            ensemble_pred.append(predicted_class)
 
         return ensemble_pred, ensemble_prob, predictions, probabilities
 
