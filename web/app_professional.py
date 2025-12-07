@@ -536,8 +536,13 @@ def index():
 
 @app.route('/value-betting')
 def value_betting_page():
-    """Pagina Value Betting con raccomandazioni"""
+    """Pagina Analisi Predittiva - Confronto Modello vs Mercato"""
     return render_template('value_betting.html')
+
+@app.route('/analysis')
+def analysis_page():
+    """Alias per analisi predittiva"""
+    return value_betting_page()
 
 @app.route('/giornata')
 def giornata_page():
@@ -1050,54 +1055,92 @@ def api_upcoming_matches():
                     # Calcola mercati (include Over/Under 2.5)
                     mercati = _calcola_mercati_deterministici(home, away, probabilita)
                     
-                    # Value betting analysis
+                    # Analisi discrepanze modello vs mercato
                     def calc_ev(prob, odds):
                         return prob * odds - 1
                     
+                    # Calcola probabilità implicite del mercato
+                    total_prob_market = (1/odds_home + 1/odds_draw + 1/odds_away)
+                    margin = (total_prob_market - 1) * 100  # Margine bookmaker %
+                    
+                    prob_market_h = (1/odds_home) / total_prob_market
+                    prob_market_d = (1/odds_draw) / total_prob_market
+                    prob_market_a = (1/odds_away) / total_prob_market
+                    
+                    # Expected Value teorico (non validato su dati reali)
                     ev_h = calc_ev(probabilita['H'], odds_home)
                     ev_d = calc_ev(probabilita['D'], odds_draw)
                     ev_a = calc_ev(probabilita['A'], odds_away)
                     
-                    # Calcola anche EV per Over/Under 2.5 se disponibili
+                    # Discrepanze: dove il modello differisce dal mercato
+                    diff_h = probabilita['H'] - prob_market_h
+                    diff_d = probabilita['D'] - prob_market_d
+                    diff_a = probabilita['A'] - prob_market_a
+                    
+                    # Calcola anche per Over/Under 2.5 se disponibili
                     ev_over = None
                     ev_under = None
+                    diff_over = None
+                    diff_under = None
+                    
                     if odds_over_25 and odds_under_25:
                         prob_over = mercati['mou25']['probabilita']['over']
                         prob_under = mercati['mou25']['probabilita']['under']
                         ev_over = calc_ev(prob_over, odds_over_25)
                         ev_under = calc_ev(prob_under, odds_under_25)
+                        
+                        total_prob_ou = (1/odds_over_25 + 1/odds_under_25)
+                        prob_market_over = (1/odds_over_25) / total_prob_ou
+                        prob_market_under = (1/odds_under_25) / total_prob_ou
+                        
+                        diff_over = prob_over - prob_market_over
+                        diff_under = prob_under - prob_market_under
                     
-                    # Trova migliore value bet tra TUTTI i mercati (1X2 + O/U)
-                    all_evs = {
-                        '1X2 Casa': ev_h,
-                        '1X2 Pareggio': ev_d,
-                        '1X2 Trasferta': ev_a
+                    # Trova maggiore discrepanza (dove modello è più convinto vs mercato)
+                    all_diffs = {
+                        '1X2 Casa': abs(diff_h),
+                        '1X2 Pareggio': abs(diff_d),
+                        '1X2 Trasferta': abs(diff_a)
                     }
-                    if ev_over is not None:
-                        all_evs['Over 2.5'] = ev_over
-                    if ev_under is not None:
-                        all_evs['Under 2.5'] = ev_under
+                    if diff_over is not None:
+                        all_diffs['Over 2.5'] = abs(diff_over)
+                    if diff_under is not None:
+                        all_diffs['Under 2.5'] = abs(diff_under)
                     
-                    best_market_key = max(all_evs.keys(), key=lambda k: all_evs[k])
-                    best_ev: float = all_evs[best_market_key]
+                    best_market_key = max(all_diffs.keys(), key=lambda k: all_diffs[k])
+                    best_diff = all_diffs[best_market_key]
                     
-                    # Determina mercato e outcome per best bet
+                    # Determina mercato e outcome per maggiore discrepanza
                     best_odds: float
+                    best_ev: float
                     if 'Over' in best_market_key:
                         best_market = 'Over/Under 2.5'
                         best_outcome = 'Over 2.5'
                         best_odds = odds_over_25 if odds_over_25 else 1.0
+                        best_ev = ev_over if ev_over else 0
                     elif 'Under' in best_market_key:
                         best_market = 'Over/Under 2.5'
                         best_outcome = 'Under 2.5'
                         best_odds = odds_under_25 if odds_under_25 else 1.0
+                        best_ev = ev_under if ev_under else 0
                     else:
                         best_market = '1X2'
-                        best_outcome = best_market_key.split(' ')[1]  # 'Casa', 'Pareggio', 'Trasferta'
+                        best_outcome = best_market_key.split(' ')[1]
                         best_odds = odds_home if best_outcome == 'Casa' else (odds_draw if best_outcome == 'Pareggio' else odds_away)
+                        if best_outcome == 'Casa':
+                            best_ev = ev_h
+                        elif best_outcome == 'Pareggio':
+                            best_ev = ev_d
+                        else:
+                            best_ev = ev_a
                     
-                    # Soglia value betting: 5%
-                    has_value = best_ev > 0.05
+                    # Classificazione per livello di discrepanza
+                    if best_diff > 0.15:  # >15% differenza
+                        analysis_level = 'high_divergence'
+                    elif best_diff > 0.08:  # >8% differenza
+                        analysis_level = 'medium_divergence'
+                    else:
+                        analysis_level = 'low_divergence'
                     
                     match_data = {
                         'home_team': home,
@@ -1124,6 +1167,45 @@ def api_upcoming_matches():
                                 'under': mercati['mou25']['probabilita']['under']
                             }
                         },
+                        'analysis': {
+                            'market_discrepancies': {
+                                'home': round(diff_h * 100, 2),
+                                'draw': round(diff_d * 100, 2),
+                                'away': round(diff_a * 100, 2),
+                                'over': round(diff_over * 100, 2) if diff_over is not None else None,
+                                'under': round(diff_under * 100, 2) if diff_under is not None else None
+                            },
+                            'market_probabilities': {
+                                'home': round(prob_market_h * 100, 2),
+                                'draw': round(prob_market_d * 100, 2),
+                                'away': round(prob_market_a * 100, 2)
+                            },
+                            'bookmaker_margin': round(margin, 2),
+                            'expected_values': {
+                                'home': round(ev_h * 100, 2),
+                                'draw': round(ev_d * 100, 2),
+                                'away': round(ev_a * 100, 2),
+                                'over': round(ev_over * 100, 2) if ev_over is not None else None,
+                                'under': round(ev_under * 100, 2) if ev_under is not None else None
+                            },
+                            'divergence_level': analysis_level,
+                            'biggest_discrepancy': round(best_diff * 100, 2),
+                            'divergent_market': best_market,
+                            'divergent_outcome': best_outcome,
+                            'divergent_odds': round(best_odds, 2),
+                            'divergent_ev': round(best_ev * 100, 2),
+                            # Backward compatibility
+                            'has_value': best_diff > 0.08,
+                            'best_value_bet': best_outcome,
+                            'best_ev_pct': round(best_ev * 100, 2),
+                            'best_expected_value': round(best_ev * 100, 2),
+                            'best_market': best_market,
+                            'best_outcome': best_outcome,
+                            'best_odds': round(best_odds, 2),
+                            'recommendation': 'ANALYZE' if analysis_level != 'low_divergence' else 'ALIGNED',
+                            # Performance disclaimer
+                            'backtest_note': 'Backtest storico: -22% ROI su value betting. Usa solo per analisi, non garanzie di profitto.'
+                        },
                         'value_betting': {
                             'expected_values': {
                                 'home': round(ev_h * 100, 2),
@@ -1132,13 +1214,12 @@ def api_upcoming_matches():
                                 'over': round(ev_over * 100, 2) if ev_over is not None else None,
                                 'under': round(ev_under * 100, 2) if ev_under is not None else None
                             },
-                            'has_value': has_value,
+                            'has_value': best_diff > 0.08,
                             'best_expected_value': round(best_ev * 100, 2),
                             'best_market': best_market,
                             'best_outcome': best_outcome,
                             'best_odds': round(best_odds, 2),
-                            'recommendation': 'BET' if has_value else 'SKIP',
-                            # Backward compatibility
+                            'recommendation': 'ANALYZE',
                             'best_value_bet': best_outcome,
                             'best_ev_pct': round(best_ev * 100, 2)
                         },

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎯 Value Betting - Raccomandazioni Smart</title>
+    <title>📊 Analisi Predittiva - Modello vs Mercato</title>
     
     <!-- Google Analytics 4 -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
@@ -12,7 +12,7 @@
         function gtag(){dataLayer.push(arguments);}
         gtag('js', new Date());
         gtag('config', 'G-XXXXXXXXXX', {
-            'page_title': 'Value Betting',
+            'page_title': 'Analisi Predittiva',
             'page_location': window.location.href
         });
     </script>
@@ -52,6 +52,48 @@
             opacity: 0.9;
         }
         
+        .disclaimer {
+            background: rgba(255, 193, 7, 0.95);
+            border-radius: 10px;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            text-align: left;
+            border-left: 5px solid #f57c00;
+        }
+        
+        .disclaimer h3 {
+            color: #e65100;
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .disclaimer p {
+            color: #333;
+            font-size: 0.95em;
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+        
+        .disclaimer strong {
+            color: #d84315;
+        }
+        
+        .disclaimer .backtest-results {
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 10px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .disclaimer .backtest-results div {
+            margin: 5px 0;
+        }
+        
         .roi-banner {
             background: rgba(255, 255, 255, 0.95);
             border-radius: 15px;
@@ -62,7 +104,7 @@
         }
         
         .roi-banner h2 {
-            color: #2ecc71;
+            color: #667eea;
             font-size: 2em;
             margin-bottom: 10px;
         }
@@ -327,17 +369,31 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🎯 Value Betting System</h1>
-            <p class="subtitle">Raccomandazioni Smart basate su Machine Learning</p>
+            <h1>📊 Analisi Predittiva</h1>
+            <p class="subtitle">Confronto Modello ML vs Mercato • Identificazione Discrepanze</p>
+        </div>
+        
+        <div class="disclaimer">
+            <h3>⚠️ DISCLAIMER IMPORTANTE - Risultati Backtest Reali</h3>
+            <p>Questo sistema è uno <strong>strumento di analisi</strong>, NON una garanzia di profitto.</p>
+            <p><strong>Backtest su 406 partite storiche (test set):</strong></p>
+            <div class="backtest-results">
+                <div>📉 Strategia Value Betting: <strong style="color: #d84315;">-22.06% ROI</strong> (-90€ su 406€)</div>
+                <div>📉 Seguire sempre modello: <strong style="color: #d84315;">-9.27% ROI</strong> (-38€)</div>
+                <div>📉 Seguire favorito bookmaker: <strong style="color: #d84315;">-6.91% ROI</strong> (-28€)</div>
+            </div>
+            <p style="margin-top: 10px;">Il margine dei bookmaker (4-7%) rende matematicamente difficile ottenere profitti consistenti.</p>
+            <p><strong>Usa questo tool per:</strong> Analizzare dove il modello differisce dal mercato, confrontare probabilità, studiare pattern.</p>
+            <p><strong>NON usare per:</strong> Aspettarsi profitti garantiti o ROI positivi.</p>
         </div>
         
         <div class="roi-banner">
-            <h2>+5.98% ROI Validato</h2>
-            <p>Sistema testato su 363 partite Serie A • Batte i bookmaker di +13.16 punti percentuali</p>
+            <h2>Analisi Discrepanze Modello-Mercato</h2>
+            <p>Sistema con 61.6% accuracy • Identifica dove il modello ML diverge dalle quote bookmaker</p>
         </div>
         
         <div id="loading" class="loading">
-            ⏳ Caricamento partite e analisi value betting...
+            ⏳ Caricamento partite e analisi discrepanze...
         </div>
         
         <div id="error" class="hidden"></div>
@@ -417,43 +473,47 @@
         }
         
         function displaySummary(matches) {
-            const betMatches = matches.filter(m => {
-                const evs = m.value_betting.expected_values;
-                const allEvs = [evs.home, evs.draw, evs.away];
-                if (evs.over !== null) allEvs.push(evs.over);
-                if (evs.under !== null) allEvs.push(evs.under);
-                return Math.max(...allEvs) > 0;
+            // Usa analysis invece di value_betting per le discrepanze
+            const divergentMatches = matches.filter(m => {
+                const analysis = m.analysis || m.value_betting;
+                return analysis.divergence_level !== 'low_divergence';
             }).sort((a, b) => {
-                const getMaxEV = (m) => {
-                    const evs = m.value_betting.expected_values;
-                    const allEvs = [evs.home, evs.draw, evs.away];
-                    if (evs.over !== null) allEvs.push(evs.over);
-                    if (evs.under !== null) allEvs.push(evs.under);
-                    return Math.max(...allEvs);
+                const getMaxDiff = (m) => {
+                    const analysis = m.analysis || m.value_betting;
+                    return analysis.biggest_discrepancy || Math.max(
+                        ...Object.values(analysis.expected_values).filter(v => v !== null)
+                    );
                 };
-                return getMaxEV(b) - getMaxEV(a);
+                return getMaxDiff(b) - getMaxDiff(a);
             });
             
             const summary = document.getElementById('summary');
             
-            if (betMatches.length > 0) {
+            if (divergentMatches.length > 0) {
                 let html = `
-                    <h2>🎲 Riepilogo Raccomandazioni (${betMatches.length} partite con valore)</h2>
+                    <h2>📊 Analisi Discrepanze (${divergentMatches.length} partite con divergenze significative)</h2>
+                    <p style="color: #666; margin-bottom: 15px;">
+                        Dove il modello ML differisce significativamente dal mercato (>8% di differenza nelle probabilità)
+                    </p>
                     <ul class="bet-list">
                 `;
                 
-                betMatches.forEach(match => {
-                    const vb = match.value_betting;
-                    const bestMarket = vb.best_market;
-                    const bestOutcome = vb.best_outcome;
-                    const bestEV = vb.best_expected_value;
-                    const bestOdds = vb.best_odds;
+                divergentMatches.forEach(match => {
+                    const analysis = match.analysis || match.value_betting;
+                    const bestMarket = analysis.divergent_market || analysis.best_market;
+                    const bestOutcome = analysis.divergent_outcome || analysis.best_outcome;
+                    const bestDiff = analysis.biggest_discrepancy || analysis.best_expected_value;
+                    const bestOdds = analysis.divergent_odds || analysis.best_odds;
+                    const level = analysis.divergence_level || 'medium_divergence';
+                    
+                    const levelEmoji = level === 'high_divergence' ? '🔴' : '🟡';
+                    const levelText = level === 'high_divergence' ? 'Alta divergenza' : 'Media divergenza';
                     
                     html += `
                         <li class="bet-item">
                             <div class="match">${match.home_team} vs ${match.away_team}</div>
-                            <div class="action">→ Punta su: ${bestOutcome} (quota ${bestOdds.toFixed(2)})</div>
-                            <div class="roi">💰 ROI atteso: +${bestEV.toFixed(1)}% | Con 100€ guadagni ${bestEV.toFixed(1)}€ nel lungo periodo</div>
+                            <div class="action">${levelEmoji} ${levelText}: ${bestOutcome} (quota ${bestOdds.toFixed(2)})</div>
+                            <div class="roi">📊 Discrepanza: ${bestDiff.toFixed(1)}% | Modello differisce significativamente dal mercato</div>
                         </li>
                     `;
                 });
@@ -461,15 +521,15 @@
                 html += `
                     </ul>
                     <p style="margin-top: 20px; color: #666; text-align: center;">
-                        💡 <strong>Regola d'oro:</strong> Scommetti SOLO su partite con EV positivo!
+                        💡 <strong>Nota:</strong> Divergenze indicano dove il modello "vede" diversamente dal mercato. Non sono garanzie di profitto (backtest: -22% ROI).
                     </p>
                 `;
                 
                 summary.innerHTML = html;
             } else {
                 summary.innerHTML = `
-                    <h2>⚠️ Nessuna opportunità oggi</h2>
-                    <p style="color: #666; text-align: center;">Tutte le partite hanno Expected Value negativo. Meglio non scommettere oggi!</p>
+                    <h2>✅ Modello Allineato al Mercato</h2>
+                    <p style="color: #666; text-align: center;">Nessuna divergenza significativa trovata. Il modello ML concorda sostanzialmente con le quote bookmaker.</p>
                 `;
             }
             
@@ -481,10 +541,12 @@
             
             matches.forEach(match => {
                 const vb = match.value_betting;
+                const analysis = match.analysis || vb;
                 const evs = vb.expected_values;
-                const isBet = vb.has_value;
-                const bestOutcome = vb.best_outcome;
-                const bestEV = vb.best_expected_value;
+                const level = analysis.divergence_level || 'low_divergence';
+                const isDivergent = level !== 'low_divergence';
+                const bestOutcome = analysis.divergent_outcome || vb.best_outcome;
+                const bestDiff = analysis.biggest_discrepancy || vb.best_expected_value;
                 
                 const date = new Date(match.commence_time);
                 const timeStr = date.toLocaleString('it-IT', { 
@@ -496,8 +558,24 @@
                 });
                 
                 const card = document.createElement('div');
-                card.className = `match-card ${isBet ? 'bet' : 'skip'}`;
+                card.className = `match-card ${isDivergent ? 'bet' : 'skip'}`;
                 
+                // Aggiungi sezione discrepanze
+                let discrepancyHTML = '';
+                if (analysis.market_discrepancies) {
+                    const discs = analysis.market_discrepancies;
+                    discrepancyHTML = `
+                        <div style="background: #f0f4ff; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                            <h4 style="margin-bottom: 10px; color: #667eea;">📊 Discrepanze Modello vs Mercato</h4>
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; font-size: 0.9em;">
+                                <div>Casa: ${discs.home > 0 ? '+' : ''}${discs.home.toFixed(1)}%</div>
+                                <div>Pareggio: ${discs.draw > 0 ? '+' : ''}${discs.draw.toFixed(1)}%</div>
+                                <div>Trasferta: ${discs.away > 0 ? '+' : ''}${discs.away.toFixed(1)}%</div>
+                            </div>
+                            ${analysis.bookmaker_margin ? `<div style="margin-top: 8px; color: #666; font-size: 0.85em;">Margine bookmaker: ${analysis.bookmaker_margin.toFixed(1)}%</div>` : ''}
+                        </div>
+                    `;
+                }                
                 // Quote 1X2
                 let oddsHTML = `
                     <div class="odds-row">
@@ -572,6 +650,8 @@
                         <div class="match-time">🕒 ${timeStr}</div>
                     </div>
                     
+                    ${discrepancyHTML}
+                    
                     ${oddsHTML}
                     
                     <div style="margin-bottom: 15px; text-align: center; color: #666;">
@@ -581,12 +661,12 @@
                     
                     ${evHTML}
                     
-                    <div class="recommendation ${isBet ? 'bet' : 'skip'}">
-                        <div class="icon">${isBet ? '✅' : '❌'}</div>
+                    <div class="recommendation ${isDivergent ? 'bet' : 'skip'}">
+                        <div class="icon">${isDivergent ? '📊' : '✅'}</div>
                         <div>
-                            ${isBet 
-                                ? `SCOMMETTI su ${bestOutcome}<br><div class="details">ROI atteso: +${bestEV.toFixed(1)}% • Con 100€ guadagni ${bestEV.toFixed(1)}€</div>` 
-                                : `SKIP - Nessun valore<br><div class="details">Miglior EV: ${bestEV.toFixed(1)}% (negativo)</div>`
+                            ${isDivergent
+                                ? `${level === 'high_divergence' ? '🔴 ALTA' : '🟡 MEDIA'} DIVERGENZA su ${bestOutcome}<br><div class="details">Discrepanza: ${bestDiff.toFixed(1)}% • Modello differisce dal mercato</div>` 
+                                : `ALLINEATO - Modello concorda con mercato<br><div class="details">Nessuna divergenza significativa rilevata</div>`
                             }
                         </div>
                     </div>
