@@ -453,14 +453,25 @@ class ProfessionalCalculator:
             prob_casa_raw, prob_ospite_raw, prob_pareggio_raw, stats_casa, stats_ospite
         )
         
-        # CALIBRAZIONE: Regolarizza verso distribuzione più conservativa per affidabilità
-        # Shrinkage verso prior per squadre con pochi dati
+        # CALIBRAZIONE AGGRESSIVA: Regolarizza verso distribuzione più conservativa
+        # Questo è CRITICO per ridurre divergenze irrealistiche dal mercato
         affidabilita_media = (stats_casa.get('affidabilita', 1.0) + stats_ospite.get('affidabilita', 1.0)) / 2
         
-        if affidabilita_media < 0.7:  # Meno di 21 partite in media
-            # Regolarizza verso probabilità più equilibrate
+        # Calcola shrinkage basato su affidabilità E divergenza potenziale
+        # Più bassa l'affidabilità, più forte lo shrinkage
+        if affidabilita_media < 1.0:  # Qualsiasi squadra con <30 partite
             prior = self._calcola_prior_bayesiani()
-            shrinkage = 0.3 * (1 - affidabilita_media)  # Max 30% shrinkage
+            
+            # Shrinkage progressivo: 10% minimo, 50% massimo per squadre con pochi dati
+            shrinkage_base = 0.10 + (0.40 * (1 - affidabilita_media))
+            
+            # Shrinkage aggiuntivo per prevenire probabilità estreme
+            max_prob = max(prob_casa, prob_pareggio, prob_ospite)
+            if max_prob > 0.50:  # Se una probabilità è molto alta
+                shrinkage_estremi = (max_prob - 0.50) * 0.5  # Penalizza probabilità > 50%
+                shrinkage_base = min(shrinkage_base + shrinkage_estremi, 0.60)  # Max 60%
+            
+            shrinkage = shrinkage_base
             
             prob_casa = prob_casa * (1 - shrinkage) + prior['vittorie_casa'] * shrinkage
             prob_pareggio = prob_pareggio * (1 - shrinkage) + prior['pareggi'] * shrinkage
@@ -472,7 +483,21 @@ class ProfessionalCalculator:
             prob_pareggio /= totale
             prob_ospite /= totale
             
-            logger.info(f"🎚️ Calibrazione applicata: affidabilità {affidabilita_media:.2f}, shrinkage {shrinkage:.2f}")
+            logger.info(f"🎚️ Calibrazione aggressiva: affidabilità {affidabilita_media:.2f}, shrinkage {shrinkage:.2f}")
+        else:
+            # Anche con alta affidabilità, applica shrinkage leggero per conservatività
+            prior = self._calcola_prior_bayesiani()
+            shrinkage = 0.05  # 5% shrinkage minimo per tutte le predizioni
+            
+            prob_casa = prob_casa * 0.95 + prior['vittorie_casa'] * 0.05
+            prob_pareggio = prob_pareggio * 0.95 + prior['pareggi'] * 0.05
+            prob_ospite = prob_ospite * 0.95 + prior['vittorie_ospite'] * 0.05
+            
+            # Ri-normalizza
+            totale = prob_casa + prob_pareggio + prob_ospite
+            prob_casa /= totale
+            prob_pareggio /= totale
+            prob_ospite /= totale
         
         # Determina predizione
         if prob_casa > prob_ospite and prob_casa > prob_pareggio:
@@ -1680,22 +1705,92 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
         
         gol_previsti = media_gol_casa_totali + media_gol_ospite_totali
         
+        # CALIBRAZIONE GOL: Regolarizza verso media di campionato per affidabilità
+        # Questo previene previsioni estreme su squadre con pochi dati
+        partite_casa_totali = len(partite_casa_home) + len(partite_casa_away)
+        partite_ospite_totali = len(partite_ospite_home) + len(partite_ospite_away)
+        min_partite = min(partite_casa_totali, partite_ospite_totali)
+        affidabilita_gol = min_partite / 30.0  # Normalizzato su 30 partite
+        
+        # Per calibrazione Over/Under: usa partite specifiche casa/trasferta
+        # Questo è più accurato perché tiene conto del contesto specifico
+        partite_casa_home_count = len(partite_casa_home)
+        partite_ospite_away_count = len(partite_ospite_away)
+        min_partite_specifiche = min(partite_casa_home_count, partite_ospite_away_count)
+        
+        # Media campionato Serie A: 2.7 gol/partita
+        media_campionato = 2.7
+        
+        if min_partite < 30:
+            # Shrinkage ULTRA-AGGRESSIVO per squadre con dati limitati
+            # Obiettivo: massimo realismo, minimo rischio divergenze estreme
+            if min_partite < 10:
+                shrinkage_gol = 0.80  # 80% verso media per <10 partite (Pisa!)
+            elif min_partite < 15:
+                shrinkage_gol = 0.65  # 65% per 10-15 partite
+            elif min_partite < 20:
+                shrinkage_gol = 0.50  # 50% per 15-20 partite
+            elif min_partite < 25:
+                shrinkage_gol = 0.35  # 35% per 20-25 partite
+            else:
+                shrinkage_gol = 0.20  # 20% per 25-30 partite
+            
+            gol_previsti_raw = gol_previsti
+            gol_previsti = gol_previsti * (1 - shrinkage_gol) + media_campionato * shrinkage_gol
+            
+            # LIMITE ASSOLUTO PROGRESSIVO: gol previsti limitati in base ai dati disponibili
+            # Meno dati = range più stretto intorno alla media
+            if min_partite < 10:
+                max_deviation = 0.2  # ±0.2 gol per <10 partite (Pisa)
+            elif min_partite < 20:
+                max_deviation = 0.3  # ±0.3 gol per 10-20 partite
+            else:
+                max_deviation = 0.4  # ±0.4 gol per 20-30 partite
+            
+            gol_previsti = max(media_campionato - max_deviation, 
+                             min(media_campionato + max_deviation, gol_previsti))
+            
+            logger.info(f"🎚️ Calibrazione ultra-aggressiva: {min_partite} partite, shrinkage {shrinkage_gol:.0%}, range ±{max_deviation}, gol da {gol_previsti_raw:.2f} a {gol_previsti:.2f}")
+        
         # Over/Under 2.5 - Calcolo dinamico basato sui gol previsti
         # Usa una funzione logistica per probabilità più realistica
         
-        # Calcolo probabilistico più sofisticato
+        # Calcolo probabilistico più sofisticato con calibrazione conservativa
         diff_25 = gol_previsti - 2.5
-        prob_over25 = 1 / (1 + math.exp(-2 * diff_25))  # Funzione sigmoidale
         
-        # Aggiusta per limiti realistici (30%-80%)
-        prob_over25 = max(0.25, min(0.80, prob_over25))
+        # Funzione sigmoidale con pendenza molto ridotta per massimo conservatism
+        # Da -2 a -1.0 per probabilità molto più conservative
+        prob_over25_raw = 1 / (1 + math.exp(-1.0 * diff_25))
+        
+        # CALIBRAZIONE FINALE: Range adattivo in base all'affidabilità
+        # Squadre con pochi dati = range più stretto
+        # USA min_partite_specifiche (casa home + ospite away) per maggiore precisione
+        logger.info(f"🔍 DEBUG RANGE: min_partite_specifiche={min_partite_specifiche}, prob_raw={prob_over25_raw:.3f}")
+        
+        if min_partite_specifiche < 10:
+            # Range 48-52% per squadre con <10 partite specifiche (massimo conservatismo)
+            # Per Pisa (7 partite trasferta): forza convergenza verso mercato
+            prob_over25 = max(0.48, min(0.52, prob_over25_raw))
+            logger.info(f"   ✅ Range 48-52% applicato: {prob_over25_raw:.3f} → {prob_over25:.3f}")
+        elif min_partite_specifiche < 15:
+            # Range 45-55% per squadre con 10-15 partite specifiche
+            prob_over25 = max(0.45, min(0.55, prob_over25_raw))
+            logger.info(f"   ✅ Range 45-55% applicato: {prob_over25_raw:.3f} → {prob_over25:.3f}")
+        elif min_partite_specifiche < 25:
+            # Range 42-58% per squadre con 15-25 partite
+            prob_over25 = max(0.42, min(0.58, prob_over25_raw))
+            logger.info(f"   ✅ Range 42-58% applicato: {prob_over25_raw:.3f} → {prob_over25:.3f}")
+        else:
+            # Range 40-60% per squadre con >25 partite
+            prob_over25 = max(0.40, min(0.60, prob_over25_raw))
+            logger.info(f"   ✅ Range 40-60% applicato: {prob_over25_raw:.3f} → {prob_over25:.3f}")
         
         # Debug info
         logger.info(f"🎯 Mercati Calcolo: {squadra_casa} vs {squadra_ospite}")
         logger.info(f"   Gol Casa Previsti: {media_gol_casa_totali:.2f}")
         logger.info(f"   Gol Ospite Previsti: {media_gol_ospite_totali:.2f}")
         logger.info(f"   Totale Gol Previsti: {gol_previsti:.2f}")
-        logger.info(f"   Prob Over 2.5: {prob_over25:.3f}")
+        logger.info(f"   Prob Over 2.5 (calibrata): {prob_over25:.3f}")
             
         prob_under25 = 1.0 - prob_over25
         
