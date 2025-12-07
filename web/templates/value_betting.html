@@ -514,6 +514,46 @@
         .value-one {
             font-size: 1em;
         }
+        
+        /* Reliability Indicator Styles */
+        .reliability-indicator {
+            margin: 15px 0;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.9em;
+            border-left: 4px solid;
+        }
+        
+        .reliability-high {
+            background: #e8f5e9;
+            border-color: #4caf50;
+            color: #2e7d32;
+        }
+        
+        .reliability-medium {
+            background: #fff3e0;
+            border-color: #ff9800;
+            color: #e65100;
+        }
+        
+        .reliability-low {
+            background: #ffebee;
+            border-color: #f44336;
+            color: #c62828;
+        }
+        
+        .reliability-header {
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        
+        .reliability-details {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
     </style>
 </head>
 <body>
@@ -725,7 +765,39 @@
                             ${analysis.bookmaker_margin ? `<div class="margin-info">Margine bookmaker: ${analysis.bookmaker_margin.toFixed(1)}%</div>` : ''}
                         </div>
                     `;
-                }                
+                }
+                
+                // INDICATORE AFFIDABILITÀ DATI
+                let reliabilityHTML = '';
+                if (match.prediction && match.prediction.data_reliability) {
+                    const rel = match.prediction.data_reliability;
+                    const score = rel.reliability_score;
+                    let reliabilityClass = 'low';
+                    let reliabilityEmoji = '⚠️';
+                    let reliabilityText = 'Limitata';
+                    
+                    if (score >= 0.7) {
+                        reliabilityClass = 'high';
+                        reliabilityEmoji = '✅';
+                        reliabilityText = 'Alta';
+                    } else if (score >= 0.5) {
+                        reliabilityClass = 'medium';
+                        reliabilityEmoji = '🟡';
+                        reliabilityText = 'Media';
+                    }
+                    
+                    reliabilityHTML = `
+                        <div class="reliability-indicator reliability-${reliabilityClass}">
+                            <div class="reliability-header">${reliabilityEmoji} Affidabilità Predizione: ${reliabilityText}</div>
+                            <div class="reliability-details">
+                                <div>Partite ${match.home_team}: ${rel.home_team_matches}</div>
+                                <div>Partite ${match.away_team}: ${rel.away_team_matches}</div>
+                                <div>Score: ${(score * 100).toFixed(0)}%</div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
                 // Quote 1X2
                 let oddsHTML = `
                     <div class="odds-row">
@@ -799,6 +871,8 @@
                         <div class="match-title">${match.home_team} vs ${match.away_team}</div>
                         <div class="match-time">🕒 ${timeStr}</div>
                     </div>
+                    
+                    ${reliabilityHTML}
                     
                     ${discrepancyHTML}
                     
