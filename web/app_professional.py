@@ -288,26 +288,80 @@ class ProfessionalCalculator:
         combined = f"{squadra_casa.lower()}_{squadra_ospite.lower()}"
         return hashlib.md5(combined.encode()).hexdigest()[:12]
     
+    def _calcola_prior_bayesiani(self) -> Dict[str, float]:
+        """Calcola prior informativi basati su statistiche di campionato"""
+        if self.df_features is None or len(self.df_features) == 0:
+            return {'vittorie_casa': 0.43, 'pareggi': 0.27, 'vittorie_ospite': 0.30}
+        
+        # Calcola medie reali del campionato
+        totale_partite = len(self.df_features)
+        vittorie_casa = len(self.df_features[self.df_features['FTR'] == 'H'])
+        pareggi = len(self.df_features[self.df_features['FTR'] == 'D'])
+        vittorie_ospite = len(self.df_features[self.df_features['FTR'] == 'A'])
+        
+        return {
+            'vittorie_casa': vittorie_casa / totale_partite if totale_partite > 0 else 0.43,
+            'pareggi': pareggi / totale_partite if totale_partite > 0 else 0.27,
+            'vittorie_ospite': vittorie_ospite / totale_partite if totale_partite > 0 else 0.30
+        }
+    
     def _calcola_statistiche_squadra(self, squadra: str, in_casa: bool = True) -> Dict[str, float]:
-        """Calcola statistiche reali della squadra dal dataset"""
+        """Calcola statistiche reali della squadra dal dataset con regolarizzazione bayesiana"""
         try:
             # Controllo sicurezza DataFrame
             if self.df_features is None:
-                return {'vittorie': 0.33, 'pareggi': 0.33, 'sconfitte': 0.33}
+                return {'vittorie': 0.33, 'pareggi': 0.33, 'sconfitte': 0.33, 'partite_totali': 0}
+            
+            # Ottieni prior bayesiani
+            prior = self._calcola_prior_bayesiani()
                 
             if in_casa:
                 partite = self.df_features[self.df_features['HomeTeam'] == squadra]
                 vittorie = len(partite[partite['FTR'] == 'H'])
                 pareggi = len(partite[partite['FTR'] == 'D'])
+                prior_vitt = prior['vittorie_casa']
             else:
                 partite = self.df_features[self.df_features['AwayTeam'] == squadra]
                 vittorie = len(partite[partite['FTR'] == 'A'])
                 pareggi = len(partite[partite['FTR'] == 'D'])
+                prior_vitt = prior['vittorie_ospite']
             
             sconfitte = len(partite) - vittorie - pareggi
+            n_partite = len(partite)
             
-            if len(partite) == 0:
-                return {'vittorie': 0.33, 'pareggi': 0.33, 'sconfitte': 0.33, 'clean_sheet_rate': 0.3}
+            if n_partite == 0:
+                return {
+                    'vittorie': prior_vitt,
+                    'pareggi': prior['pareggi'],
+                    'sconfitte': 1 - prior_vitt - prior['pareggi'],
+                    'partite_totali': 0,
+                    'clean_sheet_rate': 0.3
+                }
+            
+            # BAYESIAN SMOOTHING: Combina dati reali con prior
+            # Peso prior inversamente proporzionale al numero di partite
+            # Più dati = meno peso al prior, meno dati = più peso al prior
+            peso_prior = min(30 / max(n_partite, 1), 0.5)  # Max 50% peso prior
+            peso_dati = 1 - peso_prior
+            
+            # Statistiche grezze
+            vitt_raw = vittorie / n_partite
+            par_raw = pareggi / n_partite
+            sconf_raw = sconfitte / n_partite
+            
+            # Combina con prior bayesiani
+            vitt_bayesian = peso_dati * vitt_raw + peso_prior * prior_vitt
+            par_bayesian = peso_dati * par_raw + peso_prior * prior['pareggi']
+            sconf_bayesian = peso_dati * sconf_raw + peso_prior * (1 - prior_vitt - prior['pareggi'])
+            
+            # Normalizza per garantire somma = 1
+            totale = vitt_bayesian + par_bayesian + sconf_bayesian
+            vitt_final = vitt_bayesian / totale
+            par_final = par_bayesian / totale
+            sconf_final = sconf_bayesian / totale
+            
+            if n_partite < 20:
+                logger.info(f"⚖️ Bayesian smoothing {squadra} ({'casa' if in_casa else 'trasferta'}): {n_partite} partite, peso prior {peso_prior:.2f}")
             
             # Calcola clean sheet rate (partite senza subire gol)
             if in_casa:
@@ -315,15 +369,19 @@ class ProfessionalCalculator:
             else:
                 clean_sheets = len(partite[partite['FTHG'] == 0]) if 'FTHG' in partite.columns else 0
             
-            clean_sheet_rate = clean_sheets / len(partite) if len(partite) > 0 else 0.3
+            clean_sheet_rate = clean_sheets / n_partite if n_partite > 0 else 0.3
+            
+            # Calcola punti medi con statistiche bayesiane
+            punti_medi = (vitt_final * 3 + par_final) * 3  # Normalizzato su 3 punti max
             
             return {
-                'vittorie': vittorie / len(partite),
-                'pareggi': pareggi / len(partite),
-                'sconfitte': sconfitte / len(partite),
-                'partite_totali': len(partite),
+                'vittorie': vitt_final,
+                'pareggi': par_final,
+                'sconfitte': sconf_final,
+                'partite_totali': n_partite,
                 'clean_sheet_rate': clean_sheet_rate,
-                'punti_medi': (vittorie * 3 + pareggi) / len(partite) if len(partite) > 0 else 1.5
+                'punti_medi': punti_medi,
+                'affidabilita': min(n_partite / 30.0, 1.0)  # 0-1, 1 = molto affidabile
             }
             
         except Exception as e:
@@ -366,7 +424,7 @@ class ProfessionalCalculator:
         return prob_casa / totale, prob_ospite / totale, prob_pareggio / totale
     
     def predici_partita_deterministica(self, squadra_casa: str, squadra_ospite: str) -> Tuple[str, Dict[str, float], float]:
-        """Predizione deterministica basata su statistiche reali"""
+        """Predizione deterministica basata su statistiche reali con calibrazione"""
         
         # Controllo cache
         cache_key = self._calcola_hash_deterministico(squadra_casa, squadra_ospite)
@@ -374,7 +432,7 @@ class ProfessionalCalculator:
             logger.info(f"📦 Cache hit per {squadra_casa} vs {squadra_ospite}")
             return self.cache_deterministica[cache_key]
         
-        # Calcola statistiche reali
+        # Calcola statistiche reali (ora con Bayesian smoothing)
         stats_casa = self._calcola_statistiche_squadra(squadra_casa, in_casa=True)
         stats_ospite = self._calcola_statistiche_squadra(squadra_ospite, in_casa=False)
         
@@ -394,6 +452,27 @@ class ProfessionalCalculator:
         prob_casa, prob_ospite, prob_pareggio = self._applica_simmetria_matematica(
             prob_casa_raw, prob_ospite_raw, prob_pareggio_raw, stats_casa, stats_ospite
         )
+        
+        # CALIBRAZIONE: Regolarizza verso distribuzione più conservativa per affidabilità
+        # Shrinkage verso prior per squadre con pochi dati
+        affidabilita_media = (stats_casa.get('affidabilita', 1.0) + stats_ospite.get('affidabilita', 1.0)) / 2
+        
+        if affidabilita_media < 0.7:  # Meno di 21 partite in media
+            # Regolarizza verso probabilità più equilibrate
+            prior = self._calcola_prior_bayesiani()
+            shrinkage = 0.3 * (1 - affidabilita_media)  # Max 30% shrinkage
+            
+            prob_casa = prob_casa * (1 - shrinkage) + prior['vittorie_casa'] * shrinkage
+            prob_pareggio = prob_pareggio * (1 - shrinkage) + prior['pareggi'] * shrinkage
+            prob_ospite = prob_ospite * (1 - shrinkage) + prior['vittorie_ospite'] * shrinkage
+            
+            # Ri-normalizza
+            totale = prob_casa + prob_pareggio + prob_ospite
+            prob_casa /= totale
+            prob_pareggio /= totale
+            prob_ospite /= totale
+            
+            logger.info(f"🎚️ Calibrazione applicata: affidabilità {affidabilita_media:.2f}, shrinkage {shrinkage:.2f}")
         
         # Determina predizione
         if prob_casa > prob_ospite and prob_casa > prob_pareggio:
@@ -1165,6 +1244,16 @@ def api_upcoming_matches():
                                 **probabilita,
                                 'over': mercati['mou25']['probabilita']['over'],
                                 'under': mercati['mou25']['probabilita']['under']
+                            },
+                            # METADATI AFFIDABILITÀ
+                            'data_reliability': {
+                                'home_team_matches': calculator._calcola_statistiche_squadra(home, in_casa=True).get('partite_totali', 0),
+                                'away_team_matches': calculator._calcola_statistiche_squadra(away, in_casa=False).get('partite_totali', 0),
+                                'reliability_score': round((
+                                    calculator._calcola_statistiche_squadra(home, in_casa=True).get('affidabilita', 0.5) +
+                                    calculator._calcola_statistiche_squadra(away, in_casa=False).get('affidabilita', 0.5)
+                                ) / 2, 2),
+                                'note': 'Score 0-1: >0.7=alta affidabilità, 0.5-0.7=media, <0.5=limitata (pochi dati storici)'
                             }
                         },
                         'analysis': {
