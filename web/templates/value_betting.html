@@ -94,6 +94,14 @@
             margin: 5px 0;
         }
         
+        .backtest-negative {
+            color: #d84315;
+        }
+        
+        .disclaimer-margin-top {
+            margin-top: 10px;
+        }
+        
         .roi-banner {
             background: rgba(255, 255, 255, 0.95);
             border-radius: 15px;
@@ -332,6 +340,76 @@
             display: none;
         }
         
+        /* Utility classes for dynamic content */
+        .discrepancy-box {
+            background: #f0f4ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .discrepancy-title {
+            margin-bottom: 10px;
+            color: #667eea;
+        }
+
+        .discrepancy-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            font-size: 0.9em;
+        }
+
+        .margin-info {
+            margin-top: 8px;
+            color: #666;
+            font-size: 0.85em;
+        }
+
+        .odds-row-alt {
+            margin-top: 10px;
+        }
+
+        .ev-row-alt {
+            margin-top: 10px;
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .prediction-info {
+            background: #f9f9f9;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+        }
+
+        .recommendation-details {
+            margin-top: 15px;
+            padding: 15px;
+            background: #fff5e6;
+            border-radius: 8px;
+            border-left: 4px solid #ff9800;
+        }
+
+        .odds-source-info {
+            margin-top: 15px;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .summary-note {
+            margin-top: 20px;
+            margin-bottom: 15px;
+            color: #666;
+        }
+
+        .value-one {
+            font-size: 1em;
+        }
+        
         /* Legal Disclaimer Styles */
         .legal-disclaimer {
             margin: 40px auto 20px;
@@ -364,6 +442,78 @@
         .disclaimer-link:hover {
             text-decoration: underline;
         }
+        
+        /* Utility classes for dynamic content */
+        .discrepancy-box {
+            background: #f0f4ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .discrepancy-box h4 {
+            margin-bottom: 10px;
+            color: #667eea;
+        }
+        
+        .discrepancy-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            font-size: 0.9em;
+        }
+        
+        .margin-info {
+            margin-top: 8px;
+            color: #666;
+            font-size: 0.85em;
+        }
+        
+        .odds-row-alt {
+            margin-top: 10px;
+        }
+        
+        .odds-box-alt {
+            grid-column: 1 / 2;
+        }
+        
+        .odds-box-alt-2 {
+            grid-column: 2 / 3;
+        }
+        
+        .ev-row-alt {
+            margin-top: 10px;
+            grid-template-columns: repeat(2, 1fr);
+        }
+        
+        .prediction-info {
+            margin-bottom: 15px;
+            text-align: center;
+            color: #666;
+        }
+        
+        .recommendation-details {
+            font-size: 0.9em;
+            margin-top: 10px;
+            opacity: 0.9;
+        }
+        
+        .odds-source-info {
+            margin-top: 15px;
+            text-align: center;
+            color: #999;
+            font-size: 0.85em;
+        }
+        
+        .summary-note {
+            margin-top: 20px;
+            color: #666;
+            text-align: center;
+        }
+        
+        .value-one {
+            font-size: 1em;
+        }
     </style>
 </head>
 <body>
@@ -378,11 +528,11 @@
             <p>Questo sistema è uno <strong>strumento di analisi</strong>, NON una garanzia di profitto.</p>
             <p><strong>Backtest su 406 partite storiche (test set):</strong></p>
             <div class="backtest-results">
-                <div>📉 Strategia Value Betting: <strong style="color: #d84315;">-22.06% ROI</strong> (-90€ su 406€)</div>
-                <div>📉 Seguire sempre modello: <strong style="color: #d84315;">-9.27% ROI</strong> (-38€)</div>
-                <div>📉 Seguire favorito bookmaker: <strong style="color: #d84315;">-6.91% ROI</strong> (-28€)</div>
+                <div>📉 Strategia Value Betting: <strong class="backtest-negative">-22.06% ROI</strong> (-90€ su 406€)</div>
+                <div>📉 Seguire sempre modello: <strong class="backtest-negative">-9.27% ROI</strong> (-38€)</div>
+                <div>📉 Seguire favorito bookmaker: <strong class="backtest-negative">-6.91% ROI</strong> (-28€)</div>
             </div>
-            <p style="margin-top: 10px;">Il margine dei bookmaker (4-7%) rende matematicamente difficile ottenere profitti consistenti.</p>
+            <p class="disclaimer-margin-top">Il margine dei bookmaker (4-7%) rende matematicamente difficile ottenere profitti consistenti.</p>
             <p><strong>Usa questo tool per:</strong> Analizzare dove il modello differisce dal mercato, confrontare probabilità, studiare pattern.</p>
             <p><strong>NON usare per:</strong> Aspettarsi profitti garantiti o ROI positivi.</p>
         </div>
@@ -458,7 +608,7 @@
                 </div>
                 <div class="stat-card">
                     <div class="label">Fonte Dati</div>
-                    <div class="value" style="font-size: 1em;">The Odds API</div>
+                    <div class="value value-one">The Odds API</div>
                 </div>
                 <div class="stat-card">
                     <div class="label">Quote Usate</div>
@@ -492,7 +642,7 @@
             if (divergentMatches.length > 0) {
                 let html = `
                     <h2>📊 Analisi Discrepanze (${divergentMatches.length} partite con divergenze significative)</h2>
-                    <p style="color: #666; margin-bottom: 15px;">
+                    <p class="summary-note">
                         Dove il modello ML differisce significativamente dal mercato (>8% di differenza nelle probabilità)
                     </p>
                     <ul class="bet-list">
@@ -520,7 +670,7 @@
                 
                 html += `
                     </ul>
-                    <p style="margin-top: 20px; color: #666; text-align: center;">
+                    <p class="summary-note" style="text-align: center;">
                         💡 <strong>Nota:</strong> Divergenze indicano dove il modello "vede" diversamente dal mercato. Non sono garanzie di profitto (backtest: -22% ROI).
                     </p>
                 `;
@@ -529,7 +679,7 @@
             } else {
                 summary.innerHTML = `
                     <h2>✅ Modello Allineato al Mercato</h2>
-                    <p style="color: #666; text-align: center;">Nessuna divergenza significativa trovata. Il modello ML concorda sostanzialmente con le quote bookmaker.</p>
+                    <p class="summary-note" style="text-align: center;">Nessuna divergenza significativa trovata. Il modello ML concorda sostanzialmente con le quote bookmaker.</p>
                 `;
             }
             
@@ -565,14 +715,14 @@
                 if (analysis.market_discrepancies) {
                     const discs = analysis.market_discrepancies;
                     discrepancyHTML = `
-                        <div style="background: #f0f4ff; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-                            <h4 style="margin-bottom: 10px; color: #667eea;">📊 Discrepanze Modello vs Mercato</h4>
-                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; font-size: 0.9em;">
+                        <div class="discrepancy-box">
+                            <h4 class="discrepancy-title">📊 Discrepanze Modello vs Mercato</h4>
+                            <div class="discrepancy-grid">
                                 <div>Casa: ${discs.home > 0 ? '+' : ''}${discs.home.toFixed(1)}%</div>
                                 <div>Pareggio: ${discs.draw > 0 ? '+' : ''}${discs.draw.toFixed(1)}%</div>
                                 <div>Trasferta: ${discs.away > 0 ? '+' : ''}${discs.away.toFixed(1)}%</div>
                             </div>
-                            ${analysis.bookmaker_margin ? `<div style="margin-top: 8px; color: #666; font-size: 0.85em;">Margine bookmaker: ${analysis.bookmaker_margin.toFixed(1)}%</div>` : ''}
+                            ${analysis.bookmaker_margin ? `<div class="margin-info">Margine bookmaker: ${analysis.bookmaker_margin.toFixed(1)}%</div>` : ''}
                         </div>
                     `;
                 }                
@@ -597,7 +747,7 @@
                 // Quote Over/Under se disponibili
                 if (match.odds_totals && match.odds_totals.over_25 && match.odds_totals.under_25) {
                     oddsHTML += `
-                        <div class="odds-row" style="margin-top: 10px;">
+                        <div class="odds-row odds-row-alt">
                             <div class="odd-box" style="grid-column: 1 / 2;">
                                 <div class="label">Over 2.5</div>
                                 <div class="value">${match.odds_totals.over_25.toFixed(2)}</div>
@@ -631,7 +781,7 @@
                 // EV Over/Under se disponibili
                 if (evs.over !== null && evs.under !== null) {
                     evHTML += `
-                        <div class="ev-row" style="margin-top: 10px; grid-template-columns: repeat(2, 1fr);">
+                        <div class="ev-row ev-row-alt">
                             <div class="ev-box ${evs.over > 0 ? 'positive' : 'negative'}">
                                 <div class="label">EV Over 2.5</div>
                                 <div class="value">${evs.over > 0 ? '+' : ''}${evs.over.toFixed(1)}%</div>
