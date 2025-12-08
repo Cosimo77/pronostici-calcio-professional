@@ -12,6 +12,8 @@ def carica_dati():
     
     # Lista specifica dei file delle stagioni da caricare
     stagioni_files = [
+        "I1_1819.csv",
+        "I1_1920.csv",
         "I1_2021.csv",
         "I1_2122.csv", 
         "I1_2223.csv",
