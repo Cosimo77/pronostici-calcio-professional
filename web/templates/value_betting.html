@@ -565,16 +565,16 @@
         
         <div class="disclaimer">
             <h3>⚠️ DISCLAIMER IMPORTANTE - Risultati Backtest Reali</h3>
-            <p>Questo sistema è uno <strong>strumento di analisi</strong>, NON una garanzia di profitto.</p>
-            <p><strong>Backtest su 406 partite storiche (test set):</strong></p>
+            <p>Questo sistema è uno <strong>strumento di analisi</strong>, NON un sistema per scommettere.</p>
+            <p><strong>Backtest su 640 partite storiche (Nov 2023 - Mag 2025):</strong></p>
             <div class="backtest-results">
-                <div>📉 Strategia Value Betting: <strong class="backtest-negative">-22.06% ROI</strong> (-90€ su 406€)</div>
-                <div>📉 Seguire sempre modello: <strong class="backtest-negative">-9.27% ROI</strong> (-38€)</div>
-                <div>📉 Seguire favorito bookmaker: <strong class="backtest-negative">-6.91% ROI</strong> (-28€)</div>
+                <div>💰 Performance Finanziaria: <strong id="roi-turnover-text">+3.15% ROI su turnover</strong> • <strong id="return-total-text">+92.74% return totale</strong> (<strong id="profit-text">+€927.44</strong> su <strong id="bets-text">640 bet</strong>)</div>
+                <div>📊 Win Rate: <strong class="backtest-negative" id="win-rate-text">29.4%</strong> (188 vinte su 640 scommesse)</div>
+                <div>⚠️ Max Drawdown: <strong class="backtest-negative">-700.25%</strong> • Sharpe Ratio: 0.71</div>
             </div>
-            <p class="disclaimer-margin-top">Il margine dei bookmaker (4-7%) rende matematicamente difficile ottenere profitti consistenti.</p>
-            <p><strong>Usa questo tool per:</strong> Analizzare dove il modello differisce dal mercato, confrontare probabilità, studiare pattern.</p>
-            <p><strong>NON usare per:</strong> Aspettarsi profitti garantiti o ROI positivi.</p>
+            <p class="disclaimer-margin-top"><strong class="backtest-negative">⛔ Sistema NON profittevole per scommesse reali:</strong> Nonostante il return positivo, il drawdown estremo (-700%) e il basso win rate (29.4%) rendono questo sistema inadatto per betting reale. Il margine dei bookmaker (4-7%) e la volatilità estrema impediscono profitti consistenti.</p>
+            <p><strong>Usa questo tool per:</strong> Analizzare dove il modello ML differisce dal mercato, confrontare probabilità, studiare pattern predittivi.</p>
+            <p><strong>NON usare per:</strong> Scommesse reali. Questo è uno strumento educativo di analisi predittiva.</p>
         </div>
         
         <div class="roi-banner">
@@ -711,7 +711,7 @@
                 html += `
                     </ul>
                     <p class="summary-note" style="text-align: center;">
-                        💡 <strong>Nota:</strong> Divergenze indicano dove il modello "vede" diversamente dal mercato. Non sono garanzie di profitto (backtest: -22% ROI).
+                        💡 <strong>Nota:</strong> Divergenze indicano dove il modello ML "vede" diversamente dal mercato. Non sono garanzie di profitto (backtest: +0.39% ROI ma -700% drawdown = NON profittevole).
                     </p>
                 `;
                 
@@ -909,6 +909,29 @@
         
         // Ricarica ogni 5 minuti
         setInterval(loadMatches, 5 * 60 * 1000);
+        
+        // Carica ROI dinamico
+        async function loadDynamicROI() {
+            try {
+                const response = await fetch('/api/roi_stats');
+                const data = await response.json();
+                
+                document.getElementById('roi-turnover-text').textContent = 
+                    `+${data.roi_turnover.toFixed(2)}% ROI su turnover`;
+                document.getElementById('return-total-text').textContent = 
+                    `+${data.return_total.toFixed(2)}% return totale`;
+                document.getElementById('profit-text').textContent = 
+                    `+€${data.total_profit.toFixed(2)}`;
+                document.getElementById('bets-text').textContent = 
+                    `${data.total_bets} bet`;
+                document.getElementById('win-rate-text').textContent = 
+                    `${data.win_rate.toFixed(1)}%`;
+            } catch (error) {
+                console.log('ROI statico mostrato (fallback)');
+            }
+        }
+        
+        loadDynamicROI();
     </script>
     
     <!-- Legal Disclaimer -->
