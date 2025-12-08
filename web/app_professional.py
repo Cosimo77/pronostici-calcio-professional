@@ -949,56 +949,44 @@ def api_roi_history():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/rigenera_cache', methods=['POST'])
-@limiter.limit("1 per hour")  # Max 1 esecuzione/ora
+@limiter.limit("10 per hour")  # Operazione leggera, no API calls
 def api_rigenera_cache():
-    """Rigenera cache ROI eseguendo backtest completo"""
+    """Rigenera cache ROI dai file backtest esistenti (NO chiamate API)"""
     try:
-        import subprocess
         from pathlib import Path
+        import sys
         
         base_path = Path(__file__).parent.parent
-        script_path = base_path / 'backtest_completo_2920.py'
         
-        if not script_path.exists():
-            return jsonify({'error': 'Script backtest non trovato'}), 404
+        # Importa modulo calcolo ROI
+        sys.path.insert(0, str(base_path / 'scripts'))
+        from calcola_roi_dinamico import calcola_roi_aggiornato
         
-        # Esegui backtest con timeout 5 minuti
-        result = subprocess.run(
-            ['python3', str(script_path)],
-            cwd=str(base_path),
-            capture_output=True,
-            text=True,
-            timeout=300
-        )
+        # Ricalcola metriche da backtest_trades.csv esistente
+        metriche = calcola_roi_aggiornato()
         
-        if result.returncode != 0:
-            return jsonify({
-                'error': 'Backtest fallito',
-                'stderr': result.stderr[-500:]  # Ultimi 500 char
-            }), 500
+        if not metriche:
+            return jsonify({'error': 'Impossibile calcolare metriche'}), 500
         
-        # Copia cache aggiornata in data/backtest/
-        import shutil
-        cache_src = base_path / 'cache' / 'roi_metrics.json'
-        cache_dst = base_path / 'data' / 'backtest' / 'roi_metrics.json'
+        # Salva in data/backtest/ (directory trackable)
+        cache_file = base_path / 'data' / 'backtest' / 'roi_metrics.json'
+        cache_file.parent.mkdir(parents=True, exist_ok=True)
         
-        if cache_src.exists():
-            shutil.copy(cache_src, cache_dst)
-        
-        trades_src = base_path / 'backtest_trades.csv'
-        trades_dst = base_path / 'data' / 'backtest' / 'backtest_trades.csv'
-        
-        if trades_src.exists():
-            shutil.copy(trades_src, trades_dst)
+        import json
+        with open(cache_file, 'w') as f:
+            json.dump(metriche, f, indent=2)
         
         return jsonify({
             'status': 'success',
-            'message': 'Cache ROI rigenerata con successo',
-            'output': result.stdout[-500:]  # Ultimi 500 char output
+            'message': 'Cache ROI aggiornata (nessuna chiamata API)',
+            'metriche': {
+                'roi_turnover': metriche.get('roi_turnover', 0),
+                'total_bets': metriche.get('partite_totali', 0),
+                'max_drawdown': metriche.get('max_drawdown', 0),
+                'return_total': metriche.get('return_totale', 0)
+            }
         })
         
-    except subprocess.TimeoutExpired:
-        return jsonify({'error': 'Timeout: backtest troppo lungo (>5min)'}), 504
     except Exception as e:
         logger.error(f"Errore rigenerazione cache: {e}")
         return jsonify({'error': str(e)}), 500

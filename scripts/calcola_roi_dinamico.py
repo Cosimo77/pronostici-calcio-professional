@@ -117,18 +117,11 @@ def get_roi_metrics():
             cache_file = location
             break
     
-    # Se cache esiste e ha meno di 1 ora, usa quella
+    # Leggi cache se esiste (sempre fresco da file)
     if cache_file:
         try:
             with open(cache_file, 'r') as f:
-                metriche = json.load(f)
-                
-            # Verifica età cache (max 1 ora)
-            aggiornato = datetime.fromisoformat(metriche['aggiornato'])
-            eta = (datetime.now() - aggiornato).total_seconds()
-            
-            if eta < 3600:  # 1 ora
-                return metriche
+                return json.load(f)
         except:
             pass
     
