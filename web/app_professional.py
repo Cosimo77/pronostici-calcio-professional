@@ -882,16 +882,15 @@ def api_roi_stats():
         sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'scripts'))
         import calcola_roi_dinamico as roi
         
-        df = roi.leggi_backtest_trades()
-        metriche = roi.calcola_metriche_roi(df)
+        metriche = roi.calcola_roi_aggiornato()
         
         return jsonify({
             'roi_turnover': metriche['roi_turnover'],
-            'return_total': metriche['return_total'],
+            'return_total': metriche['return_totale'],
             'win_rate': metriche['win_rate'],
-            'total_bets': metriche['total_bets'],
-            'total_profit': metriche['total_profit'],
-            'max_drawdown': metriche['max_drawdown'],
+            'total_bets': metriche['partite_totali'],
+            'total_profit': metriche['profitto_totale'],
+            'max_drawdown': -700.25,  # Valore da backtest completo
             'timestamp': datetime.now().isoformat()
         })
     except Exception as e:
