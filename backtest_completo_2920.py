@@ -15,7 +15,7 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), 'scripts'))
 sys.path.append(os.path.join(os.path.dirname(__file__), 'web'))
 
-from app_professional import ProfessionalCalculator
+from app_professional import ProfessionalCalculator  # type: ignore[import-not-found]
 
 class BacktestCompleto:
     """Backtest su dataset completo 2,920 partite"""
@@ -202,7 +202,7 @@ class BacktestCompleto:
         max_drawdown = drawdown.min()
         
         # Sharpe ratio (approssimato)
-        returns = df_trades['roi'].values
+        returns = np.array(df_trades['roi'].values, dtype=float)
         sharpe = (returns.mean() / returns.std()) if returns.std() > 0 else 0
         
         # EV medio
