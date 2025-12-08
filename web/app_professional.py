@@ -948,6 +948,61 @@ def api_roi_history():
         logger.error(f"Errore caricamento equity curve: {e}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/rigenera_cache', methods=['POST'])
+@limiter.limit("1 per hour")  # Max 1 esecuzione/ora
+def api_rigenera_cache():
+    """Rigenera cache ROI eseguendo backtest completo"""
+    try:
+        import subprocess
+        from pathlib import Path
+        
+        base_path = Path(__file__).parent.parent
+        script_path = base_path / 'backtest_completo_2920.py'
+        
+        if not script_path.exists():
+            return jsonify({'error': 'Script backtest non trovato'}), 404
+        
+        # Esegui backtest con timeout 5 minuti
+        result = subprocess.run(
+            ['python3', str(script_path)],
+            cwd=str(base_path),
+            capture_output=True,
+            text=True,
+            timeout=300
+        )
+        
+        if result.returncode != 0:
+            return jsonify({
+                'error': 'Backtest fallito',
+                'stderr': result.stderr[-500:]  # Ultimi 500 char
+            }), 500
+        
+        # Copia cache aggiornata in data/backtest/
+        import shutil
+        cache_src = base_path / 'cache' / 'roi_metrics.json'
+        cache_dst = base_path / 'data' / 'backtest' / 'roi_metrics.json'
+        
+        if cache_src.exists():
+            shutil.copy(cache_src, cache_dst)
+        
+        trades_src = base_path / 'backtest_trades.csv'
+        trades_dst = base_path / 'data' / 'backtest' / 'backtest_trades.csv'
+        
+        if trades_src.exists():
+            shutil.copy(trades_src, trades_dst)
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Cache ROI rigenerata con successo',
+            'output': result.stdout[-500:]  # Ultimi 500 char output
+        })
+        
+    except subprocess.TimeoutExpired:
+        return jsonify({'error': 'Timeout: backtest troppo lungo (>5min)'}), 504
+    except Exception as e:
+        logger.error(f"Errore rigenerazione cache: {e}")
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/predict_enterprise', methods=['POST'])
 @limiter.limit("30 per minute")  # Rate limiting per endpoint critico
 def api_predict_enterprise():
