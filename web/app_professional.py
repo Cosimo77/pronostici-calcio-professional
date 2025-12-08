@@ -929,9 +929,9 @@ def api_roi_history():
         df_recent = df.tail(100)
         
         equity_curve = []
-        for idx, row in df_recent.iterrows():
+        for bet_num, (_, row) in enumerate(df_recent.iterrows(), start=1):
             equity_curve.append({
-                'bet': int(idx),
+                'bet': bet_num,
                 'bankroll': round(float(row['bankroll']), 2),
                 'date': str(row['date']),
                 'profit': round(float(row['profit']), 2),
