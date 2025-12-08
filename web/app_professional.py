@@ -885,12 +885,15 @@ def api_roi_stats():
         metriche = roi.calcola_roi_aggiornato()
         
         return jsonify({
-            'roi_turnover': metriche['roi_turnover'],
-            'return_total': metriche['return_totale'],
-            'win_rate': metriche['win_rate'],
-            'total_bets': metriche['partite_totali'],
-            'total_profit': metriche['profitto_totale'],
-            'max_drawdown': -700.25,  # Valore da backtest completo
+            'roi_turnover': metriche.get('roi_turnover', 0),
+            'return_total': metriche.get('return_totale', 0),
+            'win_rate': metriche.get('win_rate', 0),
+            'total_bets': metriche.get('partite_totali', 0),
+            'total_profit': metriche.get('profitto_totale', 0),
+            'max_drawdown': metriche.get('max_drawdown', -700.25),
+            'sharpe_ratio': metriche.get('sharpe_ratio', 0),
+            'ev_medio': metriche.get('ev_medio', 0),
+            'periodo': metriche.get('periodo', {}),
             'timestamp': datetime.now().isoformat()
         })
     except Exception as e:
@@ -903,8 +906,47 @@ def api_roi_stats():
             'total_bets': 640,
             'total_profit': 927.44,
             'max_drawdown': -700.25,
+            'sharpe_ratio': 0,
+            'ev_medio': 0,
+            'periodo': {},
             'timestamp': datetime.now().isoformat()
         })
+
+@app.route('/api/roi_history')
+def api_roi_history():
+    """Endpoint per equity curve storica (ultimi 100 bet)"""
+    try:
+        # Legge backtest trades
+        import pandas as pd
+        trades_file = os.path.join(os.path.dirname(__file__), '..', 'backtest_trades.csv')
+        
+        if not os.path.exists(trades_file):
+            return jsonify({'error': 'Dati storici non disponibili'}), 404
+        
+        df = pd.read_csv(trades_file)
+        
+        # Ultime 100 bet per equity curve
+        df_recent = df.tail(100)
+        
+        equity_curve = []
+        for idx, row in df_recent.iterrows():
+            equity_curve.append({
+                'bet': int(idx),
+                'bankroll': round(float(row['bankroll']), 2),
+                'date': str(row['date']),
+                'profit': round(float(row['profit']), 2),
+                'won': bool(row['won'])
+            })
+        
+        return jsonify({
+            'equity_curve': equity_curve,
+            'total_bets': len(df),
+            'showing_last': len(equity_curve)
+        })
+        
+    except Exception as e:
+        logger.error(f"Errore caricamento equity curve: {e}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/predict_enterprise', methods=['POST'])
 @limiter.limit("30 per minute")  # Rate limiting per endpoint critico

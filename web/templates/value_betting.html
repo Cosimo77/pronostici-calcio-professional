@@ -216,6 +216,61 @@
             color: #333;
         }
         
+        /* Dashboard ROI Real-time */
+        .roi-dashboard {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px 0;
+            color: white;
+        }
+        
+        .roi-loading {
+            text-align: center;
+            font-size: 1.1em;
+            padding: 10px;
+        }
+        
+        .roi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .roi-metric {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            padding: 15px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .roi-metric .label {
+            font-size: 0.85em;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+        
+        .roi-metric .value {
+            font-size: 1.8em;
+            font-weight: bold;
+        }
+        
+        .roi-metric.positive .value {
+            color: #4ade80;
+        }
+        
+        .roi-metric.negative .value {
+            color: #f87171;
+        }
+        
+        .roi-periodo {
+            margin-top: 15px;
+            text-align: center;
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+        
         .ev-row {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -566,13 +621,13 @@
         <div class="disclaimer">
             <h3>⚠️ DISCLAIMER IMPORTANTE - Risultati Backtest Reali</h3>
             <p>Questo sistema è uno <strong>strumento di analisi</strong>, NON un sistema per scommettere.</p>
-            <p><strong>Backtest su 640 partite storiche (Nov 2023 - Mag 2025):</strong></p>
-            <div class="backtest-results">
-                <div>💰 Performance Finanziaria: <strong id="roi-turnover-text">+3.15% ROI su turnover</strong> • <strong id="return-total-text">+92.74% return totale</strong> (<strong id="profit-text">+€927.44</strong> su <strong id="bets-text">640 bet</strong>)</div>
-                <div>📊 Win Rate: <strong class="backtest-negative" id="win-rate-text">29.4%</strong> (188 vinte su 640 scommesse)</div>
-                <div>⚠️ Max Drawdown: <strong class="backtest-negative">-700.25%</strong> • Sharpe Ratio: 0.71</div>
+            
+            <!-- ROI Dashboard Dinamica -->
+            <div id="roi-dashboard" class="roi-dashboard">
+                <div class="roi-loading">⏳ Caricamento metriche backtest...</div>
             </div>
-            <p class="disclaimer-margin-top"><strong class="backtest-negative">⛔ Sistema NON profittevole per scommesse reali:</strong> Nonostante il return positivo, il drawdown estremo (-700%) e il basso win rate (29.4%) rendono questo sistema inadatto per betting reale. Il margine dei bookmaker (4-7%) e la volatilità estrema impediscono profitti consistenti.</p>
+            
+            <p class="disclaimer-margin-top"><strong class="backtest-negative">⛔ Sistema NON profittevole per scommesse reali:</strong> Nonostante performance variabili, il drawdown estremo e la volatilità rendono questo sistema inadatto per betting reale. Il margine dei bookmaker (4-7%) e la varianza impediscono profitti consistenti.</p>
             <p><strong>Usa questo tool per:</strong> Analizzare dove il modello ML differisce dal mercato, confrontare probabilità, studiare pattern predittivi.</p>
             <p><strong>NON usare per:</strong> Scommesse reali. Questo è uno strumento educativo di analisi predittiva.</p>
         </div>
@@ -596,6 +651,66 @@
     </div>
     
     <script>
+        // Carica ROI Dashboard all'avvio
+        async function loadROIDashboard() {
+            try {
+                const response = await fetch('/api/roi_stats');
+                const data = await response.json();
+                
+                const dashboard = document.getElementById('roi-dashboard');
+                
+                // Determina classe per metriche
+                const roiClass = data.roi_turnover > 0 ? 'positive' : 'negative';
+                const returnClass = data.return_total > 0 ? 'positive' : 'negative';
+                const drawdownClass = 'negative';  // Drawdown sempre negativo
+                
+                dashboard.innerHTML = `
+                    <h4 style="margin-bottom: 15px;">📊 Backtest su ${data.total_bets} partite storiche</h4>
+                    <div class="roi-grid">
+                        <div class="roi-metric ${roiClass}">
+                            <div class="label">ROI su Turnover</div>
+                            <div class="value">${data.roi_turnover > 0 ? '+' : ''}${data.roi_turnover.toFixed(2)}%</div>
+                        </div>
+                        <div class="roi-metric ${returnClass}">
+                            <div class="label">Return Totale</div>
+                            <div class="value">${data.return_total > 0 ? '+' : ''}${data.return_total.toFixed(2)}%</div>
+                        </div>
+                        <div class="roi-metric">
+                            <div class="label">Win Rate</div>
+                            <div class="value">${data.win_rate.toFixed(1)}%</div>
+                        </div>
+                        <div class="roi-metric ${returnClass}">
+                            <div class="label">Profitto Totale</div>
+                            <div class="value">€${data.total_profit.toFixed(2)}</div>
+                        </div>
+                        <div class="roi-metric ${drawdownClass}">
+                            <div class="label">Max Drawdown</div>
+                            <div class="value">${data.max_drawdown.toFixed(1)}%</div>
+                        </div>
+                        ${data.sharpe_ratio ? `
+                        <div class="roi-metric">
+                            <div class="label">Sharpe Ratio</div>
+                            <div class="value">${data.sharpe_ratio.toFixed(2)}</div>
+                        </div>
+                        ` : ''}
+                    </div>
+                    ${data.periodo && data.periodo.da ? `
+                    <div class="roi-periodo">
+                        📅 Periodo: ${data.periodo.da} → ${data.periodo.a}
+                    </div>
+                    ` : ''}
+                `;
+                
+            } catch (error) {
+                console.error('Errore caricamento ROI:', error);
+                document.getElementById('roi-dashboard').innerHTML = `
+                    <div style="text-align: center; padding: 20px;">
+                        ⚠️ Errore caricamento metriche backtest
+                    </div>
+                `;
+            }
+        }
+        
         async function loadMatches() {
             try {
                 const response = await fetch('/api/upcoming_matches');
@@ -952,5 +1067,11 @@
             Le performance passate non garantiscono risultati futuri.
         </div>
     </div>
+    
+    <script>
+        // Carica dashboard e partite all'avvio
+        loadROIDashboard();
+        loadMatches();
+    </script>
 </body>
 </html>
