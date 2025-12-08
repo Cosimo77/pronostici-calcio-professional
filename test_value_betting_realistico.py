@@ -89,6 +89,10 @@ for idx, row in df_test.iterrows():
         if not pred or not prob_dict:
             continue
         
+        # Controlla se prob_dict è un dict o una stringa di errore
+        if isinstance(prob_dict, str):
+            continue
+        
         pred_str = pred[0] if isinstance(pred, list) else pred
         prob_model_h = prob_dict.get('H', 0.33)
         prob_model_d = prob_dict.get('D', 0.33)

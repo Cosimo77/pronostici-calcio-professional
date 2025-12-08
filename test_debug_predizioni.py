@@ -12,7 +12,7 @@ import os
 # Aggiungi path
 sys.path.append(os.path.join(os.path.dirname(__file__), 'web'))
 
-from app_professional import calculator, inizializza_sistema_professionale
+from web.app_professional import calculator, inizializza_sistema_professionale
 
 def test_statistiche_base():
     """Test 1: Verifica calcolo statistiche base squadre"""
@@ -140,7 +140,7 @@ def test_calcolo_mercati_ou():
     print("TEST 4: CALCOLO OVER/UNDER 2.5")
     print("="*80)
     
-    from app_professional import _calcola_mercati_deterministici
+    from web.app_professional import _calcola_mercati_deterministici
     
     partite_test = [
         ('Napoli', 'Juventus'),
