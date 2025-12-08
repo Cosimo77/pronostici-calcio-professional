@@ -2,10 +2,11 @@
 
 ## 1. ✅ Backtest Completo su 510 Partite (PRIORITÀ ALTA)
 
-### Obiettivo
+### Obiettivo Backtest
+
 Validare sistema su campione più grande e rappresentativo (~3x più partite del backtest precedente da 640→185 partite effettive).
 
-### Implementazione
+### Implementazione Backtest
 
 **Script:** `backtest_completo_2920.py`
 
@@ -36,7 +37,7 @@ Test set:     510 partite (Ago 2024 - Dic 2025)
 
 ### Equity Curve (ultimi 500 bet)
 
-```
+```text
 Bet 50:   +38.7% (€1,386)  🟢
 Bet 100:  +14.5% (€1,145)  🟢
 Bet 150:  +5.3%  (€1,053)  🟢
@@ -62,6 +63,7 @@ Bet 500:  +11.6% (€1,116)  🟢
 | Periodo | Nov 2023 - Mag 2025 | Ago 2024 - Dic 2025 | Più recente |
 
 **Insight chiave:**
+
 - ✅ Drawdown drasticamente ridotto (-700% → -51.82%)
 - ⚠️ ROI leggermente negativo su periodo recente
 - ✅ Win rate stabile (~29%)
@@ -72,6 +74,7 @@ Bet 500:  +11.6% (€1,116)  🟢
 ## 2. ✅ Dashboard ROI Real-time (PRIORITÀ ALTA)
 
 ### Obiettivo
+
 Mostrare metriche backtest aggiornate automaticamente nel frontend invece di valori statici hardcoded.
 
 ### Implementazione
@@ -79,6 +82,7 @@ Mostrare metriche backtest aggiornate automaticamente nel frontend invece di val
 #### Backend: Nuovi Endpoint API
 
 **`/api/roi_stats`** - Metriche complete
+
 ```json
 {
   "roi_turnover": -0.51,
@@ -98,6 +102,7 @@ Mostrare metriche backtest aggiornate automaticamente nel frontend invece di val
 ```
 
 **`/api/roi_history`** (IMPLEMENTATO - Ready)
+
 - Equity curve ultimi 100 bet
 - Formato: `[{bet, bankroll, date, profit, won}]`
 - Usabile per Chart.js visualization
@@ -105,12 +110,14 @@ Mostrare metriche backtest aggiornate automaticamente nel frontend invece di val
 #### Frontend: Dashboard Interattiva
 
 **Design:**
+
 - Gradient viola-blu (`#667eea` → `#764ba2`)
 - 6 metriche principali in grid responsive
 - Colori dinamici (verde positivo, rosso negativo)
 - Periodo backtest visualizzato
 
 **JavaScript:**
+
 ```javascript
 async function loadROIDashboard() {
     const response = await fetch('/api/roi_stats');
@@ -126,7 +133,7 @@ loadROIDashboard();
 
 ### Screenshot Dashboard
 
-```
+```text
 ┌─────────────────────────────────────────────────────┐
 │ 📊 Backtest su 510 partite storiche                │
 ├───────────────┬───────────────┬───────────────────┤
@@ -154,6 +161,7 @@ loadROIDashboard();
 ### Documento: `CERTIFICAZIONE_DATI_REALI.md`
 
 **Contenuto:**
+
 - ✅ Dichiarazione ufficiale: 100% dati reali da football-data.co.uk
 - ✅ Verifica tecnica: 2,920 partite, 48 colonne quote bookmaker
 - ✅ Test determinismo: 10 predizioni consecutive identiche
@@ -189,11 +197,13 @@ Rispondere definitivamente alla domanda utente: "Stiamo usando solo dati reali? 
 ### Trend Positivo (Ultimi 100 bet: +16.53%)
 
 **Ipotesi:**
+
 - Dataset ampliato (2,920 partite) migliora predizioni recenti
 - Shrinkage calibrato riduce overfitting
 - Modelli riaddestrati (8 Dic) più accurati
 
 **Prossimi Step:**
+
 - Monitorare performance prossimi 200 bet
 - Se trend +16% persiste → sistema potenzialmente profittevole
 - Considerare ricalibrazione probabilità (Platt Scaling tuning)
@@ -203,37 +213,47 @@ Rispondere definitivamente alla domanda utente: "Stiamo usando solo dati reali? 
 ## 5. 🔮 Prossimi Miglioramenti (Non Implementati)
 
 ### A. Fine-tuning Shrinkage Bayesiano (MEDIO)
+
 **Proposta:** A/B test shrinkage 15% vs 22% per squadre 20-30 partite
 **Effort:** 3 giorni
 **Impatto potenziale:** -2% divergenze
 
 ### B. Feature Importance (SHAP) (RICERCA)
+
 **Proposta:** Mostrare quali features influenzano ogni predizione
-```
+
+```text
 Napoli vs Juventus: H 46.5%
 Top 3 features:
   1. Forma casa Napoli (ultimo 5): +8.2%
   2. Gol subiti trasferta Juve: +4.1%
   3. Prior bayesiano: +2.8%
 ```
+
 **Effort:** 6h
 **Impatto:** Valore educativo alto, trasparenza ML
 
 ### C. Grafici Equity Curve (UX)
+
 **Proposta:** Visualizzazione Chart.js con `/api/roi_history`
 **Effort:** 2h
 **Impatto:** UX migliore, tracking visivo performance
 
 ### D. Alert Predizioni Eccezionali (BASSO)
+
 **Proposta:** Flag predizioni con EV >15% + Affidabilità >0.6 + Divergenza <8%
-```
+
+```text
 ⭐ Alta qualità dati - Predizione con forte supporto statistico
 ```
+
 **Effort:** 1h
 **Impatto:** Evidenzia best opportunities educative
 
 ### E. Mercati BTTS/Multigol (FUTURO - BLOCCATO)
+
 **Condizioni richieste:**
+
 - ✅ Divergenze <15% stabili per 1 mese
 - ❌ ROI >5% confermato (attuale -0.51%)
 - ❌ Drawdown <30% (attuale -51.82%)
@@ -257,12 +277,14 @@ Top 3 features:
 **Stato:** 🟡 **Operativo ma NON profittevole per betting reale**
 
 **Uso raccomandato:**
+
 - ✅ Strumento educativo analisi predittiva
 - ✅ Confronto modello ML vs mercato
 - ✅ Studio pattern e divergenze
 - ❌ NON per scommesse reali
 
 **Performance:**
+
 - ROI: -0.51% (leggermente negativo)
 - Win rate: 29.2% (stabile)
 - Drawdown: -51.82% (volatilità gestibile ma alta)
