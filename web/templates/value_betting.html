@@ -736,10 +736,7 @@
                 // Mostra statistiche
                 displayStats(data);
                 
-                // Mostra riepilogo
-                displaySummary(data.matches);
-                
-                // Mostra partite
+                // Mostra partite con card dettagliate
                 displayMatches(data.matches);
                 
             } catch (error) {
@@ -844,6 +841,26 @@
         
         function displayMatches(matches) {
             const container = document.getElementById('matches');
+            
+            // Aggiungi titolo sezione
+            const divergentCount = matches.filter(m => {
+                const analysis = m.analysis || m.value_betting;
+                return analysis.divergence_level !== 'low_divergence';
+            }).length;
+            
+            const title = document.createElement('h2');
+            title.style.cssText = 'margin: 40px 0 20px 0; text-align: center; color: #333;';
+            title.innerHTML = divergentCount > 0 
+                ? `📊 Analisi Discrepanze (${divergentCount} partite con divergenze significative)`
+                : `✅ Partite Disponibili (${matches.length})`;
+            container.appendChild(title);
+            
+            const note = document.createElement('p');
+            note.style.cssText = 'text-align: center; color: #666; margin-bottom: 30px;';
+            note.innerHTML = divergentCount > 0
+                ? 'Dove il modello ML differisce significativamente dal mercato (>8% di differenza nelle probabilità)'
+                : 'Modello allineato al mercato - Nessuna divergenza significativa rilevata';
+            container.appendChild(note);
             
             matches.forEach(match => {
                 const vb = match.value_betting;
