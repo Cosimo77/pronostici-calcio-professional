@@ -57,6 +57,19 @@ def calcola_roi_aggiornato():
         # Evoluzione (ultimi periodi)
         ultimi_100 = df.tail(100)['profit'].sum() / capitale_iniziale * 100 if len(df) >= 100 else 0
         
+        # Calcola drawdown
+        bankroll = capitale_iniziale
+        peak = capitale_iniziale
+        max_drawdown = 0
+        
+        for profit in df['profit']:
+            bankroll += profit
+            if bankroll > peak:
+                peak = bankroll
+            drawdown = ((peak - bankroll) / peak * 100) if peak > 0 else 0
+            if drawdown > max_drawdown:
+                max_drawdown = drawdown
+        
         metriche = {
             'roi_turnover': round(roi_turnover, 2),
             'return_totale': round(return_totale, 2),
@@ -66,6 +79,7 @@ def calcola_roi_aggiornato():
             'profitto_totale': round(profitto_totale, 2),
             'stake_totale': round(stake_totale, 2),
             'capitale_iniziale': capitale_iniziale,
+            'max_drawdown': round(-max_drawdown, 2),  # Negativo per convenzione
             'ultimi_100_return': round(ultimi_100, 2),
             'aggiornato': datetime.now().isoformat(),
             'periodo': {
