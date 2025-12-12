@@ -2187,37 +2187,6 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
         'consiglio': best_exact
     }
     
-    # BTTS (Both Teams To Score) - logica migliorata
-    # Calcolo basato sulla probabilità che ogni squadra segni almeno un gol
-    prob_casa_segna = 1 - clean_sheet_ospite
-    prob_ospite_segna = 1 - clean_sheet_casa
-    
-    # Bonus per partite con molti gol previsti
-    gol_bonus = min(0.15, (gol_previsti - 2.0) * 0.1) if gol_previsti > 2.0 else 0
-    
-    # SOLO DATI REALI: calcolo BTTS da statistiche clean sheet
-    prob_btts_si = (prob_casa_segna * prob_ospite_segna) + gol_bonus
-    
-    # Penalità per affidabilità bassa: regredisci verso media 50% BTTS
-    affidabilita_media = (stats_casa.get('affidabilita', 1.0) + stats_ospite.get('affidabilita', 1.0)) / 2
-    if affidabilita_media < 0.7:  # Una o entrambe neopromosee/pochi dati
-        prob_media_btts = 0.50  # Media BTTS Serie A
-        peso_regressione = 1 - affidabilita_media
-        prob_btts_si = prob_btts_si * (1 - peso_regressione) + prob_media_btts * peso_regressione
-    
-    prob_btts_si = max(0.30, min(0.75, prob_btts_si))  # Limiti conservativi (30-75%)
-    prob_btts_no = 1 - prob_btts_si
-    
-    mercati['mbtts'] = {
-        'nome': 'Both Teams To Score',
-        'probabilita': {
-            'si': round(prob_btts_si, 3),
-            'no': round(prob_btts_no, 3)
-        },
-        'confidenza': max(prob_btts_si, prob_btts_no),
-        'consiglio': 'si' if prob_btts_si > prob_btts_no else 'no'
-    }
-    
     # Risultato/Over Under 2.5 combinato
     prob_1x_over = (prob_base.get('H', 0.33) + prob_base.get('D', 0.33)) * mercati['mou25']['probabilita']['over']
     prob_1x_under = (prob_base.get('H', 0.33) + prob_base.get('D', 0.33)) * mercati['mou25']['probabilita']['under']
