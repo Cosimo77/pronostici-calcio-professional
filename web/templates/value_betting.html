@@ -841,6 +841,7 @@
         
         function displayMatches(matches) {
             const container = document.getElementById('matches');
+            container.innerHTML = ''; // PULISCI container prima di riempirlo
             
             // Aggiungi titolo sezione
             const divergentCount = matches.filter(m => {
