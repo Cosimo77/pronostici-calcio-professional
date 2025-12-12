@@ -1926,8 +1926,8 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
         diff_15 = gol_previsti - 1.5
         prob_over15 = 1 / (1 + math.exp(-2 * diff_15))
         
-        # Aggiusta per limiti realistici (40%-90%) 
-        prob_over15 = max(0.35, min(0.90, prob_over15))
+        # Aggiusta per limiti realistici (35%-85%) 
+        prob_over15 = max(0.35, min(0.85, prob_over15))
             
         prob_under15 = 1.0 - prob_over15
         
@@ -2033,8 +2033,8 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
     if equilibrio < 0.1:  # Partita molto equilibrata = più possibilità 0-0
         prob_nogoal *= 1.3
     
-    # Limiti più realistici per maggiore realismo (10%-25%)
-    prob_nogoal = max(0.10, min(0.25, prob_nogoal))
+    # Limiti più realistici e conservativi (15%-30%)
+    prob_nogoal = max(0.15, min(0.30, prob_nogoal))
     prob_goal = 1.0 - prob_nogoal
     
     mercati['mgg'] = {
@@ -2197,7 +2197,15 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
     
     # SOLO DATI REALI: calcolo BTTS da statistiche clean sheet
     prob_btts_si = (prob_casa_segna * prob_ospite_segna) + gol_bonus
-    prob_btts_si = max(0.25, min(0.85, prob_btts_si))  # Limiti realistici
+    
+    # Penalità per affidabilità bassa: regredisci verso media 50% BTTS
+    affidabilita_media = (stats_casa.get('affidabilita', 1.0) + stats_ospite.get('affidabilita', 1.0)) / 2
+    if affidabilita_media < 0.7:  # Una o entrambe neopromosee/pochi dati
+        prob_media_btts = 0.50  # Media BTTS Serie A
+        peso_regressione = 1 - affidabilita_media
+        prob_btts_si = prob_btts_si * (1 - peso_regressione) + prob_media_btts * peso_regressione
+    
+    prob_btts_si = max(0.30, min(0.75, prob_btts_si))  # Limiti conservativi (30-75%)
     prob_btts_no = 1 - prob_btts_si
     
     mercati['mbtts'] = {
@@ -2395,8 +2403,17 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
         'gol_previsti': round(gol_previsti, 1)
     }
     
-    # Casa Segna (Dinamico)
+    # Casa Segna (Dinamico con limiti realistici + aggiustamento affidabilità)
     prob_casa_segna = 1 - stats_ospite.get('clean_sheet_rate', 0.3)
+    
+    # Penalità per dati limitati: regredisci verso media 70% se pochi dati ospite
+    affidabilita_ospite = stats_ospite.get('affidabilita', 1.0)
+    if affidabilita_ospite < 0.7:  # Pochi dati storici (es. neopromossa)
+        prob_media = 0.70  # Media Serie A
+        peso_regressione = 1 - affidabilita_ospite  # Più bassa affidabilità = più regressione
+        prob_casa_segna = prob_casa_segna * (1 - peso_regressione) + prob_media * peso_regressione
+    
+    prob_casa_segna = max(0.40, min(0.90, prob_casa_segna))  # Limiti 40-90%
     prob_casa_non_segna = 1 - prob_casa_segna
     
     mercati['mcasasegna'] = {
@@ -2409,8 +2426,17 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
         'consiglio': 'si' if prob_casa_segna > prob_casa_non_segna else 'no'
     }
     
-    # Ospite Segna (Dinamico)
+    # Ospite Segna (Dinamico con limiti realistici + aggiustamento affidabilità)
     prob_ospite_segna = 1 - stats_casa.get('clean_sheet_rate', 0.3)
+    
+    # Penalità per dati limitati: regredisci verso media 65% (trasferta più difficile)
+    affidabilita_casa = stats_casa.get('affidabilita', 1.0)
+    if affidabilita_casa < 0.7:  # Pochi dati storici casa
+        prob_media = 0.65  # Media trasferta Serie A
+        peso_regressione = 1 - affidabilita_casa
+        prob_ospite_segna = prob_ospite_segna * (1 - peso_regressione) + prob_media * peso_regressione
+    
+    prob_ospite_segna = max(0.40, min(0.90, prob_ospite_segna))  # Limiti 40-90%
     prob_ospite_non_segna = 1 - prob_ospite_segna
     
     mercati['mospitesegna'] = {
