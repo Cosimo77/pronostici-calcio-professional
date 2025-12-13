@@ -1998,53 +1998,39 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
             'gol_previsti': 2.5
         }
     
-    # Goal/NoGoal dinamico basato sui dati reali
+    # Goal/NoGoal (GG/NG) = Entrambe le squadre segnano
     clean_sheet_casa = stats_casa.get('clean_sheet_rate', 0.3)
     clean_sheet_ospite = stats_ospite.get('clean_sheet_rate', 0.3)
     
-    # Calcolo più realistico basato sui gol previsti - calibrato per realismo
-    # Una partita senza gol richiede entrambe le squadre non segnino
-    if gol_previsti < 1.0:
-        prob_nogoal_base = 0.45  # 45% per partite molto difensive
-    elif gol_previsti < 1.5:
-        prob_nogoal_base = 0.35  # 35% per partite difensive
-    elif gol_previsti < 2.0:
-        prob_nogoal_base = 0.25  # 25% per partite equilibrate basse
-    elif gol_previsti < 2.5:
-        prob_nogoal_base = 0.20  # 20% per partite moderate
-    elif gol_previsti < 3.0:
-        prob_nogoal_base = 0.15  # 15% per partite offensive
-    else:
-        prob_nogoal_base = 0.10  # 10% per partite molto offensive
-        
-    # Aggiustamento realistico: NoGoal richiede che entrambe le squadre non segnino
-    # Probabilità che casa non segni * Probabilità che ospite non segni
-    prob_casa_non_segna = clean_sheet_ospite  # Dipende dalla difesa ospite
-    prob_ospite_non_segna = clean_sheet_casa  # Dipende dalla difesa casa
+    # GG = Entrambe segnano
+    prob_casa_segna_gg = 1 - clean_sheet_ospite
+    prob_ospite_segna_gg = 1 - clean_sheet_casa
     
-    # Combinazione probabilistica più realistica
-    prob_nogoal_clean = prob_casa_non_segna * prob_ospite_non_segna
+    # Bonus per partite offensive
+    gol_bonus = min(0.15, (gol_previsti - 2.0) * 0.1) if gol_previsti > 2.0 else 0
     
-    # Media pesata tra calcolo base e clean sheet
-    prob_nogoal = (prob_nogoal_base * 0.6 + prob_nogoal_clean * 0.4)
+    # Probabilità GG (Goal/Goal)
+    prob_gg = (prob_casa_segna_gg * prob_ospite_segna_gg) + gol_bonus
     
-    # Aggiustamento finale basato su equilibrio partita
-    equilibrio = abs(prob_base.get('H', 0.33) - prob_base.get('A', 0.33))
-    if equilibrio < 0.1:  # Partita molto equilibrata = più possibilità 0-0
-        prob_nogoal *= 1.3
+    # Penalità per affidabilità bassa: regredisci verso media 50% GG
+    affidabilita_media = (stats_casa.get('affidabilita', 1.0) + stats_ospite.get('affidabilita', 1.0)) / 2
+    if affidabilita_media < 0.7:  # Una o entrambe con pochi dati
+        prob_media_gg = 0.50  # Media GG Serie A
+        peso_regressione = 1 - affidabilita_media
+        prob_gg = prob_gg * (1 - peso_regressione) + prob_media_gg * peso_regressione
     
-    # Limiti più realistici e conservativi (15%-30%)
-    prob_nogoal = max(0.15, min(0.30, prob_nogoal))
-    prob_goal = 1.0 - prob_nogoal
+    # Limiti conservativi (30-75%)
+    prob_gg = max(0.30, min(0.75, prob_gg))
+    prob_ng = 1.0 - prob_gg
     
     mercati['mgg'] = {
         'nome': 'Goal/NoGoal',
         'probabilita': {
-            'goal': round(prob_goal, 3),
-            'nogoal': round(prob_nogoal, 3)
+            'goal': round(prob_gg, 3),  # GG = entrambe segnano
+            'nogoal': round(prob_ng, 3)  # NG = almeno una non segna
         },
-        'confidenza': max(prob_goal, prob_nogoal),
-        'consiglio': 'goal' if prob_goal > prob_nogoal else 'nogoal'
+        'confidenza': max(prob_gg, prob_ng),
+        'consiglio': 'goal' if prob_gg > prob_ng else 'nogoal'
     }
     
     # Double Chance
