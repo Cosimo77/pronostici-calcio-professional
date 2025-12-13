@@ -2078,15 +2078,20 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
     }
     
     # Clean Sheet
+    # Probabilità che SOLO una squadra non subisca gol (mutualmente esclusivi)
+    prob_solo_casa_cs = clean_sheet_casa * (1 - clean_sheet_ospite)
+    prob_solo_ospite_cs = clean_sheet_ospite * (1 - clean_sheet_casa)
+    prob_nessuno_cs = 1 - prob_solo_casa_cs - prob_solo_ospite_cs
+    
     mercati['mcs'] = {
         'nome': 'Clean Sheet',
         'probabilita': {
-            'casa': round(clean_sheet_casa, 3),
-            'ospite': round(clean_sheet_ospite, 3),
-            'nessuno': round(1 - max(clean_sheet_casa, clean_sheet_ospite), 3)
+            'casa': round(prob_solo_casa_cs, 3),
+            'ospite': round(prob_solo_ospite_cs, 3),
+            'nessuno': round(prob_nessuno_cs, 3)
         },
-        'confidenza': max(clean_sheet_casa, clean_sheet_ospite),
-        'consiglio': 'casa' if clean_sheet_casa > clean_sheet_ospite else 'ospite'
+        'confidenza': max(prob_solo_casa_cs, prob_solo_ospite_cs, prob_nessuno_cs),
+        'consiglio': 'casa' if prob_solo_casa_cs > prob_solo_ospite_cs else 'ospite'
     }
     
     # Primo Tempo 1X2
