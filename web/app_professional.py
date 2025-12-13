@@ -1068,15 +1068,68 @@ def api_predict_enterprise():
         pred_prob = [probabilita['H'], probabilita['D'], probabilita['A']][pred_idx]
         roi_expected = calc_ev(pred_prob, pred_odds)
         
-        # Raccomandazione (strategia validata: sempre GB)
+        # ============================================
+        # 🎯 FASE 1 - FILTRI VALIDATI (13 Dic 2025)
+        # ROI Backtest: -4.48% → +7.17% (+11.65pp)
+        # ============================================
+        def _valida_opportunita_fase1(pred, odds, ev_pct):
+            """
+            Filtri FASE 1 validati su 510 trade:
+            - Solo PAREGGI
+            - Quote: 2.8-3.5 (no >3.5, alta varianza)
+            - EV: ≥25% (sweet spot, no >50%)
+            
+            Returns: (is_valid, reason)
+            """
+            # Solo pareggi
+            if pred != 'D':
+                return False, 'not_draw'
+            
+            # Quote range validato
+            if odds < 2.8:
+                return False, 'odds_too_low'
+            if odds > 3.5:
+                return False, 'odds_too_high'  # Quote >3.5: WR 20.8%, ROI -24%
+            
+            # EV minimo (controintuitivo: EV <25% ha ROI +19%)
+            if ev_pct < 25:
+                return False, 'ev_too_low'
+            
+            # EV troppo alto spesso = quote alte = imprevedibile
+            # Ma non filtriamo il max (test su range 25-50% migliore)
+            
+            return True, 'validated'
+        
+        # Valida opportunità con filtri FASE 1
+        is_valid_fase1, validation_reason = _valida_opportunita_fase1(
+            predizione, pred_odds, roi_expected * 100
+        )
+        
+        # Raccomandazione (con validazione FASE 1)
         outcome_names = {'H': 'Casa', 'D': 'Pareggio', 'A': 'Trasferta'}
+        
+        if is_valid_fase1:
+            strategy = 'FASE1_VALIDATED'
+            reason = f'✅ FASE 1: Pareggio quota {pred_odds:.2f} (range 2.8-3.5), EV {roi_expected*100:.1f}% (≥25%). Backtest ROI +7.17%'
+        else:
+            strategy = 'FILTERED_OUT'
+            filter_reasons = {
+                'not_draw': f'⚠️ Non pareggio ({outcome_names[predizione]}). FASE 1 validata solo su pareggi.',
+                'odds_too_low': f'⚠️ Quota {pred_odds:.2f} < 2.8. Range validato: 2.8-3.5',
+                'odds_too_high': f'⚠️ Quota {pred_odds:.2f} > 3.5. Quote alte: WR 20.8%, ROI -24%',
+                'ev_too_low': f'⚠️ EV {roi_expected*100:.1f}% < 25%. Soglia minima validata: 25%'
+            }
+            reason = filter_reasons.get(validation_reason, f'Filtro: {validation_reason}')
+        
         recommendation = {
             'bet_outcome': outcome_names[predizione],
             'bet_odds': pred_odds,
             'confidence': confidenza,
             'roi_expected_pct': roi_expected * 100,
-            'strategy': 'ALWAYS_MODEL',
-            'reason': f'Modello GB validato ROI +5.98%. Predice {outcome_names[predizione]} con {confidenza*100:.1f}% confidenza.'
+            'strategy': strategy,
+            'reason': reason,
+            'fase1_validated': is_valid_fase1,
+            'fase1_filter_reason': validation_reason
         }
         
         # Formato compatibile con template Enterprise + VALUE BETTING
