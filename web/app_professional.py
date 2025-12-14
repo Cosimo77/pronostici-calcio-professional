@@ -338,18 +338,38 @@ class ProfessionalCalculator:
                     'clean_sheet_rate': 0.3
                 }
             
-            # BAYESIAN SMOOTHING: Combina dati reali con prior
+            # BAYESIAN SMOOTHING RIDOTTO: Combina dati reali con prior (UNICO layer)
+            # FIX: Ridotto da 50% a 20% max per evitare appiattimento eccessivo
             # Peso prior inversamente proporzionale al numero di partite
-            # Più dati = meno peso al prior, meno dati = più peso al prior
-            peso_prior = min(30 / max(n_partite, 1), 0.5)  # Max 50% peso prior
+            peso_prior = min(20 / max(n_partite, 1), 0.20)  # Max 20% peso prior (era 50%)
             peso_dati = 1 - peso_prior
             
-            # Statistiche grezze
-            vitt_raw = vittorie / n_partite
-            par_raw = pareggi / n_partite
-            sconf_raw = sconfitte / n_partite
+            # PESO FORMA RECENTE: Ultimi 10 match pesano 10x (DOMINANTE per forma corrente)
+            # FIX: Aumentato da 3x a 10x per riflettere REALMENTE la forma squadra
+            # Esempio: Napoli 10/10 vittorie recenti DEVE pesare più di 56% vittorie storiche
+            partite_sorted = partite.sort_values('Date', ascending=False) if 'Date' in partite.columns else partite
+            ultimi_10 = partite_sorted.head(min(10, n_partite))
             
-            # Combina con prior bayesiani
+            # Calcola statistiche con peso forma
+            if in_casa:
+                vitt_recenti = len(ultimi_10[ultimi_10['FTR'] == 'H'])
+                par_recenti = len(ultimi_10[ultimi_10['FTR'] == 'D'])
+            else:
+                vitt_recenti = len(ultimi_10[ultimi_10['FTR'] == 'A'])
+                par_recenti = len(ultimi_10[ultimi_10['FTR'] == 'D'])
+            
+            sconf_recenti = len(ultimi_10) - vitt_recenti - par_recenti
+            n_recenti = len(ultimi_10)
+            
+            # Statistiche grezze PONDERATE (forma recente peso 10x)
+            # Formula: (partite_totali + peso*partite_recenti) / (n_totali + peso*n_recenti)
+            # Questo dà peso DOMINANTE alla forma corrente rispetto allo storico
+            peso_recenti = 9.0  # Peso aggiuntivo (1 + 9 = 10x totale)
+            vitt_raw = (vittorie + peso_recenti * vitt_recenti) / (n_partite + peso_recenti * n_recenti)
+            par_raw = (pareggi + peso_recenti * par_recenti) / (n_partite + peso_recenti * n_recenti)
+            sconf_raw = (sconfitte + peso_recenti * sconf_recenti) / (n_partite + peso_recenti * n_recenti)
+            
+            # Combina con prior bayesiani (smoothing ridotto)
             vitt_bayesian = peso_dati * vitt_raw + peso_prior * prior_vitt
             par_bayesian = peso_dati * par_raw + peso_prior * prior['pareggi']
             sconf_bayesian = peso_dati * sconf_raw + peso_prior * (1 - prior_vitt - prior['pareggi'])
@@ -436,68 +456,39 @@ class ProfessionalCalculator:
         stats_casa = self._calcola_statistiche_squadra(squadra_casa, in_casa=True)
         stats_ospite = self._calcola_statistiche_squadra(squadra_ospite, in_casa=False)
         
-        # Combina statistiche con pesi logici
-        peso_casa = 0.6  # Peso per le prestazioni in casa
-        peso_ospite = 0.4  # Peso per le prestazioni in trasferta
+        # APPROCCIO CORRETTO: Confronto DIRETTO forza squadre (NON media che appiattisce)
+        # FIX: Rimossa media che diluiva differenze tra squadre forti e deboli
+        # Usa statistiche PURE con solo leggero bilanciamento
         
-        prob_casa_raw = (stats_casa['vittorie'] * peso_casa + 
-                         (1 - stats_ospite['vittorie']) * peso_ospite) / 2
+        # Prendi statistiche GREZZE (già ponderate per forma in _calcola_statistiche_squadra)
+        vitt_casa = stats_casa['vittorie']      # Es: Udinese 30% vittorie casa
+        vitt_ospite = stats_ospite['vittorie']  # Es: Napoli 90% vittorie trasferta
+        par_casa = stats_casa['pareggi']
+        par_ospite = stats_ospite['pareggi']
         
-        prob_ospite_raw = (stats_ospite['vittorie'] * peso_ospite + 
-                          (1 - stats_casa['vittorie']) * peso_casa) / 2
-        
-        prob_pareggio_raw = (stats_casa['pareggi'] + stats_ospite['pareggi']) / 2
+        # Probabilità base: confronto diretto
+        prob_casa_raw = vitt_casa * (1 - vitt_ospite)  # Casa vince SE ospite non vince
+        prob_ospite_raw = vitt_ospite * (1 - vitt_casa)  # Ospite vince SE casa non vince
+        prob_pareggio_raw = (par_casa + par_ospite) / 2  # Media pareggi
         
         # Applica simmetria matematica avanzata
         prob_casa, prob_ospite, prob_pareggio = self._applica_simmetria_matematica(
             prob_casa_raw, prob_ospite_raw, prob_pareggio_raw, stats_casa, stats_ospite
         )
         
-        # CALIBRAZIONE AGGRESSIVA: Regolarizza verso distribuzione più conservativa
-        # Questo è CRITICO per ridurre divergenze irrealistiche dal mercato
+        # CALIBRAZIONE LEGGERA: Solo normalizzazione (smoothing GIÀ applicato in _calcola_statistiche_squadra)
+        # FIX: Rimosso doppio layer di shrinkage che appiattiva probabilità
+        # Il smoothing bayesiano è già stato applicato a livello di statistiche squadra (20% max)
         affidabilita_media = (stats_casa.get('affidabilita', 1.0) + stats_ospite.get('affidabilita', 1.0)) / 2
         
-        # Calcola shrinkage basato su affidabilità E divergenza potenziale
-        # Più bassa l'affidabilità, più forte lo shrinkage
-        if affidabilita_media < 1.0:  # Qualsiasi squadra con <30 partite
-            prior = self._calcola_prior_bayesiani()
-            
-            # Shrinkage progressivo: 10% minimo, 50% massimo per squadre con pochi dati
-            shrinkage_base = 0.10 + (0.40 * (1 - affidabilita_media))
-            
-            # Shrinkage aggiuntivo per prevenire probabilità estreme
-            max_prob = max(prob_casa, prob_pareggio, prob_ospite)
-            if max_prob > 0.50:  # Se una probabilità è molto alta
-                shrinkage_estremi = (max_prob - 0.50) * 0.5  # Penalizza probabilità > 50%
-                shrinkage_base = min(shrinkage_base + shrinkage_estremi, 0.60)  # Max 60%
-            
-            shrinkage = shrinkage_base
-            
-            prob_casa = prob_casa * (1 - shrinkage) + prior['vittorie_casa'] * shrinkage
-            prob_pareggio = prob_pareggio * (1 - shrinkage) + prior['pareggi'] * shrinkage
-            prob_ospite = prob_ospite * (1 - shrinkage) + prior['vittorie_ospite'] * shrinkage
-            
-            # Ri-normalizza
-            totale = prob_casa + prob_pareggio + prob_ospite
+        # Solo normalizzazione finale per garantire somma = 1
+        totale = prob_casa + prob_pareggio + prob_ospite
+        if totale > 0:
             prob_casa /= totale
             prob_pareggio /= totale
             prob_ospite /= totale
-            
-            logger.info(f"🎚️ Calibrazione aggressiva: affidabilità {affidabilita_media:.2f}, shrinkage {shrinkage:.2f}")
-        else:
-            # Anche con alta affidabilità, applica shrinkage leggero per conservatività
-            prior = self._calcola_prior_bayesiani()
-            shrinkage = 0.05  # 5% shrinkage minimo per tutte le predizioni
-            
-            prob_casa = prob_casa * 0.95 + prior['vittorie_casa'] * 0.05
-            prob_pareggio = prob_pareggio * 0.95 + prior['pareggi'] * 0.05
-            prob_ospite = prob_ospite * 0.95 + prior['vittorie_ospite'] * 0.05
-            
-            # Ri-normalizza
-            totale = prob_casa + prob_pareggio + prob_ospite
-            prob_casa /= totale
-            prob_pareggio /= totale
-            prob_ospite /= totale
+        
+        logger.info(f"📊 Predizione {squadra_casa} vs {squadra_ospite}: H={prob_casa:.1%} D={prob_pareggio:.1%} A={prob_ospite:.1%} (affidabilità {affidabilita_media:.2f})")
         
         # Determina predizione
         if prob_casa > prob_ospite and prob_casa > prob_pareggio:
