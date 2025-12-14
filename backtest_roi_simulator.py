@@ -94,9 +94,12 @@ class ROIBacktester:
         
         return profit, roi_percent
     
-    def run_backtest(self, df, start_date=None, end_date=None):
+    def run_backtest(self, df, start_date=None, end_date=None, min_partite_training=1000):
         """
         Esegue backtest completo su dataset storico
+        
+        Args:
+            min_partite_training: Minimo partite richieste per training (default 1000)
         
         Args:
             df: Dataset con partite storiche

@@ -2053,22 +2053,27 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
         'consiglio': best_dc
     }
     
-    # Asian Handicap
-    forza_casa = stats_casa.get('punti_medi', 1.5)
-    forza_ospite = stats_ospite.get('punti_medi', 1.3)
+    # Asian Handicap - basato su differenza probabilità FT
+    prob_h_ft = prob_base.get('H', 0.33)
+    prob_a_ft = prob_base.get('A', 0.33)
+    delta_prob = prob_h_ft - prob_a_ft  # Positivo = casa favorita
     
-    if forza_casa > forza_ospite + 0.5:
+    # Delta probabilità → handicap (confronto diretto, non medie generali)
+    if delta_prob > 0.25:  # >25pp differenza
+        handicap = -1.0
+        prob_copertura = min(0.70, 0.50 + delta_prob * 0.5)
+    elif delta_prob > 0.15:  # 15-25pp
         handicap = -0.5
-        prob_copertura = 0.60
-    elif forza_casa > forza_ospite:
+        prob_copertura = min(0.65, 0.50 + delta_prob * 0.6)
+    elif delta_prob > -0.15:  # -15 a +15pp (equilibrato)
         handicap = 0.0
-        prob_copertura = 0.55
-    elif forza_ospite > forza_casa + 0.5:
+        prob_copertura = 0.50 + abs(delta_prob) * 0.3
+    elif delta_prob > -0.25:  # -25 a -15pp
         handicap = +0.5
-        prob_copertura = 0.60
-    else:
-        handicap = 0.0
-        prob_copertura = 0.50
+        prob_copertura = min(0.65, 0.50 - delta_prob * 0.6)
+    else:  # < -25pp (ospite dominante)
+        handicap = +1.0
+        prob_copertura = min(0.70, 0.50 - delta_prob * 0.5)
     
     mercati['mah'] = {
         'nome': 'Asian Handicap',
@@ -2095,10 +2100,17 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
         'consiglio': 'casa' if prob_solo_casa_cs > prob_solo_ospite_cs else 'ospite'
     }
     
-    # Primo Tempo 1X2
-    prob_h_pt = prob_base.get('H', 0.33) * 0.8
-    prob_d_pt = 0.5  # Primo tempo spesso pareggio
-    prob_a_pt = prob_base.get('A', 0.33) * 0.8
+    # Primo Tempo 1X2 - FIX: Basato su probabilità FT non hardcoded 50%
+    # Nel primo tempo i pareggi sono più frequenti MA non sempre 50%
+    # Formula corretta: mantiene proporzioni FT ma aumenta peso pareggio
+    prob_h_ft = prob_base.get('H', 0.33)
+    prob_d_ft = prob_base.get('D', 0.33)
+    prob_a_ft = prob_base.get('A', 0.33)
+    
+    # Nel HT: riduce H/A del 20%, aumenta D proporzionalmente
+    prob_h_pt = prob_h_ft * 0.75  # -25% per casa
+    prob_a_pt = prob_a_ft * 0.75  # -25% per trasferta
+    prob_d_pt = prob_d_ft + (prob_h_ft * 0.25 + prob_a_ft * 0.25)  # Recupera il 25% perso
     
     # Normalizza
     total_pt = prob_h_pt + prob_d_pt + prob_a_pt
@@ -2210,9 +2222,9 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
     vittorie_casa = stats_casa.get('vittorie', 0.33)
     vittorie_ospite = stats_ospite.get('vittorie', 0.33)
     
-    # Squadre che perdono di più tendono ad essere più aggressive
-    aggressivita_casa = 0.5 + sconfitte_casa * 0.7
-    aggressivita_ospite = 0.5 + sconfitte_ospite * 0.7
+    # Squadre vincenti sono più aggressive (attaccano), perdenti più difensive
+    aggressivita_casa = 0.5 + vittorie_casa * 0.7
+    aggressivita_ospite = 0.5 + vittorie_ospite * 0.7
     
     # Calcolo dinamico basato sulle statistiche reali - calibrato per realismo
     cartellini_previsti = 3.5 + (aggressivita_casa + aggressivita_ospite) * 1.5
@@ -2249,10 +2261,10 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
     }
     
     # Corner - Numero Calci d'Angolo
-    # Calcolo dinamico basato sui gol previsti e performance offensive
-    # Corner correlano con attacchi e gol previsti
-    attacking_strength_casa = vittorie_casa + (gol_previsti / 4.0) * 0.4
-    attacking_strength_ospite = vittorie_ospite + (gol_previsti / 4.0) * 0.4
+    # Calcolo dinamico basato sui gol previsti specifici per squadra
+    # Corner correlano con attacchi e gol previsti (usa gol casa/ospite separati)
+    attacking_strength_casa = vittorie_casa + (media_gol_casa_totali / 2.5) * 0.4
+    attacking_strength_ospite = vittorie_ospite + (media_gol_ospite_totali / 2.5) * 0.4
     
     # Corner variano significativamente tra partite
     # Valori più realistici: media Serie A è 8-12 corner/partita
@@ -2308,19 +2320,23 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
         'consiglio': 'casa' if prob_primo_casa == max(prob_primo_casa, prob_primo_ospite, prob_no_gol) else ('ospite' if prob_primo_ospite == max(prob_primo_casa, prob_primo_ospite, prob_no_gol) else 'nessun_gol')
     }
     
-    # Handicap Europeo (+1, 0, -1)
-    if forza_casa > forza_ospite + 0.8:
+    # Handicap Europeo (+1, 0, -1) - basato su probabilità FT
+    # Delta già calcolato sopra per Asian Handicap
+    if delta_prob > 0.30:  # >30pp = casa dominante
         handicap_euro = -1
-        prob_handicap = 0.65
-    elif forza_casa > forza_ospite + 0.3:
+        prob_handicap = min(0.70, 0.50 + delta_prob * 0.5)
+    elif delta_prob > 0.10:  # 10-30pp = casa leggero vantaggio
         handicap_euro = 0
-        prob_handicap = 0.55
-    elif forza_ospite > forza_casa + 0.8:
-        handicap_euro = +1
-        prob_handicap = 0.65
-    else:
+        prob_handicap = 0.50 + delta_prob * 0.4
+    elif delta_prob > -0.10:  # -10 a +10pp = equilibrato
         handicap_euro = 0
         prob_handicap = 0.50
+    elif delta_prob > -0.30:  # -30 a -10pp = ospite leggero vantaggio
+        handicap_euro = 0
+        prob_handicap = 0.50 - delta_prob * 0.4
+    else:  # < -30pp = ospite dominante
+        handicap_euro = +1
+        prob_handicap = min(0.70, 0.50 - delta_prob * 0.5)
     
     mercati['mheuro'] = {
         'nome': 'Handicap Europeo',
