@@ -1866,15 +1866,13 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
         
         gol_previsti = media_gol_casa_totali + media_gol_ospite_totali
         
-        # CALIBRAZIONE GOL: Regolarizza verso media di campionato per affidabilità
-        # Questo previene previsioni estreme su squadre con pochi dati
+        # CALIBRAZIONE LEGGERA: Smoothing ridotto (max 20% come per 1X2)
+        # FIX: Rimosso shrinkage ultra-aggressivo che appiattiva tutti i match
         partite_casa_totali = len(partite_casa_home) + len(partite_casa_away)
         partite_ospite_totali = len(partite_ospite_home) + len(partite_ospite_away)
         min_partite = min(partite_casa_totali, partite_ospite_totali)
-        affidabilita_gol = min_partite / 30.0  # Normalizzato su 30 partite
         
-        # Per calibrazione Over/Under: usa partite specifiche casa/trasferta
-        # Questo è più accurato perché tiene conto del contesto specifico
+        # Usa partite specifiche casa/trasferta per maggiore precisione
         partite_casa_home_count = len(partite_casa_home)
         partite_ospite_away_count = len(partite_ospite_away)
         min_partite_specifiche = min(partite_casa_home_count, partite_ospite_away_count)
@@ -1882,69 +1880,26 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
         # Media campionato Serie A: 2.7 gol/partita
         media_campionato = 2.7
         
-        if min_partite < 30:
-            # Shrinkage ULTRA-AGGRESSIVO per squadre con dati limitati
-            # Obiettivo: massimo realismo, minimo rischio divergenze estreme
-            if min_partite < 10:
-                shrinkage_gol = 0.80  # 80% verso media per <10 partite (Pisa!)
-            elif min_partite < 15:
-                shrinkage_gol = 0.65  # 65% per 10-15 partite
-            elif min_partite < 20:
-                shrinkage_gol = 0.50  # 50% per 15-20 partite
-            elif min_partite < 25:
-                shrinkage_gol = 0.35  # 35% per 20-25 partite
-            else:
-                shrinkage_gol = 0.20  # 20% per 25-30 partite
-            
+        # Smoothing leggero solo per squadre con pochi dati (coerente con fix 1X2)
+        if min_partite < 20:
+            shrinkage_gol = min(15 / max(min_partite, 1), 0.20)  # Max 20% (era 80%!)
             gol_previsti_raw = gol_previsti
             gol_previsti = gol_previsti * (1 - shrinkage_gol) + media_campionato * shrinkage_gol
-            
-            # LIMITE ASSOLUTO PROGRESSIVO: gol previsti limitati in base ai dati disponibili
-            # Meno dati = range più stretto intorno alla media
-            if min_partite < 10:
-                max_deviation = 0.2  # ±0.2 gol per <10 partite (Pisa)
-            elif min_partite < 20:
-                max_deviation = 0.3  # ±0.3 gol per 10-20 partite
-            else:
-                max_deviation = 0.4  # ±0.4 gol per 20-30 partite
-            
-            gol_previsti = max(media_campionato - max_deviation, 
-                             min(media_campionato + max_deviation, gol_previsti))
-            
-            logger.info(f"🎚️ Calibrazione ultra-aggressiva: {min_partite} partite, shrinkage {shrinkage_gol:.0%}, range ±{max_deviation}, gol da {gol_previsti_raw:.2f} a {gol_previsti:.2f}")
+            logger.info(f"🎚️ Calibrazione leggera gol: {min_partite} partite, shrinkage {shrinkage_gol:.0%}, gol {gol_previsti_raw:.2f} → {gol_previsti:.2f}")
         
         # Over/Under 2.5 - Calcolo dinamico basato sui gol previsti
-        # Usa una funzione logistica per probabilità più realistica
+        # FIX: Rimossi range forzati che appiattivano probabilità
         
-        # Calcolo probabilistico più sofisticato con calibrazione conservativa
         diff_25 = gol_previsti - 2.5
         
-        # Funzione sigmoidale con pendenza molto ridotta per massimo conservatism
-        # Da -2 a -1.0 per probabilità molto più conservative
-        prob_over25_raw = 1 / (1 + math.exp(-1.0 * diff_25))
+        # Funzione sigmoidale con pendenza realistica (non ultra-conservativa)
+        # Aumentato da 1.0 a 2.0 per maggiore differenziazione tra partite
+        prob_over25 = 1 / (1 + math.exp(-2.0 * diff_25))
         
-        # CALIBRAZIONE FINALE: Range adattivo in base all'affidabilità
-        # Squadre con pochi dati = range più stretto
-        # USA min_partite_specifiche (casa home + ospite away) per maggiore precisione
-        logger.info(f"🔍 DEBUG RANGE: min_partite_specifiche={min_partite_specifiche}, prob_raw={prob_over25_raw:.3f}")
+        # Limiti realistici ma NON appiattenti (35-70% invece di 48-52%)
+        prob_over25 = max(0.35, min(0.70, prob_over25))
         
-        if min_partite_specifiche < 10:
-            # Range 48-52% per squadre con <10 partite specifiche (massimo conservatismo)
-            # Per Pisa (7 partite trasferta): forza convergenza verso mercato
-            prob_over25 = max(0.48, min(0.52, prob_over25_raw))
-            logger.info(f"   ✅ Range 48-52% applicato: {prob_over25_raw:.3f} → {prob_over25:.3f}")
-        elif min_partite_specifiche < 15:
-            # Range 45-55% per squadre con 10-15 partite specifiche
-            prob_over25 = max(0.45, min(0.55, prob_over25_raw))
-            logger.info(f"   ✅ Range 45-55% applicato: {prob_over25_raw:.3f} → {prob_over25:.3f}")
-        elif min_partite_specifiche < 25:
-            # Range 42-58% per squadre con 15-25 partite
-            prob_over25 = max(0.42, min(0.58, prob_over25_raw))
-            logger.info(f"   ✅ Range 42-58% applicato: {prob_over25_raw:.3f} → {prob_over25:.3f}")
-        else:
-            # Range 40-60% per squadre con >25 partite
-            prob_over25 = max(0.40, min(0.60, prob_over25_raw))
-            logger.info(f"   ✅ Range 40-60% applicato: {prob_over25_raw:.3f} → {prob_over25:.3f}")
+        logger.info(f"🔍 Over 2.5 calcolo: min_partite={min_partite_specifiche}, gol={gol_previsti:.2f}, prob={prob_over25:.3f}")
         
         # Debug info
         logger.info(f"🎯 Mercati Calcolo: {squadra_casa} vs {squadra_ospite}")
@@ -2043,28 +1998,30 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
         }
     
     # Goal/NoGoal (GG/NG) = Entrambe le squadre segnano
+    # FIX: Rimossa regressione aggressiva verso media 50%
     clean_sheet_casa = stats_casa.get('clean_sheet_rate', 0.3)
     clean_sheet_ospite = stats_ospite.get('clean_sheet_rate', 0.3)
     
-    # GG = Entrambe segnano
+    # GG = Entrambe segnano (confronto diretto)
     prob_casa_segna_gg = 1 - clean_sheet_ospite
     prob_ospite_segna_gg = 1 - clean_sheet_casa
     
-    # Bonus per partite offensive
-    gol_bonus = min(0.15, (gol_previsti - 2.0) * 0.1) if gol_previsti > 2.0 else 0
+    # Probabilità GG = entrambe segnano (prodotto indipendente)
+    prob_gg = prob_casa_segna_gg * prob_ospite_segna_gg
     
-    # Probabilità GG (Goal/Goal)
-    prob_gg = (prob_casa_segna_gg * prob_ospite_segna_gg) + gol_bonus
+    # Bonus per partite offensive (aumentato da 0.15 a 0.25 per differenziare meglio)
+    gol_bonus = min(0.25, (gol_previsti - 2.0) * 0.15) if gol_previsti > 2.0 else 0
+    prob_gg += gol_bonus
     
-    # Penalità per affidabilità bassa: regredisci verso media 50% GG
+    # Smoothing leggero solo per squadre con pochi dati (max 20% come 1X2)
     affidabilita_media = (stats_casa.get('affidabilita', 1.0) + stats_ospite.get('affidabilita', 1.0)) / 2
-    if affidabilita_media < 0.7:  # Una o entrambe con pochi dati
+    if affidabilita_media < 0.7:
         prob_media_gg = 0.50  # Media GG Serie A
-        peso_regressione = 1 - affidabilita_media
+        peso_regressione = min((1 - affidabilita_media) * 0.3, 0.20)  # Max 20% (era 100%!)
         prob_gg = prob_gg * (1 - peso_regressione) + prob_media_gg * peso_regressione
     
-    # Limiti conservativi (30-75%)
-    prob_gg = max(0.30, min(0.75, prob_gg))
+    # Limiti realistici (25-80% invece di 30-75%)
+    prob_gg = max(0.25, min(0.80, prob_gg))
     prob_ng = 1.0 - prob_gg
     
     mercati['mgg'] = {
