@@ -1,19 +1,13 @@
 {
-  "roi_turnover": -0.51,
-  "return_totale": -4.48,
-  "partite_totali": 510,
-  "partite_vinte": 149,
-  "win_rate": 29.2,
-  "profitto_totale": -44.81,
-  "stake_totale": 8851.08,
-  "capitale_iniziale": 1000,
-  "capitale_finale": 955.19,
-  "max_drawdown": -51.82,
-  "sharpe_ratio": 0.03,
-  "ev_medio": 44.9,
-  "aggiornato": "2025-12-08T18:02:51.927950",
   "periodo": {
-    "da": "2024-08-17 00:00:00",
-    "a": "2025-12-01 00:00:00"
-  }
+    "da": "2020-12-11",
+    "a": "2025-05-25"
+  },
+  "trades": 1023,
+  "win_rate": 32.9,
+  "roi_turnover": 4.72,
+  "roi_bankroll": 399.03,
+  "profitto": 3990.33,
+  "max_drawdown": -434.1,
+  "bankroll_finale": 4990.33
 }
