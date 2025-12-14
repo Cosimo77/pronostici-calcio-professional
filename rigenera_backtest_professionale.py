@@ -18,8 +18,12 @@ import sys
 import os
 from pathlib import Path
 
-sys.path.append(os.path.join(os.path.dirname(__file__), 'web'))
-from app_professional import ProfessionalCalculator
+# Aggiungi il path web/ per importare ProfessionalCalculator
+web_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'web')
+if web_path not in sys.path:
+    sys.path.insert(0, web_path)
+
+from app_professional import ProfessionalCalculator  # type: ignore
 
 def rigenera_backtest_completo():
     """Rigenera backtest con predizioni aggiornate"""
