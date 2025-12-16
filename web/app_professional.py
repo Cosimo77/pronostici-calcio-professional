@@ -3037,6 +3037,29 @@ def api_health():
     
     return jsonify(health_status)
 
+@app.route('/api/automation/status')
+@limiter.limit("60 per minute")
+def api_automation_status():
+    """API stato automazione background"""
+    try:
+        from background_automation import get_automation
+        automation = get_automation()
+        
+        if automation:
+            status = automation.get_status()
+            status['available'] = True
+            return jsonify(status)
+        else:
+            return jsonify({
+                'available': False,
+                'message': 'Automazione non configurata'
+            })
+    except Exception as e:
+        return jsonify({
+            'available': False,
+            'error': str(e)
+        }), 500
+
 @app.route('/api/metrics')
 @limiter.limit("30 per minute")
 def api_metrics():
@@ -3061,8 +3084,23 @@ def api_metrics():
             'app_markets_available': 27,
             'app_accuracy_percentage': 54.9,
             
+            # Automation metrics
+            'automation_enabled': False,  # Will be updated by background_automation
+            
             'timestamp': datetime.now().isoformat()
         }
+        
+        # Add automation metrics if available
+        try:
+            from background_automation import get_automation
+            automation = get_automation()
+            if automation:
+                auto_status = automation.get_status()
+                metrics['automation_enabled'] = auto_status['running']
+                metrics['automation_last_update'] = auto_status.get('last_update')
+                metrics['automation_last_retrain'] = auto_status.get('last_retrain')
+        except:
+            pass
         
         logger.info("Metrics requested", metrics_count=len(metrics))
         return jsonify(metrics)
@@ -3314,5 +3352,17 @@ if __name__ != '__main__':
     try:
         inizializza_sistema_professionale()
         logger.info("🚀 Sistema inizializzato per produzione WSGI")
+        
+        # 🤖 Avvia automazione in background (Render free tier)
+        try:
+            from background_automation import get_automation
+            root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            automation = get_automation(root_dir)
+            if automation:  # type: ignore[truthy-function]
+                automation.start()
+                logger.info("✅ Background automation avviata")
+        except Exception as e_auto:
+            logger.warning(f"⚠️ Automazione non disponibile: {e_auto}")
+            
     except Exception as e:
         logger.error("❌ Errore inizializzazione WSGI", error=str(e))
