@@ -69,12 +69,12 @@ class BackgroundAutomation:
         if self.last_update and self.last_update.date() == now.date():
             return False  # Già fatto oggi
         
-        # Esegui alle 06:00 (±15 min tolleranza)
-        target_time = dt_time(6, 0)
+        # Esegui alle 06:00 (finestra 05:00-07:00 per garantire esecuzione)
         current_time = now.time()
         
+        # Esegui tra le 05:00 e 07:00 se non già fatto oggi
         return (
-            dt_time(5, 45) <= current_time <= dt_time(6, 15) and
+            dt_time(5, 0) <= current_time <= dt_time(7, 0) and
             (not self.last_update or self.last_update.date() != now.date())
         )
     
