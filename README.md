@@ -566,3 +566,4 @@ Perfetto per:
 ---
 
 Sviluppato con ❤️ per la community del calcio e del machine learning
+# Force rebuild Dom 21 Dic 2025 10:33:33 CET
