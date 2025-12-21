@@ -1,20 +1,14 @@
-# ⚽ Sistema Pronostici Calcio Professional# 🏆 Sistema di Pronostici Calcio - Versione Completa
+# ⚽ Sistema Pronostici Calcio Professional
 
+Sistema avanzato e completamente automatizzato per l'analisi e previsione dei risultati calcistici utilizzando machine learning, automazione intelligente e monitoraggio in tempo reale.
 
+## 🚀 Avvio Rapido
 
-Sistema professionale di pronostici calcio con Machine Learning, automazione completa e deployment su Render.Sistema avanzato e completamente automatizzato per l'analisi e previsione dei risultati calcistici utilizzando machine learning, automazione intelligente e monitoraggio in tempo reale.
+### Installazione
 
-
-
-## 🚀 Quick Start## � Avvio Rapido
-
-
-
-### Installazione```bash
-
+```bash
 # Setup completo del sistema
-
-```bashpython launcher.py --setup
+python launcher.py --setup
 
 # Clone repository
 
@@ -566,4 +560,5 @@ Perfetto per:
 ---
 
 Sviluppato con ❤️ per la community del calcio e del machine learning
-# Force rebuild Dom 21 Dic 2025 10:33:33 CET
+
+## Force rebuild Dom 21 Dic 2025 10:33:33 CET

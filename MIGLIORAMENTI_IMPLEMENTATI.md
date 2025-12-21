@@ -25,7 +25,7 @@ Test set:     510 partite (Ago 2024 - Dic 2025)
 ### Risultati Backtest
 
 | Metrica | Valore | Note |
-|---------|--------|------|
+| ------- | ------ | ---- |
 | **Bet totali** | 510 | 100% del test set utilizzato |
 | **Win rate** | 29.2% | 149 vinte, 361 perse |
 | **ROI turnover** | -0.51% | Leggermente negativo |
@@ -55,7 +55,7 @@ Bet 500:  +11.6% (€1,116)  🟢
 ### Confronto vs Backtest Precedente
 
 | Metrica | Vecchio (640 bet) | Nuovo (510 bet) | Delta |
-|---------|-------------------|-----------------|-------|
+| ------- | ----------------- | --------------- | ----- |
 | ROI turnover | +3.15% | -0.51% | -3.66% |
 | Return totale | +92.74% | -4.48% | -97.22% |
 | Win rate | 29.4% | 29.2% | -0.2% |
@@ -179,7 +179,7 @@ Rispondere definitivamente alla domanda utente: "Stiamo usando solo dati reali? 
 ### Risultati vs Target Iniziale
 
 | Obiettivo | Target | Raggiunto | Status |
-|-----------|--------|-----------|--------|
+| --------- | ------ | --------- | ------ |
 | ROI annuo | +15% | -0.51% | ❌ |
 | Max drawdown | <20% | -51.82% | ⚠️ Migliorato da -700% |
 | Win rate | >33% | 29.2% | ❌ |
