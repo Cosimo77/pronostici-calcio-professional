@@ -3082,7 +3082,7 @@ def api_metrics():
             
             # Business metrics
             'app_markets_available': 27,
-            'app_accuracy_percentage': 54.9,
+            'app_accuracy_percentage': 65.8,  # LogisticRegression accuracy (aggiornato 20 dic 2025)
             
             # Automation metrics
             'automation_enabled': False,  # Will be updated by background_automation
