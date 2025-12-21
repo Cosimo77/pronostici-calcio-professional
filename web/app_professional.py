@@ -2913,7 +2913,6 @@ def api_model_performance():
             'over_under_35': {'accuracy': 0.587, 'total_predictions': total_matches},
             'goal_nogoal': {'accuracy': 0.587, 'total_predictions': total_matches},
             'double_chance': {'accuracy': 0.734, 'total_predictions': total_matches},
-            'btts': {'accuracy': 0.618, 'total_predictions': total_matches},
             'casa_segna': {'accuracy': 0.671, 'total_predictions': total_matches},
             'ospite_segna': {'accuracy': 0.643, 'total_predictions': total_matches},
             'cartellini_totali': {'accuracy': 0.578, 'total_predictions': total_matches},
@@ -2976,7 +2975,6 @@ def api_accuracy_report():
                 'over_under_15': 71.2,
                 'goal_nogoal': 58.7,
                 'double_chance': 73.4,
-                'btts': 61.8,
                 'primo_tempo': 49.2,
                 'exact_score': 15.3,
                 'asian_handicap': 55.7,
@@ -3142,8 +3140,7 @@ def api_metrics_summary():
                 'risultato_finale': {'accuratezza': 65.8, 'confidenza': 'Alta'},
                 'over_under_25': {'accuratezza': 62.3, 'confidenza': 'Alta'},
                 'goal_nogoal': {'accuratezza': 58.7, 'confidenza': 'Media'},
-                'double_chance': {'accuratezza': 73.4, 'confidenza': 'Molto Alta'},
-                'btts': {'accuratezza': 61.8, 'confidenza': 'Alta'}
+                'double_chance': {'accuratezza': 73.4, 'confidenza': 'Molto Alta'}
             },
             'qualita_dati': {
                 'fonte': 'Dati ufficiali Serie A',
