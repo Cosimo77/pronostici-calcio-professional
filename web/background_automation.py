@@ -88,13 +88,14 @@ class BackgroundAutomation:
         if self.last_retrain and (now - self.last_retrain).days < 6:
             return False  # Già fatto questa settimana
         
-        # Esegui Domenica alle 02:00
-        is_sunday = now.weekday() == 6
+        # Esegui Lunedì alle 02:00 UTC (era Domenica sera in Italia)
+        # Lunedì = weekday 0 (Domenica = 6)
+        is_monday = now.weekday() == 0
         target_time = dt_time(2, 0)
         current_time = now.time()
         
         return (
-            is_sunday and
+            is_monday and
             dt_time(1, 45) <= current_time <= dt_time(2, 15) and
             (not self.last_retrain or (now - self.last_retrain).days >= 6)
         )
