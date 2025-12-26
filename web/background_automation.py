@@ -50,15 +50,19 @@ class BackgroundAutomation:
         while self.running:
             try:
                 now = datetime.now(timezone.utc)
-                logger.debug(f"⏰ Check automation - UTC: {now.strftime('%Y-%m-%d %H:%M:%S')}")
+                logger.info(f"⏰ Check automation - UTC: {now.strftime('%Y-%m-%d %H:%M:%S')}")
                 
                 # 🔄 Aggiornamento quotidiano alle 06:00
-                if self._should_run_daily_update(now):
+                should_update = self._should_run_daily_update(now)
+                logger.info(f"📊 Daily update check: {should_update} (last_update: {self.last_update})")
+                if should_update:
                     logger.info("✅ Condizione daily update soddisfatta, esecuzione...")
                     self._run_daily_update()
                 
-                # 🧠 Riaddestramento settimanale (Domenica 02:00)
-                if self._should_run_weekly_retrain(now):
+                # 🧠 Riaddestramento settimanale (Lunedì 02:00 UTC)
+                should_retrain = self._should_run_weekly_retrain(now)
+                logger.info(f"🧠 Weekly retrain check: {should_retrain} (last_retrain: {self.last_retrain}, weekday: {now.weekday()})")
+                if should_retrain:
                     logger.info("✅ Condizione weekly retrain soddisfatta, esecuzione...")
                     self._run_weekly_retrain()
                 

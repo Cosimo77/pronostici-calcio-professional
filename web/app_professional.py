@@ -10,7 +10,7 @@ import logging
 import os
 import sys
 import math
-from datetime import datetime
+from datetime import datetime, timezone
 import hashlib
 from typing import Dict, Tuple, Any, Optional
 from flask_limiter import Limiter
@@ -3057,6 +3057,52 @@ def api_automation_status():
             'available': False,
             'error': str(e)
         }), 500
+
+@app.route('/api/automation/force_update', methods=['POST'])
+@limiter.limit("5 per hour")
+def api_force_update():
+    """Forza esecuzione manuale daily update (solo per debugging)"""
+    try:
+        from background_automation import get_automation
+        automation = get_automation()
+        
+        if not automation:
+            return jsonify({'error': 'Automazione non disponibile'}), 500
+        
+        # Esegui update manualmente
+        automation._run_daily_update()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Update forzato eseguito',
+            'timestamp': datetime.now(timezone.utc).isoformat()
+        })
+    except Exception as e:
+        logger.error(f"Errore force update: {e}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/automation/force_retrain', methods=['POST'])
+@limiter.limit("3 per hour")
+def api_force_retrain():
+    """Forza esecuzione manuale weekly retrain (solo per debugging)"""
+    try:
+        from background_automation import get_automation
+        automation = get_automation()
+        
+        if not automation:
+            return jsonify({'error': 'Automazione non disponibile'}), 500
+        
+        # Esegui retrain manualmente
+        automation._run_weekly_retrain()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Retrain forzato eseguito',
+            'timestamp': datetime.now(timezone.utc).isoformat()
+        })
+    except Exception as e:
+        logger.error(f"Errore force retrain: {e}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/metrics')
 @limiter.limit("30 per minute")
