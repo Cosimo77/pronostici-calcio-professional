@@ -109,16 +109,26 @@ class BackgroundAutomation:
         logger.info(f"🔄 Avvio aggiornamento quotidiano - Last update: {self.last_update}")
         
         try:
-            script_path = self.root_dir / "scripts" / "aggiorna_quotidiano.py"
-            logger.info(f"📂 Tentativo script: {script_path}")
+            # Prova script minimale (sempre presente nel root)
+            script_path = self.root_dir / "update_data_minimal.py"
+            logger.info(f"📂 Script minimale: {script_path}")
             
             if not script_path.exists():
+                # Fallback: scripts/aggiorna_quotidiano.py
+                script_path = self.root_dir / "scripts" / "aggiorna_quotidiano.py"
+                logger.info(f"📂 Tentativo script: {script_path}")
+            
+            if not script_path.exists():
+                # Fallback: aggiorna_veloce.py
                 script_path = self.root_dir / "aggiorna_veloce.py"
                 logger.info(f"📂 Fallback script: {script_path}")
             
             if not script_path.exists():
-                logger.error(f"❌ Script aggiornamento non trovato in: {self.root_dir}")
-                logger.error(f"❌ File esistenti: {list(self.root_dir.glob('aggiorna*.py'))}")
+                logger.error(f"❌ Nessuno script aggiornamento trovato in: {self.root_dir}")
+                logger.error(f"❌ File esistenti: {list(self.root_dir.glob('*.py'))[:10]}")
+                # Aggiorna comunque il timestamp per non bloccare
+                self.last_update = datetime.now(timezone.utc)
+                logger.warning(f"⚠️ Timestamp aggiornato senza eseguire script: {self.last_update}")
                 return
             
             logger.info(f"▶️ Esecuzione: {script_path}")
