@@ -10,20 +10,64 @@ import subprocess
 import threading
 import time
 import logging
+import json
 from datetime import datetime, time as dt_time, timezone
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
 class BackgroundAutomation:
-    """Automazione in background per Render free tier"""
+    """Gestisce automazione background con persistenza stato"""
     
-    def __init__(self, root_dir):
+    def __init__(self, root_dir: Path):
         self.root_dir = Path(root_dir)
         self.running = False
         self.thread = None
-        self.last_update = None
-        self.last_retrain = None
+        
+        # File persistenza stato
+        self.state_file = self.root_dir / "logs" / "automation_state.json"
+        self.state_file.parent.mkdir(parents=True, exist_ok=True)
+        
+        # Carica stato salvato
+        state = self._load_state()
+        self.last_update = state.get('last_update')
+        self.last_retrain = state.get('last_retrain')
+    
+    def _load_state(self):
+        """Carica stato salvato da file JSON"""
+        try:
+            if self.state_file.exists():
+                with open(self.state_file, 'r') as f:
+                    data = json.load(f)
+                    
+                # Converti stringhe ISO a datetime
+                if data.get('last_update'):
+                    data['last_update'] = datetime.fromisoformat(data['last_update'])
+                if data.get('last_retrain'):
+                    data['last_retrain'] = datetime.fromisoformat(data['last_retrain'])
+                    
+                logger.info(f"📂 Stato caricato: {data}")
+                return data
+        except Exception as e:
+            logger.warning(f"⚠️ Errore caricamento stato: {e}")
+        
+        return {}
+    
+    def _save_state(self):
+        """Salva stato su file JSON"""
+        try:
+            data = {
+                'last_update': self.last_update.isoformat() if self.last_update else None,
+                'last_retrain': self.last_retrain.isoformat() if self.last_retrain else None,
+                'updated_at': datetime.now(timezone.utc).isoformat()
+            }
+            
+            with open(self.state_file, 'w') as f:
+                json.dump(data, f, indent=2)
+                
+            logger.info(f"💾 Stato salvato: {self.state_file}")
+        except Exception as e:
+            logger.error(f"❌ Errore salvataggio stato: {e}", exc_info=True)
         
     def start(self):
         """Avvia thread automazione"""
@@ -128,6 +172,7 @@ class BackgroundAutomation:
                 logger.error(f"❌ File esistenti: {list(self.root_dir.glob('*.py'))[:10]}")
                 # Aggiorna comunque il timestamp per non bloccare
                 self.last_update = datetime.now(timezone.utc)
+                self._save_state()  # 💾 SALVA STATO SU FILE
                 logger.warning(f"⚠️ Timestamp aggiornato senza eseguire script: {self.last_update}")
                 return
             
@@ -142,6 +187,7 @@ class BackgroundAutomation:
             
             if result.returncode == 0:
                 self.last_update = datetime.now(timezone.utc)
+                self._save_state()  # 💾 SALVA STATO SU FILE
                 logger.info(f"✅ Aggiornamento quotidiano completato - timestamp: {self.last_update}")
                 logger.info(f"📊 Output: {result.stdout[-200:]}")  # Ultimi 200 char
             else:
@@ -182,6 +228,7 @@ class BackgroundAutomation:
             
             if result.returncode == 0:
                 self.last_retrain = datetime.now(timezone.utc)
+                self._save_state()  # 💾 SALVA STATO SU FILE
                 logger.info(f"✅ Riaddestramento completato - timestamp: {self.last_retrain}")
                 logger.info(f"📊 Output: {result.stdout[-200:]}")
             else:
