@@ -339,9 +339,10 @@ class ProfessionalCalculator:
                 }
             
             # BAYESIAN SMOOTHING RIDOTTO: Combina dati reali con prior (UNICO layer)
-            # FIX: Ridotto da 50% a 20% max per evitare appiattimento eccessivo
-            # Peso prior inversamente proporzionale al numero di partite
-            peso_prior = min(20 / max(n_partite, 1), 0.20)  # Max 20% peso prior (era 50%)
+            # FIX v2: Soglia aumentata a 30 partite per neo-promosse (Pisa, Como, Cremonese)
+            # Peso prior aumentato a 40% max per squadre con <30 partite (era 20%)
+            # Motivo: Bias pareggio sistematico su squadre nuove richiede maggior regolarizzazione
+            peso_prior = min(30 / max(n_partite, 1), 0.40)  # Max 40% peso prior per <30 partite
             peso_dati = 1 - peso_prior
             
             # PESO FORMA RECENTE: Ultimi 10 match pesano 10x (DOMINANTE per forma corrente)
@@ -380,8 +381,8 @@ class ProfessionalCalculator:
             par_final = par_bayesian / totale
             sconf_final = sconf_bayesian / totale
             
-            if n_partite < 20:
-                logger.info(f"⚖️ Bayesian smoothing {squadra} ({'casa' if in_casa else 'trasferta'}): {n_partite} partite, peso prior {peso_prior:.2f}")
+            if n_partite < 30:
+                logger.info(f"⚖️ Bayesian smoothing {squadra} ({'casa' if in_casa else 'trasferta'}): {n_partite} partite, peso prior {peso_prior:.2%}")
             
             # Calcola clean sheet rate (partite senza subire gol)
             if in_casa:
