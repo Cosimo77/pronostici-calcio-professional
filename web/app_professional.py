@@ -339,10 +339,11 @@ class ProfessionalCalculator:
                 }
             
             # BAYESIAN SMOOTHING RIDOTTO: Combina dati reali con prior (UNICO layer)
-            # FIX v2: Soglia aumentata a 30 partite per neo-promosse (Pisa, Como, Cremonese)
-            # Peso prior aumentato a 40% max per squadre con <30 partite (era 20%)
-            # Motivo: Bias pareggio sistematico su squadre nuove richiede maggior regolarizzazione
-            peso_prior = min(30 / max(n_partite, 1), 0.40)  # Max 40% peso prior per <30 partite
+            # FIX v3 (28 Dic): Soglia 30 partite, peso prior 50% max (validato su 4/4 partite fallite)
+            # Risultati 27 Dic: Pisa X 42.5%→0-2, Como X 43%→0-3, Parma X 48.7%→1-0, Torino H→1-2
+            # Prior 40% insufficiente → aumentato a 50% per ridurre overpredizione pareggi
+            # Motivo: Bias pareggio sistematico confermato su TUTTE le squadre <30 partite
+            peso_prior = min(40 / max(n_partite, 1), 0.50)  # Max 50% peso prior per <30 partite
             peso_dati = 1 - peso_prior
             
             # PESO FORMA RECENTE: Ultimi 10 match pesano 10x (DOMINANTE per forma corrente)
@@ -479,8 +480,19 @@ class ProfessionalCalculator:
         
         # CALIBRAZIONE LEGGERA: Solo normalizzazione (smoothing GIÀ applicato in _calcola_statistiche_squadra)
         # FIX: Rimosso doppio layer di shrinkage che appiattiva probabilità
-        # Il smoothing bayesiano è già stato applicato a livello di statistiche squadra (20% max)
+        # Il smoothing bayesiano è già stato applicato a livello di statistiche squadra (50% max)
         affidabilita_media = (stats_casa.get('affidabilita', 1.0) + stats_ospite.get('affidabilita', 1.0)) / 2
+        
+        # PENALTY CONFIDENZA per squadre con dati insufficienti (<30 partite)
+        # Riduce confidenza gradualmente: 29 partite = -1.7%, 20 partite = -16.7%, 10 partite = -33%
+        n_partite_casa = stats_casa.get('partite_totali', 100)
+        n_partite_ospite = stats_ospite.get('partite_totali', 100)
+        min_partite = min(n_partite_casa, n_partite_ospite)
+        
+        if min_partite < 30:
+            penalty = (30 - min_partite) / 60  # Penalty 0-50% graduale
+            affidabilita_media *= (1 - penalty)
+            logger.info(f"⚠️ Penalty confidenza applicata: {min_partite} partite → riduzione {penalty:.1%}")
         
         # Solo normalizzazione finale per garantire somma = 1
         totale = prob_casa + prob_pareggio + prob_ospite
@@ -1173,6 +1185,25 @@ def api_predict_enterprise():
             'modalita': 'professional_value_betting',
             'timestamp': datetime.now().isoformat()
         }
+        
+        # AGGIUNGI WARNING per squadre con dati insufficienti
+        # Fix v3: Alert visivo per predizioni con <30 partite storiche
+        stats_casa = calculator._calcola_statistiche_squadra(squadra_casa, in_casa=True)
+        stats_ospite = calculator._calcola_statistiche_squadra(squadra_ospite, in_casa=False)
+        n_partite_casa = stats_casa.get('partite_totali', 100)
+        n_partite_ospite = stats_ospite.get('partite_totali', 100)
+        min_partite = min(n_partite_casa, n_partite_ospite)
+        
+        if min_partite < 30:
+            squadra_limitata = squadra_casa if n_partite_casa < 30 else squadra_ospite
+            response['warning'] = {
+                'tipo': 'dati_insufficienti',
+                'messaggio': f'⚠️ Dati limitati per {squadra_limitata} ({min_partite} partite) - Predizione meno affidabile',
+                'partite_disponibili': min_partite,
+                'soglia_minima': 30,
+                'confidenza_ridotta': True
+            }
+            logger.warning(f"⚠️ Predizione con dati limitati: {squadra_limitata} ({min_partite} partite)")
         
         logger.info(f"✅ Predizione Enterprise + Value Betting: {squadra_casa} vs {squadra_ospite} → {predizione} (ROI: {roi_expected*100:+.1f}%)")
         
