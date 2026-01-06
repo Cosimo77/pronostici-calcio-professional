@@ -1,0 +1,71 @@
+name: Aggiornamento Automatico Dati
+
+on:
+  schedule:
+    # Ogni Lunedì alle 06:00 UTC (07:00 ITA)
+    - cron: '0 6 * * 1'
+  
+  # Permetti esecuzione manuale
+  workflow_dispatch:
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📊 Trigger aggiornamento dati
+        run: |
+          echo "🔄 Avvio aggiornamento automatico dati..."
+          
+          response=$(curl -X POST \
+            -w "\n%{http_code}" \
+            -s \
+            https://pronostici-calcio-pro.onrender.com/api/automation/force_update)
+          
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+          
+          echo "📡 Status Code: $http_code"
+          echo "📝 Risposta: $body"
+          
+          if [ "$http_code" -eq 200 ]; then
+            echo "✅ Aggiornamento completato con successo!"
+          else
+            echo "❌ Errore durante aggiornamento (HTTP $http_code)"
+            exit 1
+          fi
+      
+      - name: 🧠 Trigger riaddestramento modelli
+        run: |
+          echo "🧠 Avvio riaddestramento modelli..."
+          
+          response=$(curl -X POST \
+            -w "\n%{http_code}" \
+            -s \
+            https://pronostici-calcio-pro.onrender.com/api/automation/force_retrain)
+          
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+          
+          echo "📡 Status Code: $http_code"
+          echo "📝 Risposta: $body"
+          
+          if [ "$http_code" -eq 200 ]; then
+            echo "✅ Riaddestramento completato con successo!"
+          else
+            echo "⚠️ Warning: Riaddestramento fallito (HTTP $http_code)"
+            echo "ℹ️ Continuo comunque (non critico)"
+          fi
+      
+      - name: 📊 Verifica stato finale
+        run: |
+          echo "📊 Verifica stato automazione..."
+          
+          status=$(curl -s https://pronostici-calcio-pro.onrender.com/api/automation/status)
+          
+          echo "📝 Stato attuale:"
+          echo "$status" | python3 -m json.tool || echo "$status"
+          
+          echo ""
+          echo "✅ Workflow completato!"
+          echo "📅 Data esecuzione: $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
