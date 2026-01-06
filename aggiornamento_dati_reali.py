@@ -42,16 +42,17 @@ def scarica_dati_reali():
         # Fonte 1: Football-data.co.uk (CSV Serie A 2024-25)
         print("   🔗 Tentativo download da football-data.co.uk...")
         
-        url_serie_a = "https://www.football-data.co.uk/mmz4281/2425/I1.csv"
+        # URL Serie A stagione corrente 2025-26
+        url_serie_a = "https://www.football-data.co.uk/mmz4281/2526/I1.csv"
         response = requests.get(url_serie_a, timeout=15)
         
         if response.status_code == 200:
             # Salva file temporaneo
-            with open('temp_serie_a_2425.csv', 'wb') as f:
+            with open('temp_serie_a_2526.csv', 'wb') as f:
                 f.write(response.content)
             
             # Carica e processa
-            df_new = pd.read_csv('temp_serie_a_2425.csv')
+            df_new = pd.read_csv('temp_serie_a_2526.csv')
             print(f"   ✅ Scaricate {len(df_new)} partite Serie A 2024-25")
             
             # Pulizia e standardizzazione
@@ -90,7 +91,7 @@ def scarica_dati_reali():
                 new_data.append(df_new)
             
             # Rimuovi file temporaneo
-            os.remove('temp_serie_a_2425.csv')
+            os.remove('temp_serie_a_2526.csv')
         
     except Exception as e:
         print(f"   ⚠️ Errore download football-data.co.uk: {e}")
