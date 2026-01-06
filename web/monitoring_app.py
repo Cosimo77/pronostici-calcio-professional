@@ -68,18 +68,19 @@ def api_health():
 
 @app.route('/api/metrics_summary')
 def api_metrics():
-    """API metriche simulate"""
+    """API metriche simulate - redirect a app principale se disponibile"""
+    # Questa è solo una fallback, la dashboard usa l'API principale
     return jsonify({
         'performance': {
             'accuratezza_complessiva': 54.1,
-            'partite_analizzate': 1777,
-            'predizioni_corrette': 961,
+            'partite_analizzate': 0,  # Calcolato dinamicamente da app_professional
+            'predizioni_corrette': 0,
             'confidenza_media': 68.5,
             'mercati_supportati': 8
         },
         'stato_operativo': {
             'sistema_attivo': True,
-            'squadre_disponibili': 220,
+            'squadre_disponibili': 0,
             'cache_predizioni': 45,
             'dataset_caricato': True
         },
@@ -206,8 +207,8 @@ def monitoring():
                 <h3>📊 Performance Modelli</h3>
                 <div id="metrics-content">
                     <div class="metric"><span>Accuratezza Complessiva:</span><span class="value">54.1%</span></div>
-                    <div class="metric"><span>Partite Analizzate:</span><span class="value">1777</span></div>
-                    <div class="metric"><span>Predizioni Corrette:</span><span class="value">961</span></div>
+                    <div class="metric"><span>Partite Analizzate:</span><span class="value" id="partite-analizzate">Caricamento...</span></div>
+                    <div class="metric"><span>Predizioni Corrette:</span><span class="value" id="predizioni-corrette">Caricamento...</span></div>
                     <div class="metric"><span>Confidenza Media:</span><span class="value">68.5%</span></div>
                     <div class="metric"><span>Mercati Supportati:</span><span class="value">8</span></div>
                 </div>
