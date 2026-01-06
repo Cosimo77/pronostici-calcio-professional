@@ -2940,9 +2940,9 @@ def api_model_performance():
     try:
         # Calcola partite validabili dinamicamente dal dataset
         total_matches = calculator._calcola_partite_validabili()
-        correct_predictions = int(total_matches * 0.658)  # Accuratezza 65.8%
+        correct_predictions = int(total_matches * 0.432)  # Accuratezza 43.2%
         
-        accuracy = 0.658
+        accuracy = 0.432
         
         # Distribuzione predizioni
         predictions_distribution = {
@@ -2952,7 +2952,7 @@ def api_model_performance():
         }
         
         # Confidenza media
-        avg_confidence = 0.58
+        avg_confidence = 0.449
         
         # Metriche per mercato (aggiornate con nuovi mercati)
         market_performance = {
@@ -3223,10 +3223,10 @@ def api_metrics_summary():
                 'modalita': 'professional_deterministic'
             },
             'performance': {
-                'accuratezza_complessiva': 65.8,
+                'accuratezza_complessiva': 43.2,
                 'partite_analizzate': partite_analizzate,
                 'predizioni_corrette': predizioni_corrette,
-                'confidenza_media': 58.3,
+                'confidenza_media': 44.9,
                 'mercati_supportati': 27
             },
             'stato_operativo': {
