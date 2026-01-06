@@ -119,8 +119,11 @@ class BackgroundAutomation:
     
     def _should_run_daily_update(self, now):
         """Verifica se eseguire update quotidiano"""
-        if self.last_update and self.last_update.date() == now.date():
-            return False  # Già fatto oggi
+        if self.last_update:
+            # Assicura timezone-aware per confronto date
+            last_update_aware = self.last_update if self.last_update.tzinfo else self.last_update.replace(tzinfo=timezone.utc)
+            if last_update_aware.date() == now.date():
+                return False  # Già fatto oggi
         
         # Esegui alle 06:00 (finestra 05:00-07:00 per garantire esecuzione)
         current_time = now.time()
@@ -133,8 +136,11 @@ class BackgroundAutomation:
     
     def _should_run_weekly_retrain(self, now):
         """Verifica se eseguire retrain settimanale"""
-        if self.last_retrain and (now - self.last_retrain).days < 6:
-            return False  # Già fatto questa settimana
+        if self.last_retrain:
+            # Assicura entrambi timezone-aware per confronto
+            last_retrain_aware = self.last_retrain if self.last_retrain.tzinfo else self.last_retrain.replace(tzinfo=timezone.utc)
+            if (now - last_retrain_aware).days < 6:
+                return False  # Già fatto questa settimana
         
         # Esegui Lunedì alle 02:00 UTC (era Domenica sera in Italia)
         # Lunedì = weekday 0 (Domenica = 6)
@@ -266,7 +272,10 @@ class BackgroundAutomation:
         if not self.last_retrain:
             return "Prossima Domenica alle 02:00"
         
-        days_since = (datetime.now() - self.last_retrain).days
+        # Assicura entrambi timezone-aware per confronto
+        now_aware = datetime.now(timezone.utc)
+        last_retrain_aware = self.last_retrain if self.last_retrain.tzinfo else self.last_retrain.replace(tzinfo=timezone.utc)
+        days_since = (now_aware - last_retrain_aware).days
         days_until = 7 - days_since
         return f"Tra {days_until} giorni (Domenica 02:00)"
 
