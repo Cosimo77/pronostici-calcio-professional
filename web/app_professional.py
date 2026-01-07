@@ -3214,7 +3214,7 @@ def api_metrics_summary():
     try:
         # Calcola partite validabili dinamicamente
         partite_analizzate = calculator._calcola_partite_validabili()
-        predizioni_corrette = int(partite_analizzate * 0.658)  # 65.8% accuracy
+        predizioni_corrette = int(partite_analizzate * 0.432)  # 43.2% accuracy (backtest reale)
         
         summary = {
             'sistema': {
