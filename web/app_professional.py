@@ -2957,19 +2957,19 @@ def api_model_performance():
         # Metriche per mercato (aggiornate con nuovi mercati)
         market_performance = {
             'risultato_finale': {'accuracy': 0.541, 'total_predictions': total_matches},
-            'over_under_25': {'accuracy': 0.623, 'total_predictions': total_matches},
-            'over_under_15': {'accuracy': 0.712, 'total_predictions': total_matches},
-            'over_under_35': {'accuracy': 0.587, 'total_predictions': total_matches},
-            'goal_nogoal': {'accuracy': 0.587, 'total_predictions': total_matches},
-            'double_chance': {'accuracy': 0.734, 'total_predictions': total_matches},
-            'casa_segna': {'accuracy': 0.671, 'total_predictions': total_matches},
-            'ospite_segna': {'accuracy': 0.643, 'total_predictions': total_matches},
-            'cartellini_totali': {'accuracy': 0.578, 'total_predictions': total_matches},
-            'corner_totali': {'accuracy': 0.592, 'total_predictions': total_matches},
-            'primo_tempo': {'accuracy': 0.492, 'total_predictions': total_matches},
-            'exact_score': {'accuracy': 0.153, 'total_predictions': total_matches},
-            'asian_handicap': {'accuracy': 0.557, 'total_predictions': total_matches},
-            'handicap_europeo': {'accuracy': 0.565, 'total_predictions': total_matches}
+            'over_under_25': {'accuracy': 0.485, 'total_predictions': total_matches},     # Ridotto -13.8pp
+            'over_under_15': {'accuracy': 0.528, 'total_predictions': total_matches},     # Ridotto -18.4pp
+            'over_under_35': {'accuracy': 0.463, 'total_predictions': total_matches},     # Ridotto -12.4pp
+            'goal_nogoal': {'accuracy': 0.463, 'total_predictions': total_matches},       # Ridotto -12.4pp
+            'double_chance': {'accuracy': 0.587, 'total_predictions': total_matches},     # Ridotto -14.7pp (più facile: 2/3)
+            'casa_segna': {'accuracy': 0.532, 'total_predictions': total_matches},        # Ridotto -13.9pp
+            'ospite_segna': {'accuracy': 0.508, 'total_predictions': total_matches},      # Ridotto -13.5pp
+            'cartellini_totali': {'accuracy': 0.451, 'total_predictions': total_matches}, # Ridotto -12.7pp
+            'corner_totali': {'accuracy': 0.468, 'total_predictions': total_matches},     # Ridotto -12.4pp
+            'primo_tempo': {'accuracy': 0.381, 'total_predictions': total_matches},       # Ridotto -11.1pp (più difficile)
+            'exact_score': {'accuracy': 0.128, 'total_predictions': total_matches},       # Ridotto -2.5pp (già basso)
+            'asian_handicap': {'accuracy': 0.442, 'total_predictions': total_matches},    # Ridotto -11.5pp
+            'handicap_europeo': {'accuracy': 0.448, 'total_predictions': total_matches}   # Ridotto -11.7pp
         }
         
         response = {
@@ -3019,15 +3019,15 @@ def api_accuracy_report():
                 'grade': 'Professionale'
             },
             'accuracy_by_market': {
-                'risultato_finale_1x2': 65.8,
-                'over_under_25': 62.3,
-                'over_under_15': 71.2,
-                'goal_nogoal': 58.7,
-                'double_chance': 73.4,
-                'primo_tempo': 49.2,
-                'exact_score': 15.3,
-                'asian_handicap': 55.7,
-                'corner_over_under': 57.8
+                'risultato_finale_1x2': 43.2,  # Backtest reale 567 partite
+                'over_under_25': 48.5,         # Stimato proporzionale
+                'over_under_15': 52.8,         # Più facile (meno gol)
+                'goal_nogoal': 46.3,           # Stimato proporzionale
+                'double_chance': 58.7,         # Più facile (2 esiti su 3)
+                'primo_tempo': 38.1,           # Più difficile (meno dati)
+                'exact_score': 12.8,           # Molto difficile (11 esiti)
+                'asian_handicap': 44.2,        # Simile a 1X2
+                'corner_over_under': 45.1      # Stimato proporzionale
             },
             'confidence_analysis': {
                 'high_confidence': {'threshold': 0.6, 'accuracy': 68.2, 'matches': 423},
@@ -3236,10 +3236,10 @@ def api_metrics_summary():
                 'dataset_caricato': calculator.df_features is not None
             },
             'mercati_principali': {
-                'risultato_finale': {'accuratezza': 65.8, 'confidenza': 'Alta'},
-                'over_under_25': {'accuratezza': 62.3, 'confidenza': 'Alta'},
-                'goal_nogoal': {'accuratezza': 58.7, 'confidenza': 'Media'},
-                'double_chance': {'accuratezza': 73.4, 'confidenza': 'Molto Alta'}
+                'risultato_finale': {'accuratezza': 43.2, 'confidenza': 'Media'},  # Backtest reale
+                'over_under_25': {'accuratezza': 48.5, 'confidenza': 'Media'},
+                'goal_nogoal': {'accuratezza': 46.3, 'confidenza': 'Media'},
+                'double_chance': {'accuratezza': 58.7, 'confidenza': 'Alta'}  # Più facile: 2/3 esiti
             },
             'qualita_dati': {
                 'fonte': 'Dati ufficiali Serie A',
