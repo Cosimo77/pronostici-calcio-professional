@@ -622,9 +622,10 @@ def inizializza_sistema_professionale():
                     soglia_minima = 2 if squadra == 'Pisa' else 10
                     if totale_partite >= soglia_minima:
                         squadre_valide.append(squadra)
-                        logger.info(f"✅ {squadra}: {totale_partite} partite nel dataset")
+                        # Log ridotto per velocizzare avvio su Render
+                        logger.debug(f"✅ {squadra}: {totale_partite} partite nel dataset")
                     else:
-                        logger.warning(f"⚠️ {squadra}: solo {totale_partite} partite nel dataset (soglia {soglia_minima})")
+                        logger.debug(f"⚠️ {squadra}: solo {totale_partite} partite nel dataset (soglia {soglia_minima})")
                 else:
                     logger.error(f"❌ Dataset non caricato per verificare {squadra}")
             else:
