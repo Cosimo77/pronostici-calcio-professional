@@ -244,38 +244,47 @@ def aggiorna_risultati_automatico():
         
         print(f"🔍 {casa} vs {ospite} ({data})")
         
-        # Cerca risultato finale
-        # (The Odds API non ha risultati - useremo dataset)
+        # Cerca risultato finale nel dataset pulito
         try:
-            calculator = ProfessionalCalculator()
+            # Carica dataset pulito (più semplice e veloce)
+            df_partite = pd.read_csv('data/dataset_pulito.csv')
             
-            # Cerca nel dataset partite passate
-            df_partite = calculator.df_features
+            # Match partita per casa, ospite e data
             match = df_partite[
                 (df_partite['HomeTeam'] == casa) & 
                 (df_partite['AwayTeam'] == ospite) &
-                (df_partite['Date'].astype(str).str.contains(data))
+                (df_partite['Date'].astype(str) == data)
             ]
             
             if len(match) == 0:
                 print(f"   ⏳ Partita non ancora giocata o non nel dataset")
                 continue
             
-            risultato = match.iloc[0]['FTR']
+            # Calcola risultato da gol
+            gol_casa = match.iloc[0]['FTHG']
+            gol_ospite = match.iloc[0]['FTAG']
             
-            # Aggiorna tracking (usando .at per singoli valori - più veloce)
+            if gol_casa > gol_ospite:
+                risultato = 'H'
+            elif gol_ospite > gol_casa:
+                risultato = 'A'
+            else:
+                risultato = 'D'
+            
+            # Aggiorna tracking
             df.at[idx, 'Risultato'] = risultato  # type: ignore
             
             # Calcola P/L
             stake = float(row['Stake'])
             quota_x = float(row['Quota_X'])
             
-            if risultato == 'X':
+            if risultato == 'D':  # Pareggio = WIN
                 profit = stake * (quota_x - 1)
-                print(f"   ✅ WIN - Pareggio! Profit: €{profit:+.2f}")
+                print(f"   ✅ WIN - Pareggio {gol_casa}-{gol_ospite}! Profit: €{profit:+.2f}")
             else:
                 profit = -stake
-                print(f"   ❌ LOSS - {risultato} - Loss: €{profit:.2f}")
+                esito_str = "Casa" if risultato == 'H' else "Trasferta"
+                print(f"   ❌ LOSS - {esito_str} {gol_casa}-{gol_ospite} - Loss: €{profit:.2f}")
             
             # Aggiorna bankroll
             bankroll_precedente = float(row['Bankroll'])
