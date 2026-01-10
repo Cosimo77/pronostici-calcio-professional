@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Partite Prossime - Serie A</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: #f5f7fa;
+            min-height: 100vh;
+            padding: 20px 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        .container {
+            max-width: 1200px;
+        }
+        .match-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 1px solid #e1e8ed;
+        }
+        .match-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #e1e8ed;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        .match-time {
+            background: #1a73e8;
+            color: white;
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+        .teams {
+            font-size: 1.8rem;
+            font-weight: 700;
+            text-align: center;
+            margin: 20px 0;
+            color: #202124;
+        }
+        .vs {
+            color: #5f6368;
+            margin: 0 20px;
+            font-weight: 400;
+        }
+        .odds-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 25px;
+        }
+        .odd-box {
+            text-align: center;
+            padding: 20px 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border: 2px solid #e8eaed;
+        }
+        .odd-label {
+            color: #5f6368;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .odd-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #1a73e8;
+            margin: 5px 0;
+        }
+        .odd-box small {
+            color: #5f6368;
+            font-size: 1rem;
+        }
+        .value-badge {
+            background: #0f9d58;
+            color: white;
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        .date-header {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 12px;
+            margin: 35px 0 20px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border-left: 5px solid #1a73e8;
+        }
+        .date-header h3 {
+            margin: 0;
+            color: #202124;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        .date-header small {
+            color: #5f6368;
+            font-size: 1.1rem;
+        }
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #5f6368;
+            font-size: 1.3rem;
+        }
+        .prediction-badge {
+            background: #1a73e8;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 1.05rem;
+            font-weight: 600;
+            margin-top: 10px;
+            display: inline-block;
+        }
+        .text-white {
+            color: #202124 !important;
+        }
+        .alert-success {
+            background: #e8f5e9;
+            border: 2px solid #0f9d58;
+            color: #1e4620;
+            font-size: 1.05rem;
+        }
+        .alert-success strong {
+            color: #0f9d58;
+        }
+        h1 {
+            color: #202124;
+            font-weight: 700;
+        }
+        .lead {
+            color: #5f6368;
+            font-size: 1.2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="text-center text-white mb-4">
+            <h1 class="mb-2"><i class="fas fa-calendar-alt"></i> Partite Prossime Serie A</h1>
+            <p class="lead">Quote reali aggiornate + Predizioni ML</p>
+        </div>
+
+        <div id="matches-container" class="loading">
+            <i class="fas fa-spinner fa-spin fa-3x"></i>
+            <p class="mt-3">Caricamento partite...</p>
+        </div>
+
+        <div class="text-center mt-4">
+            <a href="/" class="btn btn-light btn-lg">
+                <i class="fas fa-home"></i> Torna alla Home
+            </a>
+        </div>
+    </div>
+
+    <script>
+        async function loadMatches() {
+            try {
+                const response = await fetch('/api/upcoming_matches');
+                const data = await response.json();
+                
+                if (data.error) {
+                    document.getElementById('matches-container').innerHTML = `
+                        <div class="alert alert-danger">
+                            <h4>Errore</h4>
+                            <p>${data.error}</p>
+                            <small>${data.hint || ''}</small>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const matches = data.matches || [];
+                
+                if (matches.length === 0) {
+                    document.getElementById('matches-container').innerHTML = `
+                        <div class="alert alert-info text-dark">
+                            <h4>Nessuna partita trovata</h4>
+                            <p>Non ci sono partite programmate nei prossimi giorni.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Raggruppa per data
+                const byDate = {};
+                matches.forEach(match => {
+                    const date = match.commence_time.split('T')[0];
+                    if (!byDate[date]) byDate[date] = [];
+                    byDate[date].push(match);
+                });
+
+                let html = '';
+                
+                Object.keys(byDate).sort().forEach(date => {
+                    const dateObj = new Date(date + 'T00:00:00');
+                    const dateStr = dateObj.toLocaleDateString('it-IT', { 
+                        weekday: 'long', 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                    });
+                    
+                    html += `
+                        <div class="date-header">
+                            <h3><i class="far fa-calendar"></i> ${dateStr}</h3>
+                            <small class="text-muted">${byDate[date].length} partite</small>
+                        </div>
+                    `;
+                    
+                    byDate[date].forEach(match => {
+                        const time = match.commence_time.split('T')[1].substring(0, 5);
+                        
+                        // Value betting analysis
+                        const analysis = match.analysis || {};
+                        const hasValue = analysis.has_value || false;
+                        const ev = analysis.best_expected_value || 0;
+                        
+                        // ✅ CORREZIONE: Considera value SOLO se EV > 0 (ignora backend bug con EV negativi)
+                        const isRealValue = hasValue && ev > 0;
+                        
+                        // ✅ QUOTE REALI dai bookmaker
+                        const oddsReal = match.odds_real || {};
+                        const oddsHome = oddsReal.home || 0;
+                        const oddsDraw = oddsReal.draw || 0;
+                        const oddsAway = oddsReal.away || 0;
+                        
+                        // ✅ PREDIZIONI ML
+                        const markets = match.markets || {};
+                        const mercati = markets.mercati || {};
+                        const m1x2 = mercati.m1x2 || {};
+                        const confidenza = markets.confidenza || 0;
+                        const prob = m1x2.probabilita || {};
+                        
+                        // Mappa consiglio H/D/A a testo
+                        const consiglioMap = {'H': 'Casa', 'D': 'Pareggio', 'A': 'Trasferta'};
+                        const esito = consiglioMap[m1x2.consiglio] || 'N/A';
+                        
+                        html += `
+                            <div class="match-card">
+                                <div class="match-header">
+                                    <div class="match-time">${time}</div>
+                                    ${isRealValue ? `<span class="value-badge"><i class="fas fa-gem"></i> Value +${ev.toFixed(1)}%</span>` : ''}
+                                </div>
+                                
+                                <div class="teams">
+                                    ${match.home_team} <span class="vs">vs</span> ${match.away_team}
+                                </div>
+                                
+                                ${confidenza > 0 ? `
+                                    <div class="text-center">
+                                        <span class="prediction-badge">
+                                            <i class="fas fa-brain"></i> ML: ${esito} (${(confidenza * 100).toFixed(1)}%)
+                                        </span>
+                                    </div>
+                                ` : ''}
+                                
+                                <div class="odds-container">
+                                    <div class="odd-box">
+                                        <div class="odd-label">1 Casa</div>
+                                        <div class="odd-value">${oddsHome > 0 ? oddsHome.toFixed(2) : 'N/A'}</div>
+                                        ${prob.H ? `<small class="text-muted">${(prob.H * 100).toFixed(1)}%</small>` : ''}
+                                    </div>
+                                    <div class="odd-box">
+                                        <div class="odd-label">X Pareggio</div>
+                                        <div class="odd-value">${oddsDraw > 0 ? oddsDraw.toFixed(2) : 'N/A'}</div>
+                                        ${prob.D ? `<small class="text-muted">${(prob.D * 100).toFixed(1)}%</small>` : ''}
+                                    </div>
+                                    <div class="odd-box">
+                                        <div class="odd-label">2 Trasferta</div>
+                                        <div class="odd-value">${oddsAway > 0 ? oddsAway.toFixed(2) : 'N/A'}</div>
+                                        ${prob.A ? `<small class="text-muted">${(prob.A * 100).toFixed(1)}%</small>` : ''}
+                                    </div>
+                                </div>
+                                
+                                ${isRealValue ? `
+                                    <div class="alert alert-success mt-3 mb-0">
+                                        <strong><i class="fas fa-chart-line"></i> Opportunità Value Betting</strong><br>
+                                        <small>Mercato: ${analysis.best_market} | Esito: ${analysis.best_outcome || 'N/A'} @ ${(analysis.best_odds || 0).toFixed(2)} | EV: +${ev.toFixed(1)}%</small>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        `;
+                    });
+                });
+                
+                html += `
+                    <div class="text-center text-white mt-4">
+                        <p><i class="fas fa-info-circle"></i> Quote API rimaste: ${data.api_quota?.remaining || 'N/A'}/500</p>
+                        <small>Ultimo aggiornamento: ${new Date().toLocaleString('it-IT')}</small>
+                    </div>
+                `;
+                
+                document.getElementById('matches-container').innerHTML = html;
+                
+            } catch (error) {
+                document.getElementById('matches-container').innerHTML = `
+                    <div class="alert alert-danger">
+                        <h4>Errore di Connessione</h4>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Carica all'avvio
+        loadMatches();
+        
+        // NO AUTO-REFRESH per non sprecare quota API
+    </script>
+</body>
+</html>

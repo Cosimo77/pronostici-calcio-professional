@@ -167,7 +167,7 @@ csp = {
 is_production = os.environ.get('FLASK_ENV') == 'production'
 
 Talisman(app, 
-    force_https=is_production,  # HTTPS obbligatorio in produzione
+    force_https=False,  # Disabilitato per testing locale
     strict_transport_security=True,
     strict_transport_security_max_age=31536000,  # 1 anno
     strict_transport_security_include_subdomains=True,
@@ -684,6 +684,11 @@ def enterprise():
 def monitoring():
     """Dashboard di monitoraggio sistema"""
     return render_template('monitoring.html')
+
+@app.route('/upcoming')
+def upcoming_matches_page():
+    """Pagina partite prossime con quote reali"""
+    return render_template('upcoming_matches.html')
 
 @app.route('/automation')
 def automation_page():
