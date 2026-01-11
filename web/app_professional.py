@@ -2138,21 +2138,35 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
         'consiglio': f'Casa {handicap:+.1f}' if handicap != 0 else 'Equilibrato'
     }
     
-    # Clean Sheet
-    # Probabilità che SOLO una squadra non subisca gol (mutualmente esclusivi)
-    prob_solo_casa_cs = clean_sheet_casa * (1 - clean_sheet_ospite)
-    prob_solo_ospite_cs = clean_sheet_ospite * (1 - clean_sheet_casa)
-    prob_nessuno_cs = 1 - prob_solo_casa_cs - prob_solo_ospite_cs
+    # Clean Sheet - FIX: 4 categorie logicamente corrette
+    # 1. Solo casa clean (casa non subisce, ospite subisce): es. 1-0, 2-0
+    # 2. Solo ospite clean (ospite non subisce, casa subisce): es. 0-1, 0-2
+    # 3. Entrambe clean (0-0)
+    # 4. Nessuna clean (entrambe subiscono): es. 1-1, 2-1
+    prob_entrambe_cs = clean_sheet_casa * clean_sheet_ospite  # 0-0
+    prob_solo_casa_cs = clean_sheet_casa * (1 - clean_sheet_ospite)  # Casa pulita, ospite no
+    prob_solo_ospite_cs = clean_sheet_ospite * (1 - clean_sheet_casa)  # Ospite pulita, casa no
+    prob_nessuna_cs = (1 - clean_sheet_casa) * (1 - clean_sheet_ospite)  # Entrambe subiscono
+    
+    # Trova il caso più probabile tra i 4
+    cs_probs = {
+        'solo_casa': prob_solo_casa_cs,
+        'solo_ospite': prob_solo_ospite_cs,
+        'entrambe': prob_entrambe_cs,
+        'nessuna': prob_nessuna_cs
+    }
+    best_cs = max(cs_probs.keys(), key=lambda k: cs_probs[k])
     
     mercati['mcs'] = {
         'nome': 'Clean Sheet',
         'probabilita': {
-            'casa': round(prob_solo_casa_cs, 3),
-            'ospite': round(prob_solo_ospite_cs, 3),
-            'nessuno': round(prob_nessuno_cs, 3)
+            'solo_casa': round(prob_solo_casa_cs, 3),
+            'solo_ospite': round(prob_solo_ospite_cs, 3),
+            'entrambe': round(prob_entrambe_cs, 3),
+            'nessuna': round(prob_nessuna_cs, 3)
         },
-        'confidenza': max(prob_solo_casa_cs, prob_solo_ospite_cs, prob_nessuno_cs),
-        'consiglio': 'casa' if prob_solo_casa_cs > prob_solo_ospite_cs else 'ospite'
+        'confidenza': max(cs_probs.values()),
+        'consiglio': best_cs
     }
     
     # Primo Tempo 1X2 - FIX: Basato su probabilità FT non hardcoded 50%
@@ -2210,34 +2224,38 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
         'gol_previsti': round(gol_primo_tempo, 1)
     }
     
-    # Exact Score (top risultati più probabili)
-    exact_scores = {
-        '1-0': prob_base.get('H', 0.33) * 0.25,
-        '0-1': prob_base.get('A', 0.33) * 0.25,
-        '1-1': prob_base.get('D', 0.33) * 0.35,
-        '2-1': prob_base.get('H', 0.33) * 0.20,
-        '1-2': prob_base.get('A', 0.33) * 0.20,
-        '2-0': prob_base.get('H', 0.33) * 0.15,
-        '0-2': prob_base.get('A', 0.33) * 0.15,
-        '0-0': prob_base.get('D', 0.33) * 0.25,
-        '2-2': prob_base.get('D', 0.33) * 0.15
-    }
+    # Exact Score - FIX: Distribuzione Poisson basata su gol previsti
+    from scipy.stats import poisson
     
-    # Normalizza
+    # Calcola probabilità usando distribuzione Poisson (matematicamente corretto)
+    exact_scores = {}
+    
+    # Top 12 risultati più comuni (copre ~80% casi)
+    risultati_comuni = [
+        (0, 0), (1, 0), (0, 1), (1, 1),
+        (2, 0), (0, 2), (2, 1), (1, 2),
+        (2, 2), (3, 0), (0, 3), (3, 1)
+    ]
+    
+    for gol_casa, gol_ospite in risultati_comuni:
+        # Poisson: P(X=k) = (λ^k * e^-λ) / k!
+        prob_casa = poisson.pmf(gol_casa, media_gol_casa_totali)
+        prob_ospite = poisson.pmf(gol_ospite, media_gol_ospite_totali)
+        # Probabilità congiunta (eventi indipendenti)
+        prob_risultato = prob_casa * prob_ospite
+        exact_scores[f'{gol_casa}-{gol_ospite}'] = prob_risultato
+    
+    # Normalizza per somma = 1 (alcuni risultati non inclusi)
     total_exact = sum(exact_scores.values())
     if total_exact > 0:
         exact_scores = {k: round(v/total_exact, 3) for k, v in exact_scores.items()}
     else:
-        # Fallback se non ci sono probabilità valide
-        exact_scores = {'1-1': 0.5, '1-0': 0.25, '0-1': 0.25}
+        # Fallback ultra-conservativo
+        exact_scores = {'1-1': 0.25, '1-0': 0.20, '0-1': 0.20, '2-1': 0.15, '1-2': 0.15, '0-0': 0.05}
     
-    # Trova il risultato più probabile, con fallback sicuro
-    if exact_scores:
-        best_exact = max(exact_scores.keys(), key=lambda k: exact_scores.get(k, 0))
-        best_confidence = exact_scores.get(best_exact, 0.33)
-    else:
-        best_exact = '1-1'
-        best_confidence = 0.33
+    # Trova il risultato più probabile
+    best_exact = max(exact_scores.keys(), key=lambda k: exact_scores.get(k, 0))
+    best_confidence = exact_scores.get(best_exact, 0.15)
     
     mercati['mes'] = {
         'nome': 'Exact Score',
@@ -2268,40 +2286,52 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
         'consiglio': best_combo
     }
     
-    # Numero Cartellini (Cards)
-    # Basato su aggressività dinamica delle squadre
-    sconfitte_casa = stats_casa.get('sconfitte', 0.33)
-    sconfitte_ospite = stats_ospite.get('sconfitte', 0.33)
+    # Numero Cartellini (Cards) - FIX: Usa dati REALI da colonne HY/AY
+    cartellini_previsti = 4.5  # Fallback
     
-    # Definiamo subito le variabili necessarie
+    # Definisci variabili aggressività (usate dopo in mcardrossi)
     vittorie_casa = stats_casa.get('vittorie', 0.33)
     vittorie_ospite = stats_ospite.get('vittorie', 0.33)
     
-    # Squadre vincenti sono più aggressive (attaccano), perdenti più difensive
+    if calculator.df_features is not None and 'HY' in calculator.df_features.columns and 'AY' in calculator.df_features.columns:
+        # Cartellini reali squadra casa (in casa)
+        partite_casa_home = calculator.df_features[calculator.df_features['HomeTeam'] == squadra_casa]
+        if len(partite_casa_home) > 0:
+            # Cartellini totali casa quando gioca in casa
+            media_y_casa_home = partite_casa_home[['HY', 'AY']].sum(axis=1).mean()
+        else:
+            media_y_casa_home = 2.2
+        
+        # Cartellini reali squadra ospite (in trasferta)
+        partite_ospite_away = calculator.df_features[calculator.df_features['AwayTeam'] == squadra_ospite]
+        if len(partite_ospite_away) > 0:
+            media_y_ospite_away = partite_ospite_away[['HY', 'AY']].sum(axis=1).mean()
+        else:
+            media_y_ospite_away = 2.3
+        
+        # Predizione basata su medie reali
+        cartellini_previsti = (media_y_casa_home + media_y_ospite_away) / 2
+        
+        # Smoothing leggero se pochi dati
+        min_partite = min(len(partite_casa_home), len(partite_ospite_away))
+        if min_partite < 15:
+            media_serie_a = 4.5
+            peso_shrink = min(10 / max(min_partite, 1), 0.15)
+            cartellini_previsti = cartellini_previsti * (1 - peso_shrink) + media_serie_a * peso_shrink
+    else:
+        # Fallback se colonne non disponibili
+        logger.warning("⚠️ Colonne HY/AY non trovate - usando stima")
+        aggressivita = 0.5 + (vittorie_casa + vittorie_ospite) * 0.35
+        cartellini_previsti = 3.5 + aggressivita * 2.0
+    
+    # Aggressività squadre (per mcardrossi successivo)
     aggressivita_casa = 0.5 + vittorie_casa * 0.7
     aggressivita_ospite = 0.5 + vittorie_ospite * 0.7
     
-    # Calcolo dinamico basato sulle statistiche reali - calibrato per realismo
-    cartellini_previsti = 3.5 + (aggressivita_casa + aggressivita_ospite) * 1.5
-    
-    # Aggiustamento per rivalità e importanza partita
-    rivalita_factor = 1.1 if abs(vittorie_casa - vittorie_ospite) < 0.1 else 1.0
-    cartellini_previsti *= rivalita_factor
-    
-    # Funzione sigmoidale per probabilità più realistica
+    # Funzione sigmoidale
     diff_cards = cartellini_previsti - 4.5
-    prob_over_cards = 1 / (1 + math.exp(-1.2 * diff_cards))
-    
-    # Limiti più realistici (35%-70%)
-    prob_over_cards = max(0.35, min(0.70, prob_over_cards))
-    
-    # Aggiustamento calibrato per squadre aggressive vs difensive
-    aggressivita_media = (aggressivita_casa + aggressivita_ospite) / 2
-    if aggressivita_media > 1.2:  # Squadre molto aggressive
-        prob_over_cards = min(0.70, prob_over_cards + 0.05)
-    elif aggressivita_media < 0.8:  # Squadre disciplinate
-        prob_over_cards = max(0.35, prob_over_cards - 0.08)
-    
+    prob_over_cards = 1 / (1 + math.exp(-1.5 * diff_cards))
+    prob_over_cards = max(0.30, min(0.75, prob_over_cards))
     prob_under_cards = 1 - prob_over_cards
     
     mercati['mcards'] = {
@@ -2315,29 +2345,49 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
         'cartellini_previsti': round(cartellini_previsti, 1)
     }
     
-    # Corner - Numero Calci d'Angolo
-    # Calcolo dinamico basato sui gol previsti specifici per squadra
-    # Corner correlano con attacchi e gol previsti (usa gol casa/ospite separati)
-    attacking_strength_casa = vittorie_casa + (media_gol_casa_totali / 2.5) * 0.4
-    attacking_strength_ospite = vittorie_ospite + (media_gol_ospite_totali / 2.5) * 0.4
+    # Corner - Numero Calci d'Angolo - FIX: Usa dati REALI da colonne HC/AC
+    corner_previsti = 9.5  # Fallback
     
-    # Corner variano significativamente tra partite
-    # Valori più realistici: media Serie A è 8-12 corner/partita
-    corner_previsti = 7.0 + (attacking_strength_casa + attacking_strength_ospite) * 1.0
+    if calculator.df_features is not None and 'HC' in calculator.df_features.columns and 'AC' in calculator.df_features.columns:
+        # Corner reali squadra casa (in casa)
+        partite_casa_home = calculator.df_features[calculator.df_features['HomeTeam'] == squadra_casa]
+        if len(partite_casa_home) > 0:
+            media_corner_casa_home = partite_casa_home[['HC', 'AC']].sum(axis=1).mean()
+        else:
+            media_corner_casa_home = 9.5
+        
+        # Corner reali squadra ospite (in trasferta)
+        partite_ospite_away = calculator.df_features[calculator.df_features['AwayTeam'] == squadra_ospite]
+        if len(partite_ospite_away) > 0:
+            media_corner_ospite_away = partite_ospite_away[['HC', 'AC']].sum(axis=1).mean()
+        else:
+            media_corner_ospite_away = 9.5
+        
+        # Predizione basata su medie reali
+        corner_previsti = (media_corner_casa_home + media_corner_ospite_away) / 2
+        
+        # Smoothing leggero se pochi dati
+        min_partite = min(len(partite_casa_home), len(partite_ospite_away))
+        if min_partite < 15:
+            media_serie_a = 10.0
+            peso_shrink = min(10 / max(min_partite, 1), 0.15)
+            corner_previsti = corner_previsti * (1 - peso_shrink) + media_serie_a * peso_shrink
+        
+        # Limiti realistici (6-14 corner)
+        corner_previsti = max(6.0, min(14.0, corner_previsti))
+    else:
+        # Fallback se colonne non disponibili
+        logger.warning("⚠️ Colonne HC/AC non trovate - usando stima")
+        vittorie_casa = stats_casa.get('vittorie', 0.33)
+        vittorie_ospite = stats_ospite.get('vittorie', 0.33)
+        attacking_strength = (vittorie_casa + vittorie_ospite + media_gol_casa_totali + media_gol_ospite_totali) / 4
+        corner_previsti = 7.0 + attacking_strength * 3.0
+        corner_previsti = max(6.0, min(13.0, corner_previsti))
     
-    # Aggiustamento per stile di gioco (più corner = più attacchi laterali)
-    possesso_factor = 1.1 if gol_previsti > 2.5 else 0.95
-    corner_previsti *= possesso_factor
-    
-    # Limiti realistici sui corner totali (5-12 per partita)
-    corner_previsti = max(5.0, min(12.0, corner_previsti))
-    
-    # Funzione sigmoidale meno aggressiva per probabilità più bilanciate
+    # Funzione sigmoidale
     diff_corner = corner_previsti - 9.5
-    prob_over_corner = 1 / (1 + math.exp(-0.6 * diff_corner))
-    
-    # Limiti realistici più stretti (30%-65%)
-    prob_over_corner = max(0.30, min(0.65, prob_over_corner))
+    prob_over_corner = 1 / (1 + math.exp(-0.8 * diff_corner))
+    prob_over_corner = max(0.30, min(0.70, prob_over_corner))
     prob_under_corner = 1 - prob_over_corner
     
     mercati['mcorner'] = {
