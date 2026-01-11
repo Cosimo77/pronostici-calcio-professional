@@ -3363,7 +3363,8 @@ def api_monitoring_health_detailed():
 @app.route('/monitoring/dashboard')
 def monitoring_dashboard():
     """Dashboard HTML per visualizzare metriche"""
-    return render_template('monitoring_dashboard.html')
+    # Redirect a monitoring principale (dashboard.html non esiste)
+    return monitoring()
 
 
 # ==================== GESTIONE ERRORI AVANZATA ====================

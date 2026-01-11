@@ -2,6 +2,7 @@
 """Aggiorna risultati tracking FASE1"""
 
 import pandas as pd
+from typing import Any
 
 # Carica tracking
 df = pd.read_csv('tracking_fase1_gennaio2026.csv')
@@ -37,12 +38,12 @@ for idx, row in df.iterrows():
         n += 1
         roi = (profit_tot / (stake * n)) * 100
         
-        # Aggiorna riga
-        df.at[idx, 'Risultato'] = esito
-        df.at[idx, 'Profit_Loss'] = f"{profit:.2f}"
-        df.at[idx, 'Bankroll'] = f"{bankroll:.2f}"
-        df.at[idx, 'ROI_%'] = f"{roi:.2f}"
-        df.at[idx, 'Note'] = f"{'WIN' if esito == 'D' else 'LOSS'} - {score}"
+        # Aggiorna riga (type: ignore per Pylance false positive)
+        df.at[idx, 'Risultato'] = esito  # type: ignore[index]
+        df.at[idx, 'Profit_Loss'] = f"{profit:.2f}"  # type: ignore[index]
+        df.at[idx, 'Bankroll'] = f"{bankroll:.2f}"  # type: ignore[index]
+        df.at[idx, 'ROI_%'] = f"{roi:.2f}"  # type: ignore[index]
+        df.at[idx, 'Note'] = f"{'WIN' if esito == 'D' else 'LOSS'} - {score}"  # type: ignore[index]
 
 # Salva
 df.to_csv('tracking_fase1_gennaio2026.csv', index=False)
