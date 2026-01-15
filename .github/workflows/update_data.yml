@@ -1,0 +1,56 @@
+name: Aggiornamento Dati Automatico
+
+on:
+  schedule:
+    - cron: '0 6 * * *'  # Ogni giorno alle 6:00 UTC (7:00 CET)
+  workflow_dispatch:  # Permette esecuzione manuale
+
+jobs:
+  update-render-data:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Trigger Render data update
+        run: |
+          echo "🔄 Triggering Render automation..."
+          response=$(curl -s -X POST https://pronostici-calcio-professional.onrender.com/api/automation/force_update)
+          echo "Response: $response"
+          
+          # Verifica successo
+          if echo "$response" | grep -q '"success":true'; then
+            echo "✅ Update triggered successfully"
+          else
+            echo "❌ Update failed"
+            exit 1
+          fi
+      
+      - name: Wait and verify
+        run: |
+          echo "⏳ Waiting 15s for update completion..."
+          sleep 15
+          
+          health=$(curl -s https://pronostici-calcio-professional.onrender.com/api/health)
+          echo "Health check response: $health"
+          
+          records=$(echo "$health" | grep -o '"database_records":[0-9]*' | cut -d':' -f2)
+          echo "📊 Database records: $records"
+          
+          if [ "$records" -gt 2800 ]; then
+            echo "✅ Database healthy with $records records"
+          else
+            echo "⚠️ Unexpected record count: $records"
+          fi
+      
+      - name: Test prediction API
+        run: |
+          echo "🧪 Testing prediction API..."
+          prediction=$(curl -s -X POST https://pronostici-calcio-professional.onrender.com/api/predict_enterprise \
+            -H "Content-Type: application/json" \
+            -d '{"squadra_casa":"Juventus","squadra_ospite":"Inter"}')
+          
+          if echo "$prediction" | grep -q '"mercati"'; then
+            echo "✅ Prediction API working"
+          else
+            echo "❌ Prediction API failed"
+            exit 1
+          fi
