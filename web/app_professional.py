@@ -3168,20 +3168,49 @@ def api_automation_status():
 def api_force_update():
     """Forza esecuzione manuale daily update (solo per debugging)"""
     try:
-        from background_automation import get_automation
-        automation = get_automation()
+        import subprocess
+        import os
         
-        if not automation:
-            return jsonify({'error': 'Automazione non disponibile'}), 500
+        # Usa script aggiornamento dati reali (compatibile Render)
+        script_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'aggiornamento_dati_reali.py')
         
-        # Esegui update manualmente
-        automation._run_daily_update()
+        if not os.path.exists(script_path):
+            return jsonify({'error': 'Script aggiornamento non trovato'}), 500
+        
+        # Esegui aggiornamento con timeout 3 minuti
+        result = subprocess.run(
+            ['python3', script_path],
+            capture_output=True,
+            text=True,
+            timeout=180,
+            cwd=os.path.dirname(os.path.dirname(__file__))
+        )
+        
+        if result.returncode != 0:
+            logger.error(f"Errore aggiornamento: {result.stderr}")
+            return jsonify({
+                'success': False,
+                'error': 'Errore durante aggiornamento dati',
+                'details': result.stderr[:500]
+            }), 500
+        
+        # Ricarica dataset aggiornato
+        global df_clean, df_features
+        df_clean = pd.read_csv('data/dataset_pulito.csv')
+        df_features = pd.read_csv('data/dataset_features.csv')
+        
+        logger.info(f"✅ Dati aggiornati via API: {len(df_clean)} partite")
         
         return jsonify({
             'success': True,
-            'message': 'Update forzato eseguito',
-            'timestamp': datetime.now(timezone.utc).isoformat()
+            'message': 'Aggiornamento dati completato',
+            'records': len(df_clean),
+            'timestamp': datetime.now(timezone.utc).isoformat(),
+            'output': result.stdout[-500:] if result.stdout else ''
         })
+    except subprocess.TimeoutExpired:
+        logger.error("Timeout aggiornamento dati (>3min)")
+        return jsonify({'error': 'Timeout aggiornamento'}), 504
     except Exception as e:
         logger.error(f"Errore force update: {e}", exc_info=True)
         return jsonify({'error': str(e)}), 500
