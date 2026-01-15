@@ -3166,54 +3166,45 @@ def api_automation_status():
 @app.route('/api/automation/force_update', methods=['POST'])
 @limiter.limit("5 per hour")
 def api_force_update():
-    """Forza esecuzione manuale daily update (solo per debugging)"""
+    """Forza ricaricamento dataset (compatibile Render FREE TIER)"""
     try:
-        import subprocess
-        import os
+        # Su Render FREE TIER non possiamo scaricare nuovi dati (no background jobs)
+        # Ma possiamo ricaricare il dataset esistente da GitHub
         
-        # Usa script aggiornamento dati reali (compatibile Render)
-        script_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'aggiornamento_dati_reali.py')
+        # Ricarica dataset dal repository
+        logger.info("🔄 Ricaricamento dataset in memoria...")
         
-        if not os.path.exists(script_path):
-            return jsonify({'error': 'Script aggiornamento non trovato'}), 500
+        global calculator
         
-        # Esegui aggiornamento con timeout 3 minuti
-        result = subprocess.run(
-            ['python3', script_path],
-            capture_output=True,
-            text=True,
-            timeout=180,
-            cwd=os.path.dirname(os.path.dirname(__file__))
-        )
+        # Ricarica dataset
+        df_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'dataset_pulito.csv')
         
-        if result.returncode != 0:
-            logger.error(f"Errore aggiornamento: {result.stderr}")
+        if not os.path.exists(df_path):
             return jsonify({
                 'success': False,
-                'error': 'Errore durante aggiornamento dati',
-                'details': result.stderr[:500]
+                'error': 'Dataset non trovato'
             }), 500
         
-        # Ricarica dataset aggiornato
-        global df_clean, df_features
-        df_clean = pd.read_csv('data/dataset_pulito.csv')
-        df_features = pd.read_csv('data/dataset_features.csv')
+        # Ricarica dataset in ProfessionalCalculator
+        calculator.df_features = pd.read_csv(df_path)
         
-        logger.info(f"✅ Dati aggiornati via API: {len(df_clean)} partite")
+        records_loaded = len(calculator.df_features)
+        
+        logger.info(f"✅ Dataset ricaricato: {records_loaded} partite")
         
         return jsonify({
             'success': True,
-            'message': 'Aggiornamento dati completato',
-            'records': len(df_clean),
+            'message': 'Dataset ricaricato in memoria',
+            'records': records_loaded,
             'timestamp': datetime.now(timezone.utc).isoformat(),
-            'output': result.stdout[-500:] if result.stdout else ''
+            'note': 'Render FREE TIER: dati aggiornati via GitHub deploy'
         })
-    except subprocess.TimeoutExpired:
-        logger.error("Timeout aggiornamento dati (>3min)")
-        return jsonify({'error': 'Timeout aggiornamento'}), 504
     except Exception as e:
-        logger.error(f"Errore force update: {e}", exc_info=True)
-        return jsonify({'error': str(e)}), 500
+        logger.error(f"Errore ricaricamento dataset: {e}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 @app.route('/api/automation/force_retrain', methods=['POST'])
 @limiter.limit("3 per hour")

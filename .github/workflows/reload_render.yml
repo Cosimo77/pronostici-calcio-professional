@@ -1,0 +1,47 @@
+name: Reload Render Dataset
+
+on:
+  # Trigger automatico quando dataset è aggiornato in locale e pushato
+  push:
+    branches: [ main ]
+    paths:
+      - 'data/dataset_pulito.csv'
+      - 'data/dataset_features.csv'
+  
+  # Trigger manuale
+  workflow_dispatch:
+
+jobs:
+  reload-render:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Reload dataset in Render memory
+        run: |
+          echo "🔄 Ricaricamento dataset su Render..."
+          response=$(curl -s -X POST https://pronostici-calcio-professional.onrender.com/api/automation/force_update)
+          echo "Response: $response"
+          
+          # Verifica successo
+          if echo "$response" | grep -q '"success":true'; then
+            echo "✅ Dataset ricaricato con successo"
+            records=$(echo "$response" | grep -o '"records":[0-9]*' | cut -d':' -f2)
+            echo "📊 Records caricati: $records"
+          else
+            echo "❌ Errore ricaricamento"
+            echo "$response"
+            exit 1
+          fi
+      
+      - name: Verify health
+        run: |
+          sleep 5
+          health=$(curl -s https://pronostici-calcio-professional.onrender.com/api/health)
+          
+          if echo "$health" | grep -q '"status":"healthy"'; then
+            echo "✅ Render healthy"
+            records=$(echo "$health" | grep -o '"database_records":[0-9]*' | cut -d':' -f2)
+            echo "📊 Database records: $records"
+          else
+            echo "⚠️ Health check warning"
+          fi
