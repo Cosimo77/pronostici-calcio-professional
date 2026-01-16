@@ -229,6 +229,24 @@ https://github.com/Cosimo77/pronostici-calcio-professional/actions
 
 ---
 
+## 🔍 AUDIT COERENZA DATI
+
+**Script**: `audit_coerenza.py`
+
+```bash
+python3 audit_coerenza.py
+```
+
+Verifica che i dati siano **coerenti** tra:
+- Dataset locale (`data/dataset_pulito.csv`)
+- Render production (`/api/health`)
+
+**Gap accettabile**: 0 partite
+**Azione se gap > 0**: Attendere deploy o trigger `/api/automation/force_update`
+
+---
+
 **Ultima revisione**: 16 Gennaio 2026
 **Versione**: 3.0 (Hybrid Local+Cloud)
 **Status**: Production-ready ✅
+**Gap attuale**: 31 partite (deploy in corso)
