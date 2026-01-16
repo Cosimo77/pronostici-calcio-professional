@@ -153,11 +153,11 @@ limiter.init_app(app)
 # Security Headers COMPLETI con Talisman Enterprise (CSP permissivo per dashboard)
 csp = {
     'default-src': "'self'",
-    'script-src': "'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net",
+    'script-src': "'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://www.googletagmanager.com",
     'style-src': "'self' 'unsafe-inline' https://fonts.googleapis.com",
     'font-src': "'self' https://fonts.gstatic.com",
     'img-src': "'self' data: https:",
-    'connect-src': "'self'",
+    'connect-src': "'self' https://www.google-analytics.com",
     'frame-ancestors': "'none'",  # Protezione clickjacking
     'base-uri': "'self'",
     'form-action': "'self'"
