@@ -1275,8 +1275,7 @@
                     'mou25',         // Over/Under 2.5
                     'mou15',         // Over/Under 1.5  
                     'mou35',         // Over/Under 3.5
-                    'mgg',           // Goal/NoGoal
-                    'mbtts',         // Both Teams To Score
+                    'mgg',           // Goal/NoGoal (BTTS)
                     'mcasasegna',    // Casa Segna
                     'mospitesegna',  // Ospite Segna
                     'mparidispari',  // Pari/Dispari
@@ -1365,21 +1364,6 @@
                                 predizione = 'No Goal';
                                 probabilita = `${(nogoalProb * 100).toFixed(1)}%`;
                                 valore = 'Almeno Una Non Segna';
-                            }
-                        }
-                        // Gestione BTTS
-                        else if (mercatoKey === 'mbtts' && mercato.probabilita) {
-                            const siProb = mercato.probabilita.si;
-                            const noProb = mercato.probabilita.no;
-                            
-                            if (siProb > noProb) {
-                                predizione = 'Sì';
-                                probabilita = `${(siProb * 100).toFixed(1)}%`;
-                                valore = 'Entrambe Segnano';
-                            } else {
-                                predizione = 'No';
-                                probabilita = `${(noProb * 100).toFixed(1)}%`;
-                                valore = 'Non Entrambe Segnano';
                             }
                         }
                         // Gestione Over/Under 1.5 e 3.5
