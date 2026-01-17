@@ -2133,7 +2133,10 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
     mercati['mah'] = {
         'nome': 'Asian Handicap',
         'handicap': handicap,
-        'probabilita_copertura': prob_copertura,
+        'probabilita': {
+            'copre': round(prob_copertura, 3),
+            'non_copre': round(1 - prob_copertura, 3)
+        },
         'confidenza': prob_copertura,
         'consiglio': f'Casa {handicap:+.1f}' if handicap != 0 else 'Equilibrato'
     }
@@ -2446,7 +2449,10 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
     mercati['mheuro'] = {
         'nome': 'Handicap Europeo',
         'handicap': handicap_euro,
-        'probabilita_successo': round(prob_handicap, 3),
+        'probabilita': {
+            'successo': round(prob_handicap, 3),
+            'fallimento': round(1 - prob_handicap, 3)
+        },
         'confidenza': prob_handicap,
         'consiglio': f'Casa {handicap_euro:+d}' if handicap_euro != 0 else 'Pareggio'
     }
