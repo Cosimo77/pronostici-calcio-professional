@@ -32,21 +32,21 @@ class BacktestFase1:
         
         # Configurazione per modalità
         if mode == 'attuale':
-            # Filtri ATTUALI (baseline)
-            self.kelly_fraction = 0.125  # 1/8 Kelly conservativo
-            self.min_ev = 5  # EV minimo 5%
-            self.min_prob = 0.35  # Prob minima 35%
+            # Filtri ATTUALI (baseline - NO filtri, mostra tutto)
+            self.kelly_fraction = 0.387  # Kelly × affidabilità standard
+            self.min_ev = 0  # NO filtro EV (mostra tutti)
+            self.min_prob = 0.20  # Prob minima molto bassa
             self.min_odds = 2.8  # Quote minime
             self.max_odds = 10.0  # No limite superiore quote
             self.min_affidabilita = 0.0  # No filtro affidabilità
         else:  # fase1
-            # Filtri FASE 1 MIGLIORATI
-            self.kelly_fraction = 0.5  # Kelly più aggressivo (4x)
-            self.min_ev = 35  # EV minimo 35%
+            # Filtri FASE 1 VALIDATI (13 Dic 2025)
+            self.kelly_fraction = 0.387  # Kelly × affidabilità (INVARIATO da backtest)
+            self.min_ev = 25  # EV minimo 25% (sweet spot validato)
             self.min_prob = 0.35  # Prob minima 35%
             self.min_odds = 2.8  # Quote minime 2.8
             self.max_odds = 3.5  # Quote massime 3.5 (KEY!)
-            self.min_affidabilita = 0.75  # Affidabilità minima 75%
+            self.min_affidabilita = 0.0  # NO filtro (sistema usa 0.387 costante)
         
         # Traccia equity curve
         self.equity_history = []

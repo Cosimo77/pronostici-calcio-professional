@@ -500,6 +500,15 @@
                             }
                             
                             const isBet = maxEv > 5; // Threshold al 5%
+                            
+                            // FASE1 Validation (nasconde se fuori range)
+                            const isDraw = bestOutcome === 'Pareggio';
+                            const isFase1Valid = isDraw && bestOdds >= 2.8 && bestOdds <= 3.5 && maxEv >= 25 && maxEv <= 50;
+                            
+                            // NASCONDI card se value bet NON valido secondo FASE1
+                            if (isBet && !isFase1Valid) {
+                                return '';  // Skip questa opportunità
+                            }
 
                             return `
                                 <div class="match-card">
