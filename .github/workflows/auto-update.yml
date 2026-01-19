@@ -2,8 +2,8 @@ name: Aggiornamento Automatico Dati
 
 on:
   schedule:
-    # Ogni Lunedì alle 06:00 UTC (07:00 ITA)
-    - cron: '0 6 * * 1'
+    # Ogni giorno alle 05:00 UTC (06:00 ITA)
+    - cron: '0 5 * * *'
   
   # Permetti esecuzione manuale
   workflow_dispatch:
@@ -20,7 +20,7 @@ jobs:
           response=$(curl -X POST \
             -w "\n%{http_code}" \
             -s \
-            https://pronostici-calcio-pro.onrender.com/api/automation/force_update)
+            https://pronostici-calcio-professional.onrender.com/api/automation/force_update)
           
           http_code=$(echo "$response" | tail -n1)
           body=$(echo "$response" | sed '$d')
@@ -42,7 +42,7 @@ jobs:
           response=$(curl -X POST \
             -w "\n%{http_code}" \
             -s \
-            https://pronostici-calcio-pro.onrender.com/api/automation/force_retrain)
+            https://pronostici-calcio-professional.onrender.com/api/automation/force_retrain)
           
           http_code=$(echo "$response" | tail -n1)
           body=$(echo "$response" | sed '$d')
@@ -61,7 +61,7 @@ jobs:
         run: |
           echo "📊 Verifica stato automazione..."
           
-          status=$(curl -s https://pronostici-calcio-pro.onrender.com/api/automation/status)
+          status=$(curl -s https://pronostici-calcio-professional.onrender.com/api/automation/status)
           
           echo "📝 Stato attuale:"
           echo "$status" | python3 -m json.tool || echo "$status"
