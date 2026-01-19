@@ -9,6 +9,7 @@
 ## ✅ Componenti Implementati
 
 ### 1. Core System
+
 - ✅ **fase1_automatico.py** (418 righe)
   - Integrazione The Odds API completa
   - Auto-identificazione opportunità FASE1
@@ -17,15 +18,18 @@
   - Report performance con decision framework
 
 ### 2. Automation Scripts
+
 - ✅ **run_fase1_auto.sh** - One-click esecuzione completa
 - ✅ **monitora_oggi.sh** - Dashboard partite giornaliere
 - ✅ **aggiorna_risultati.sh** - Update post-partite interattivo
 
 ### 3. Documentation
+
 - ✅ **AUTOMAZIONE_FASE1.md** - Guida tecnica completa
 - ✅ **FASE1_QUICK_START.md** - Guida rapida utente
 
 ### 4. Data Tracking
+
 - ✅ **tracking_fase1_gennaio2026.csv** - Tracking persistente
   - 10 opportunità settimana corrente
   - Auto-popolato con tutte le metriche
@@ -41,7 +45,7 @@
 
 ### Distribuzione Opportunità
 
-```
+```text
 07/01 (OGGI):    3 partite  (Bologna, Lazio, Torino)
 08/01:           1 partita  (Cremonese)
 10/01:           2 partite  (Como, Udinese)
@@ -63,17 +67,20 @@
 ## 🎯 Top 3 Opportunità
 
 1. **Fiorentina vs Milan** (11/01)
+
    - Quota X: 3.46
    - EV: **+46.5%** 🔥
    - Stake: €48.38
    - Potenziale: €118.89
 
 2. **Bologna vs Atalanta** (07/01 - OGGI)
+
    - Quota X: 3.25
    - EV: **+37.5%**
    - Stake: €48.38
 
 3. **Como vs Bologna** (10/01)
+
    - Quota X: 3.26
    - EV: **+37.9%**
    - Stake: €48.38
@@ -83,16 +90,19 @@
 ## 🚀 Uso Quotidiano
 
 ### Lunedì (Scansione Settimanale)
+
 ```bash
 ./run_fase1_auto.sh
 ```
 
 ### Ogni Giorno (Check Partite)
+
 ```bash
 ./monitora_oggi.sh
 ```
 
 ### Domenica Sera (Post-Partite)
+
 ```bash
 ./aggiorna_risultati.sh
 ```
@@ -102,11 +112,13 @@
 ## 📈 Milestones & Decision Points
 
 ### Dopo 20 Trade (Target: 27 Gennaio)
+
 - **Win Rate ≥28%** + **ROI ≥+3%** → Deploy reale €250
 - **ROI 0-3%** → Continua paper trading +10 trade
 - **ROI <0%** → Stop e analisi approfondita
 
 ### Dopo 50 Trade (Target: Marzo 2026)
+
 - **ROI ≥+5%** → Scala a €500 bankroll
 - **ROI 2-5%** → Mantieni €250
 - **ROI <+2%** → Rivedi strategia
@@ -116,6 +128,7 @@
 ## ⚠️ Stop Loss Triggers
 
 Sistema si ferma automaticamente SE:
+
 - ❌ Drawdown >70%
 - ❌ 5 perdite consecutive
 - ❌ ROI <-10% dopo 30 trade
@@ -126,13 +139,16 @@ Sistema si ferma automaticamente SE:
 ## 🔧 Technical Stack
 
 ### APIs & Data
+
 - **The Odds API**: Quote live Europa (500 req/mese)
 - **Football-Data.co.uk**: Dataset risultati storici
 - **ProfessionalCalculator**: Predizioni ML (43.2% accuracy)
 
 ### Algoritmo FASE1
+
 ```python
 Filtri Validati (510 trade backtest):
+
 - Market: Pareggio (Draw)
 - Quote: 2.8 - 3.5
 - Expected Value: 25% - 50%
@@ -140,10 +156,12 @@ Filtri Validati (510 trade backtest):
 - Kelly Stake: bankroll × 0.387 × 0.25
 
 Performance Storica:
+
 - ROI: +7.17%
 - Win Rate: 31.0%
 - Max Drawdown: -52.3%
 - Sharpe: Positivo
+
 ```
 
 ---
@@ -151,22 +169,26 @@ Performance Storica:
 ## 📊 Monitoring & Analytics
 
 ### Real-time Dashboard
+
 ```bash
 ./monitora_oggi.sh
 ```
 
 Mostra:
+
 - ✅ Partite di oggi
 - ✅ Quote e EV
 - ✅ Stake allocato
 - ✅ Status risultato
 
 ### Performance Report
+
 ```bash
 python3 fase1_automatico.py → Opzione 3
 ```
 
 Output:
+
 - Win rate attuale
 - ROI totale
 - Profitto/Perdita
@@ -183,6 +205,7 @@ Output:
 4. ❌ Probabilità key `'X'` → ✅ `'D'` (Draw)
 
 ### Best Practices
+
 - ✅ Test API integration PRIMA di logica complessa
 - ✅ Verify method signatures from source code
 - ✅ Use `grep_search` per trovare metodi corretti
@@ -193,17 +216,20 @@ Output:
 ## 📅 Timeline & Next Steps
 
 ### Settimana 1 (7-12 Gennaio)
+
 - ✅ Sistema deployed
 - ⏳ 10 opportunità in tracking
 - ⏳ Paper trading in corso
 - ⏳ Monitoraggio risultati OGGI (3 partite)
 
 ### Settimana 2-3 (14-27 Gennaio)
+
 - [ ] Accumula 20 trade totali
 - [ ] Calcola win rate reale
 - [ ] Decisione: deploy reale o continua paper
 
 ### Mese 1 (Gennaio-Febbraio)
+
 - [ ] 30-50 trade validati
 - [ ] Conferma ROI >+3%
 - [ ] Setup cron automazione completa
@@ -214,18 +240,21 @@ Output:
 ## 💡 Pro Tips
 
 ### API Quota Management
+
 - 1 scan = ~9 requests
 - 2 scan/settimana = ~72 req/mese
 - Margine: 428 richieste spare
 - Monitoring: Check dopo ogni scan
 
 ### Disciplina Paper Trading
+
 - ❌ NO soldi reali fino a validazione
 - ✅ Tracking rigoroso ogni partita
 - ✅ Decisione basata su dati oggettivi
 - ✅ Pazienza: 20+ trade minimi
 
 ### Ottimizzazione Continua
+
 - Analizza partite che NON matchano filtri
 - Considera ampliamento range EV se troppo selettivo
 - Monitor pattern quote bookmaker (cambiano?)
@@ -236,7 +265,7 @@ Output:
 ## 🏆 Success Metrics (Target Fine Mese)
 
 | Metrica | Target | Attuale | Status |
-|---------|--------|---------|--------|
+| --------- | -------- | --------- | -------- |
 | Trade Totali | ≥20 | 10 | ⏳ 50% |
 | Win Rate | ≥28% | TBD | ⏳ Pending |
 | ROI | ≥+3% | TBD | ⏳ Pending |
@@ -248,6 +277,7 @@ Output:
 ## 📞 Support & Resources
 
 ### Quick Commands
+
 ```bash
 # Scansione completa
 ./run_fase1_auto.sh
@@ -263,11 +293,13 @@ python3 fase1_automatico.py → Opzione 3
 ```
 
 ### Documentation
+
 - [AUTOMAZIONE_FASE1.md](AUTOMAZIONE_FASE1.md) - Guida tecnica
 - [FASE1_QUICK_START.md](FASE1_QUICK_START.md) - Quick start
 - [FASE1_IMPLEMENTATA.md](FASE1_IMPLEMENTATA.md) - Backtest storico
 
 ### GitHub
+
 - Repo: [pronostici-calcio-professional](https://github.com/Cosimo77/pronostici-calcio-professional)
 - Branch: main
 - Last commit: 70c2e4b
@@ -279,6 +311,7 @@ python3 fase1_automatico.py → Opzione 3
 ✅ **Sistema FASE1 100% automatico è OPERATIVO**
 
 **Cosa abbiamo ora**:
+
 - Scansione automatica quote live
 - Identificazione opportunità zero-config
 - Tracking CSV persistente
@@ -286,6 +319,7 @@ python3 fase1_automatico.py → Opzione 3
 - Report performance con decisioni
 
 **Prossimi 30 giorni**:
+
 - Paper trading disciplinato
 - Accumula 20-30 trade
 - Valida performance reale vs backtest (+7.17%)

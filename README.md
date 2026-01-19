@@ -12,7 +12,7 @@ python launcher.py --setup
 
 # Clone repository
 
-git clone https://github.com/Cosimo77/pronostici-calcio-professional.git# Avvio sistema completo
+git clone <<<<<https://github.com/Cosimo77/pronostici-calcio-professional.git#>>>>> Avvio sistema completo
 
 cd pronostici-calcio-professionalpython launcher.py
 
@@ -34,17 +34,17 @@ python -m web.app_professional  # Web server
 
 
 
-### Accesso Dashboard- **App Principale**: <http://localhost:5000>
+### Accesso Dashboard- **App Principale**: <<<<<<http://localhost:5000>>>>>>
 
-- **Dashboard Monitoraggio**: <http://localhost:5001>
+- **Dashboard Monitoraggio**: <<<<<<http://localhost:5001>>>>>>
 
-- **Web App**: <http://localhost:5008>
+- **Web App**: <<<<<<http://localhost:5008>>>>>>
 
-- **Monitoring**: <http://localhost:5008/monitoring>## ✨ Caratteristiche Principali
+- **Monitoring**: <<<<<<http://localhost:5008/monitoring>##>>>>> ✨ Caratteristiche Principali
 
-- **Automazione**: <http://localhost:5008/automation>
+- **Automazione**: <<<<<<http://localhost:5008/automation>>>>>>
 
-- **Produzione**: <https://pronostici-calcio-professional.onrender.com>### 🎯 Core Features
+- **Produzione**: <<<<<<https://pronostici-calcio-professional.onrender.com>###>>>>> 🎯 Core Features
 
 
 
@@ -206,7 +206,7 @@ python3 scripts/analizza_dati.py
 
 # Data Sources
 
-FOOTBALL_DATA_URL=https://www.football-data.co.uk# 3. Feature engineering
+FOOTBALL_DATA_URL=<<<<<https://www.football-data.co.uk#>>>>> 3. Feature engineering
 
 ```python3 scripts/feature_engineering.py
 
@@ -248,7 +248,7 @@ Dataset: 1990 partite (2020-2025)3. **📈 Analizza forma** - Analisi forma rece
 
 | Modello | Accuracy | Precision | Recall |
 
-|---------|----------|-----------|--------|### Esempio di Predizione
+| --------- | ---------- | ----------- | -------- |### Esempio di Predizione
 
 | RandomForest | 50.1% | 48.2% | 51.3% |
 
@@ -401,13 +401,16 @@ Questo progetto è privato. Tutti i diritti riservati.
 ### Metriche di Valutazione
 
 ```text
+
 Accuratezza Generale: ~50%
 Precisione per Classe:
+
 - Vittoria Casa: 53%
 - Vittoria Trasferta: 52%
 - Pareggio: 24%
 
 Cross-Validation: 50.8% (±5.3%)
+
 ```
 
 ### Interpretazione
@@ -446,6 +449,7 @@ Cross-Validation: 50.8% (±5.3%)
 Modifica `feature_engineering.py` per aggiungere nuove features:
 
 ```python
+
 # Esempio: Feature meteo
 def calcola_feature_meteo(self, data_partita):
     # La tua implementazione
@@ -453,6 +457,7 @@ def calcola_feature_meteo(self, data_partita):
 
 # Aggiungi alla funzione crea_features()
 feature_dict['meteo_score'] = self.calcola_feature_meteo(data_partita)
+
 ```
 
 ### Nuovi Modelli
@@ -460,6 +465,7 @@ feature_dict['meteo_score'] = self.calcola_feature_meteo(data_partita)
 Aggiungi nuovi modelli in `modelli_predittivi.py`:
 
 ```python
+
 'XGBoost': {
     'model': XGBClassifier(random_state=random_state),
     'params': {
@@ -468,6 +474,7 @@ Aggiungi nuovi modelli in `modelli_predittivi.py`:
     },
     'use_scaling': False
 }
+
 ```
 
 ## 🔄 Aggiornamento Dati
@@ -475,17 +482,21 @@ Aggiungi nuovi modelli in `modelli_predittivi.py`:
 ### Automatico
 
 ```bash
+
 python3 main.py
 # Seleziona opzione 2: "Solo scarica dati aggiornati"
+
 ```
 
 ### Manuale
 
 ```bash
+
 python3 scripts/scarica_dati_storici.py
 python3 scripts/analizza_dati.py
 python3 scripts/feature_engineering.py
 python3 scripts/modelli_predittivi.py
+
 ```
 
 ## ⚠️ Limitazioni e Disclaimer

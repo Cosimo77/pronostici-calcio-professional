@@ -52,6 +52,7 @@ Speedup: 160x faster
 Improvement: 99.4%
 Hit Rate: 50%
 Memory Usage: 1.01MB
+
 ```
 
 **TTL Strategy:**
@@ -90,6 +91,7 @@ Memory Usage: 1.01MB
 - Data validation (odds, probabilities)
 - Team name normalization
 - Edge cases (zero prob, low odds)
+
 ```
 
 **Execution:**
@@ -100,6 +102,7 @@ Ran 14 tests in 2.78s - OK ✅
 
 $ python3 tests/test_ml_predictions.py
 Ran 15 tests in 0.01s - OK (5 skipped) ✅
+
 ```
 
 ---
@@ -113,10 +116,12 @@ Ran 15 tests in 0.01s - OK (5 skipped) ✅
 **Componenti:**
 
 ```python
+
 - StructuredLogger: JSON logs per production
 - PerformanceMonitor: Metriche endpoint (avg, p95, p99, error rate)
 - ErrorTracker: Gestione errori con stack trace
 - Decorator @monitor_performance per tracking automatico
+
 ```
 
 **Nuovi Endpoint API:**
@@ -136,6 +141,7 @@ GET /api/monitoring/health_detailed
 GET /monitoring/dashboard
     → Dashboard HTML interattiva
     → Auto-refresh ogni 30 secondi
+
 ```
 
 **B) Dashboard Monitoring** (`web/templates/monitoring_dashboard.html`)
@@ -161,6 +167,7 @@ $ python3 check_deploy_readiness.py
 ❌ 0 errori critici
 
 ✅ SISTEMA PRONTO PER DEPLOY!
+
 ```
 
 **Categorie Verificate:**
@@ -182,6 +189,7 @@ $ python3 check_deploy_readiness.py
 $ ./setup_env.sh
 ✅ SECRET_KEY generata: Wpaa0Sxl9xv-CNMUBMAsDYsU...
 ✅ File .env creato
+
 ```
 
 **.env Generato:**
@@ -191,6 +199,7 @@ SECRET_KEY=<secure-32-byte-key>
 FLASK_ENV=production
 PORT=5008
 LOG_LEVEL=INFO
+
 ```
 
 ---
@@ -217,7 +226,7 @@ LOG_LEVEL=INFO
 ## 📈 Rating Evolution
 
 | Categoria | Before | After | Improvement |
-|-----------|--------|-------|-------------|
+| ----------- | -------- | ------- | ------------- |
 | Performance | 7.5/10 | 9.5/10 | +2.0 ⬆️ |
 | Code Quality | 8.0/10 | 9.0/10 | +1.0 ⬆️ |
 | Security | 8.5/10 | 9.0/10 | +0.5 ⬆️ |
@@ -272,13 +281,14 @@ python3 check_deploy_readiness.py
 # Start server
 export $(cat .env | grep -v '^#' | xargs)
 python3 web/app_professional.py
+
 ```
 
 **Verify:**
 
-- Server: <http://localhost:5008>
-- Dashboard: <http://localhost:5008/monitoring/dashboard>
-- Health: <http://localhost:5008/api/monitoring/health_detailed>
+- Server: <<<<<<http://localhost:5008>>>>>>
+- Dashboard: <<<<<<http://localhost:5008/monitoring/dashboard>>>>>>
+- Health: <<<<<<http://localhost:5008/api/monitoring/health_detailed>>>>>>
 
 ### 2. Deploy su Render.com
 
@@ -288,6 +298,7 @@ python3 web/app_professional.py
 git add .
 git commit -m "Production-ready with monitoring"
 git push origin main
+
 ```
 
 **B) Render.com Configuration:**
@@ -303,26 +314,30 @@ SECRET_KEY=<from .env file>
 FLASK_ENV=production
 PORT=5008
 PYTHON_VERSION=3.12.0
+
 ```
 
 **Build Command:**
 
 ```bash
 pip install -r requirements.txt
+
 ```
 
 **Start Command:**
 
 ```bash
 python web/app_professional.py
+
 ```
 
 **C) Post-Deploy Verification:**
 
 ```text
-✅ https://your-app.onrender.com → Homepage loads
-✅ https://your-app.onrender.com/api/health → Returns healthy
-✅ https://your-app.onrender.com/monitoring/dashboard → Monitoring visible
+✅ <<<<<https://your-app.onrender.com>>>>> → Homepage loads
+✅ <<<<<https://your-app.onrender.com/api/health>>>>> → Returns healthy
+✅ <<<<<https://your-app.onrender.com/monitoring/dashboard>>>>> → Monitoring visible
+
 ```
 
 ---
@@ -356,6 +371,7 @@ pronostici_calcio/
 ├── requirements.txt              # Python dependencies
 ├── Procfile                      # Render.com start command
 └── runtime.txt                   # Python version
+
 ```
 
 ---
@@ -365,8 +381,9 @@ pronostici_calcio/
 ### Dashboard Access
 
 ```text
-Local: http://localhost:5008/monitoring/dashboard
-Production: https://your-app.onrender.com/monitoring/dashboard
+Local: <<<<<http://localhost:5008/monitoring/dashboard>>>>>
+Production: <<<<<https://your-app.onrender.com/monitoring/dashboard>>>>>
+
 ```
 
 ### Key Metrics to Watch
@@ -397,6 +414,7 @@ Production: https://your-app.onrender.com/monitoring/dashboard
 GET /api/metrics → Metrics in Prometheus format
 GET /api/monitoring/performance → JSON performance data
 GET /api/monitoring/errors → JSON error data
+
 ```
 
 **Health Check (Uptime Monitoring):**
@@ -404,6 +422,7 @@ GET /api/monitoring/errors → JSON error data
 ```text
 GET /api/health → Basic health check
 GET /api/monitoring/health_detailed → Full component status
+
 ```
 
 ---
@@ -426,6 +445,7 @@ Default: 100 requests/minute
 /api/predict: 30 requests/minute
 /api/upcoming_matches: 20 requests/minute
 /api/monitoring/*: 30-60 requests/minute
+
 ```
 
 ---
@@ -454,13 +474,14 @@ Default: 100 requests/minute
 
 ```bash
 # Check system status
-curl https://your-app.onrender.com/api/health
+curl <<<<<https://your-app.onrender.com/api/health>>>>>
 
 # Clear cache (if needed)
-curl -X POST https://your-app.onrender.com/api/cache/clear
+curl -X POST <<<<<https://your-app.onrender.com/api/cache/clear>>>>>
 
 # View logs (Render dashboard)
 # → Logs tab in Render.com dashboard
+
 ```
 
 ---
@@ -497,6 +518,7 @@ redis-cli ping
 
 # Start Redis
 brew services start redis
+
 ```
 
 #### 2. Port 5008 Already in Use
@@ -507,6 +529,7 @@ lsof -ti:5008
 
 # Kill process
 kill -9 <PID>
+
 ```
 
 #### 3. SECRET_KEY Missing
@@ -514,6 +537,7 @@ kill -9 <PID>
 ```bash
 # Regenerate .env
 ./setup_env.sh
+
 ```
 
 #### 4. Tests Failing
@@ -522,6 +546,7 @@ kill -9 <PID>
 # Run with verbose output
 python3 tests/test_value_betting.py -v
 python3 tests/test_ml_predictions.py -v
+
 ```
 
 ---

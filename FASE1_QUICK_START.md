@@ -11,9 +11,11 @@
 ```bash
 # Ogni lunedì mattina (10 minuti)
 ./run_fase1_auto.sh
+
 ```
 
 Fa TUTTO automaticamente:
+
 - ✅ Scarica quote da The Odds API
 - ✅ Identifica opportunità FASE1
 - ✅ Salva nel tracking CSV
@@ -32,7 +34,7 @@ Fa TUTTO automaticamente:
 ### Opportunità Trovate
 
 | Data | Partita | Quota | EV | Stake |
-|------|---------|-------|-----|-------|
+| ------ | --------- | ------- | ----- | ------- |
 | 07/01 | Bologna-Atalanta | 3.25 | +37.5% | €48.38 |
 | 07/01 | Lazio-Fiorentina | 3.00 | +26.7% | €48.38 |
 | 07/01 | Torino-Udinese | 3.01 | +27.3% | €48.38 |
@@ -45,6 +47,7 @@ Fa TUTTO automaticamente:
 | 12/01 | Genoa-Cagliari | 2.97 | +25.8% | €48.38 |
 
 **Statistiche**:
+
 - EV medio: +32.4%
 - Quote range: 2.96-3.46 ✅ (tutte in 2.8-3.5)
 - Stake totale: €483.80
@@ -58,6 +61,7 @@ Se preferisci controllo manuale:
 
 ```bash
 python3 fase1_automatico.py
+
 ```
 
 **Menu**:
@@ -71,21 +75,30 @@ python3 fase1_automatico.py
 ## 📅 Workflow Settimanale
 
 ### Lunedì (10:00)
+
 ```bash
 ./run_fase1_auto.sh
+
 ```
+
 → Identifica opportunità per il weekend
 
 ### Dopo Partite (Domenica sera/Lunedì)
+
 ```bash
 ./run_fase1_auto.sh
+
 ```
+
 → Aggiorna automaticamente risultati dal dataset
 
 ### Fine Mese
+
 ```bash
 python3 fase1_automatico.py → Opzione 3 (REPORT)
+
 ```
+
 → Report completo con decisione (continua/scala/stop)
 
 ---
@@ -95,7 +108,7 @@ python3 fase1_automatico.py → Opzione 3 (REPORT)
 **Minimo 20 trade** prima di decidere:
 
 | Metrica | Target | Azione |
-|---------|--------|--------|
+| --------- | -------- | -------- |
 | ROI | ≥+3% | ✅ Passa a deploy reale (€250) |
 | ROI | 0-3% | ⚠️ Continua paper trading +10 trade |
 | ROI | <0% | ❌ Stop e rivedi strategia |
@@ -109,6 +122,7 @@ python3 fase1_automatico.py → Opzione 3 (REPORT)
 ## ⚠️ Stop Loss Automatici
 
 Il sistema si ferma SE:
+
 - Drawdown >70% (limite sicurezza)
 - 5 perdite consecutive
 - ROI <-10% dopo 30 trade
@@ -121,12 +135,15 @@ Il sistema si ferma SE:
 
 ```bash
 crontab -e
+
 ```
 
 Aggiungi:
+
 ```cron
 # FASE1 automatico ogni lunedì ore 10:00
 0 10 * * 1 /Users/cosimomassaro/Desktop/pronostici_calcio/run_fase1_auto.sh >> ~/fase1.log 2>&1
+
 ```
 
 Salva e esci. **Sistema completamente autonomo**.
@@ -137,6 +154,7 @@ Salva e esci. **Sistema completamente autonomo**.
 
 ```bash
 ./monitora_oggi.sh
+
 ```
 
 Mostra partite di OGGI con quote/stake.
@@ -146,16 +164,19 @@ Mostra partite di OGGI con quote/stake.
 ## 💡 Pro Tips
 
 1. **API Quota Management**: 500 richieste/mese
+
    - 1 scan = ~8-10 richieste
    - Massimo 2 scan/settimana = 80 req/mese
    - Margine: 420 richieste spare
 
 2. **Kelly Conservativo**: Stake 0.25× Kelly
+
    - €48.38 per trade (~10% bankroll)
    - Rischio controllato
    - Crescita sostenibile
 
 3. **Paper Trading Disciplina**:
+
    - NO soldi reali fino a 20+ trade validati
    - Tracking rigoroso CSV
    - Decisione basata su dati, non emozioni

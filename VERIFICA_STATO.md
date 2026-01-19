@@ -6,6 +6,7 @@
 
 ```bash
 python3 verifica_stato_rapido.py
+
 ```
 
 Output mostra:
@@ -21,9 +22,10 @@ Output mostra:
 
 ```bash
 python3 -m web.app_professional
+
 ```
 
-Poi apri: `http://localhost:8080/monitoring`
+Poi apri: `<<<<<http://localhost:8080/monitoring`>>>>>
 
 Dashboard mostra:
 
@@ -45,6 +47,7 @@ cat logs/automation_status.json | python3 -m json.tool
 
 # Log aggiornamento automatico
 tail -20 logs/aggiornamento_auto.log
+
 ```
 
 ---
@@ -63,6 +66,7 @@ wc -l data/dataset_features.csv
 
 # Dimensione file stagione corrente
 ls -lh data/I1_2526.csv
+
 ```
 
 ---
@@ -73,6 +77,7 @@ ls -lh data/I1_2526.csv
 
 ```bash
 python3 scripts/aggiorna_quotidiano_auto.py
+
 ```
 
 **Cosa fa:**
@@ -100,6 +105,7 @@ Stato automazione:
 
 ```bash
 cat logs/automation_status.json
+
 ```
 
 ---
@@ -135,12 +141,14 @@ cat logs/automation_status.json
 
 ```bash
 python3 scripts/aggiorna_quotidiano_auto.py
+
 ```
 
 ### Modelli non trovati
 
 ```bash
 python3 riaddestra_modelli_rapido.py
+
 ```
 
 ### Sistema non risponde
@@ -152,6 +160,7 @@ ps aux | grep automation_master
 # Restart automazione
 pkill -f automation_master
 python3 automation_master.py &
+
 ```
 
 ---
@@ -160,7 +169,7 @@ python3 automation_master.py &
 
 Ogni `git push origin main` triggera automaticamente deploy su Render.
 
-Verifica deploy: <https://dashboard.render.com>
+Verifica deploy: <<<<<<https://dashboard.render.com>>>>>>
 
 Log deploy: Vedi "Events" nel dashboard Render
 
@@ -182,7 +191,8 @@ python3 test_professional_calculator.py
 python3 -m web.app_professional
 
 # 5. Apri monitoring
-open http://localhost:8080/monitoring
+open <<<<<http://localhost:8080/monitoring>>>>>
+
 ```
 
 ---

@@ -3,12 +3,14 @@
 ## 📌 Logica Corretta (Render FREE TIER)
 
 ### ❌ COSA NON FUNZIONA su Render FREE TIER
+
 - Cron jobs automatici
 - Background workers
 - Script che scaricano dati esterni
 - Processi che girano oltre 30 secondi
 
 ### ✅ COSA FUNZIONA
+
 - Web server sempre online
 - Ricaricamento dataset in memoria
 - GitHub Actions trigger automatici
@@ -26,9 +28,11 @@ python3 aggiornamento_dati_reali.py
 
 # Oppure usa script rapido
 python3 aggiorna_rapido.py
+
 ```
 
 **Cosa fa:**
+
 - Scarica ultimi risultati da football-data.co.uk
 - Aggiorna `data/dataset_pulito.csv`
 - Aggiorna `data/dataset_features.csv`
@@ -39,21 +43,28 @@ python3 aggiorna_rapido.py
 git add data/dataset_pulito.csv data/dataset_features.csv
 git commit -m "Update: dataset con partite fino a $(date +%d/%m/%Y)"
 git push origin main
+
 ```
 
+
 **Cosa fa:**
+
 - Pusha nuovi dati su GitHub
 - Render rileva commit e fa auto-deploy
 - GitHub Actions rileva cambio file dataset
 
 ### 3. Reload Automatico su Render
 
+
 **Trigger automatico via GitHub Actions:**
+
 - File: `.github/workflows/reload_render.yml`
 - Si attiva su: push di `data/dataset_*.csv`
 - Chiama: `POST /api/automation/force_update`
 
+
 **Endpoint su Render:**
+
 ```python
 # web/app_professional.py
 @app.route('/api/automation/force_update')
@@ -61,6 +72,7 @@ def api_force_update():
     # Ricarica dataset dal file deployato
     calculator.df_features = pd.read_csv('data/dataset_pulito.csv')
     return {'success': True, 'records': len(dataset)}
+
 ```
 
 ---
@@ -71,15 +83,16 @@ def api_force_update():
 
 ```bash
 # Verifica health
-curl https://pronostici-calcio-professional.onrender.com/api/health
+curl <<<<<https://pronostici-calcio-professional.onrender.com/api/health>>>>>
 
 # Trigger manuale reload
-curl -X POST https://pronostici-calcio-professional.onrender.com/api/automation/force_update
+curl -X POST <<<<<https://pronostici-calcio-professional.onrender.com/api/automation/force_update>>>>>
+
 ```
 
-### GitHub Actions
+### GitHub <<<<<<https://github.com/Cosimo77/pronostici-calcio-professional/actions>>>>>>
 
-1. Vai su: https://github.com/Cosimo77/pronostici-calcio-professional/actions
+1. Vai su: <<<<<https://github.com/Cosimo77/pronostici-calcio-professional/actions>>>>>
 2. Workflow: "Reload Render Dataset"
 3. Ultimo run dovrebbe essere verde ✅
 
@@ -103,6 +116,7 @@ git commit -m "Update: nuove partite $(date +%d/%m)" && \
 git push origin main
 
 # GitHub Actions si occupa del resto automaticamente
+
 ```
 
 ---
@@ -111,21 +125,26 @@ git push origin main
 
 ### Problema: "Dati non aggiornati su Render"
 
+
 **Soluzione:**
+
 ```bash
 # 1. Verifica quante partite hai in locale
 wc -l data/dataset_pulito.csv
 
 # 2. Verifica quante su Render
-curl https://pronostici-calcio-professional.onrender.com/api/health | grep database_records
+curl <<<<<https://pronostici-calcio-professional.onrender.com/api/health>>>>> | grep database_records
 
 # 3. Se diversi, trigger manuale reload
-curl -X POST https://pronostici-calcio-professional.onrender.com/api/automation/force_update
+curl -X POST <<<<<https://pronostici-calcio-professional.onrender.com/api/automation/force_update>>>>>
+
 ```
 
 ### Problema: "GitHub Actions fallisce"
 
+
 **Possibili cause:**
+
 - Render in sleep (free tier dorme dopo 15min inattività)
 - Endpoint non risponde → Render si sveglia automaticamente
 

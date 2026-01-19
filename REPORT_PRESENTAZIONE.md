@@ -143,15 +143,19 @@ Il sistema combina i 3 modelli con **voto pesato** basato su test accuracy:
 
 ```text
 Logistic Regression (modello principale):
+
 - Overall Accuracy: 56.5%
 - Precision H/D/A: ~0.55/0.50/0.58
 - Recall H/D/A: ~0.60/0.45/0.55
 
 Random Forest:
+
 - Overall Accuracy: 51.8%
 
 Gradient Boosting:
+
 - Overall Accuracy: 45.4%
+
 ```
 
 ### Validazione Storica Reale (100 partite più recenti)
@@ -172,6 +176,7 @@ Accuratezza per Confidenza:
   Media (40-50%):    53.3% (24/45)
   Alta (50-60%):     71.4% (5/7)  ⭐
   Molto Alta (>60%): 100.0% (2/2) ⭐⭐
+
 ```
 
 ### Insight Chiave
@@ -233,6 +238,7 @@ GET  /api/health              → Status sistema
 POST /api/predict_enterprise  → Predizione partita
 POST /api/consigli            → Consigli scommessa
 GET  /api/automation_status   → Stato automazione
+
 ```
 
 ### Frontend
@@ -246,7 +252,7 @@ GET  /api/automation_status   → Stato automazione
 - **Platform:** Render.com (cloud hosting)
 - **Scalability:** Auto-scaling workers
 - **Uptime:** 99.9% target
-- **URL:** <https://pronostici-calcio-professional.onrender.com>
+- **URL:** <<<<<<https://pronostici-calcio-professional.onrender.com>>>>>>
 
 ### Sicurezza
 
@@ -296,6 +302,7 @@ Probabilità:
 Mercati:
   Over/Under 2.5: Over (attesi 3.6 gol)
   BTTS: Yes (entrambe segnano)
+
 ```
 
 ### Esempio 2: Juventus vs Napoli
@@ -309,8 +316,10 @@ Probabilità:
   Trasferta: 51.5%
 
 Note:
+
   - Napoli domina scontri diretti (80% win rate)
   - Trasferta in forma eccellente
+
 ```
 
 ### Esempio 3: Roma vs Lazio (Derby Capitale)
@@ -326,6 +335,7 @@ Probabilità:
 Mercati:
   Over/Under 2.5: Over (attesi 2.8 gol)
   BTTS: Yes
+
 ```
 
 ---
@@ -400,9 +410,9 @@ Mercati:
 
 ## 10. CONTATTI E SUPPORTO
 
-**Repository:** <https://github.com/Cosimo77/pronostici-calcio-professional>  
+**Repository:** <<<<<<https://github.com/Cosimo77/pronostici-calcio-professional>>>>>>  
 **Documentation:** README.md, AUTOMAZIONE.md, DEPLOY.md  
-**Monitoring:** <https://pronostici-calcio-professional.onrender.com/monitoring>  
+**Monitoring:** <<<<<<https://pronostici-calcio-professional.onrender.com/monitoring>>>>>>  
 
 ---
 

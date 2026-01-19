@@ -7,7 +7,7 @@
 
 ## 📊 Stato Attuale
 
-```
+```text
 Trade Completati: 4/12
 ├─ Win: 2 (50%)
 ├─ Loss: 2 (50%)
@@ -42,6 +42,7 @@ echo "1" | python3 fase1_automatico.py
 ```
 
 **Cosa fa:**
+
 - Fetcha partite prossimi 7 giorni da The Odds API
 - Identifica opportunità FASE1 (EV ≥25%, Quote X 2.8-3.5)
 - Salva automaticamente in `tracking_fase1_gennaio2026.csv`
@@ -61,6 +62,7 @@ echo "2" | python3 fase1_automatico.py
 ```
 
 **Cosa fa:**
+
 - Carica `tracking_fase1_gennaio2026.csv`
 - Cerca partite completate in `data/dataset_pulito.csv`
 - Calcola risultati da gol (H/D/A)
@@ -83,6 +85,7 @@ echo "3" | python3 fase1_automatico.py
 ```
 
 **Cosa fa:**
+
 - Analizza tutti i trade completati
 - Calcola metriche (WR, ROI, Drawdown)
 - Confronta con target FASE1 validato
@@ -118,6 +121,7 @@ echo "1" | python3 fase1_automatico.py
 ## 🔧 Comandi Utili
 
 ### Check Stato Sistema
+
 ```bash
 # Verifica tracking
 head -1 tracking_fase1_gennaio2026.csv && tail -5 tracking_fase1_gennaio2026.csv
@@ -134,6 +138,7 @@ print(OddsAPIClient().get_quota_usage())
 ```
 
 ### Workflow Tutto in Uno
+
 ```bash
 # Modalità AUTO (SCAN + UPDATE + REPORT)
 echo "4" | python3 fase1_automatico.py
@@ -141,6 +146,7 @@ echo "4" | python3 fase1_automatico.py
 ```
 
 ### Pulizia Duplicati (se necessario)
+
 ```bash
 python3 << 'EOF'
 import pandas as pd
@@ -157,14 +163,16 @@ EOF
 ## 🎯 Target e Validazione
 
 ### Obiettivi FASE1 (20 Trade Minimi)
-```
+
+```text
 Win Rate: ≥28% (attuale: 50% ✅)
 ROI: ≥+3% (attuale: +51.75% ✅✅✅)
 Drawdown: <60% (monitorare)
 ```
 
 ### Decision Tree
-```
+
+```text
 Trade < 20:
   → Continua validazione
   
@@ -182,6 +190,7 @@ Trade ≥ 20 AND ROI < 0%:
 ## ⚠️ Troubleshooting
 
 ### "Nessun risultato disponibile ancora"
+
 ```bash
 # Causa: Dataset non aggiornato
 # Fix:
@@ -190,14 +199,16 @@ python3 aggiorna_rapido.py
 ```
 
 ### "401 Unauthorized" API
+
 ```bash
 # Causa: API key scaduta
-# Fix: Rinnova su https://the-odds-api.com
+# Fix: Rinnova su <https://the-odds-api.com>
 # Aggiorna in .env:
 ODDS_API_KEY=nuova_chiave_qui
 ```
 
 ### Duplicati nel Tracking
+
 ```bash
 # Causa: SCAN ripetuto senza pulizia
 # Fix: Usa script pulizia sopra
@@ -209,13 +220,15 @@ ODDS_API_KEY=nuova_chiave_qui
 ## 📈 Performance Monitoring
 
 ### Metriche da Tracciare
+
 - **Win Rate settimanale** (target: >28%)
 - **ROI progressivo** (target: >+3%)
 - **Drawdown massimo** (alert: >60%)
 - **Trade/settimana** (atteso: 3-5)
 
 ### Alert Critici
-```
+
+```text
 ROI < 0% dopo 50 trade → STOP, analizza
 Drawdown > 80% → Ridimensiona stake
 WR < 25% per 20 trade → Rivedi filtri
@@ -226,6 +239,7 @@ WR < 25% per 20 trade → Rivedi filtri
 ## 🔐 Security & Backup
 
 ### Backup Automatico
+
 ```bash
 # Prima di ogni operazione critica
 cp tracking_fase1_gennaio2026.csv /tmp/tracking_backup_$(date +%Y%m%d).csv
@@ -237,6 +251,7 @@ git push
 ```
 
 ### Protezione API Key
+
 ```bash
 # Verifica .gitignore
 grep ".env" .gitignore  # Deve esistere
@@ -250,7 +265,7 @@ git status | grep ".env"  # Non deve apparire
 ## 📞 Quick Reference
 
 | Comando | Quando | Output Atteso |
-|---------|--------|---------------|
+| --------- | -------- | --------------- |
 | `echo "1" \| python3 fase1_automatico.py` | Lunedì mattina | 3-7 opportunità |
 | `echo "2" \| python3 fase1_automatico.py` | Dopo partite | 5-10 aggiornati |
 | `echo "3" \| python3 fase1_automatico.py` | Domenica sera | Report completo |
@@ -262,6 +277,7 @@ git status | grep ".env"  # Non deve apparire
 ## ✅ Sistema Pronto
 
 **Tutto funziona:**
+
 - ✅ SCAN automatico (The Odds API)
 - ✅ UPDATE automatico (dataset matching)
 - ✅ REPORT automatico (metriche)

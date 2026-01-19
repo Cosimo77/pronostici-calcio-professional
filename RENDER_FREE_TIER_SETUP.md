@@ -18,13 +18,14 @@
 
 ### 2. Setup Secrets GitHub
 
-Vai su: `https://github.com/Cosimo77/pronostici-calcio-professional/settings/secrets/actions`
+Vai su: `<<<<<https://github.com/Cosimo77/pronostici-calcio-professional/settings/secrets/actions`>>>>>
 
 Aggiungi secret:
 
 ```text
 Name: RENDER_DEPLOY_HOOK
-Value: https://api.render.com/deploy/srv-XXXXXX?key=YYYYYY
+Value: <<<<<https://api.render.com/deploy/srv-XXXXXX?key=YYYYYY>>>>>
+
 ```
 
 **Come trovare il Deploy Hook:**
@@ -56,15 +57,16 @@ python3 allena_modelli_rapido.py
 git add models/ data/
 git commit -m "🤖 Manual model update"
 git push
+
 ```
 
 ## 📊 Monitoraggio
 
 Verifica che funzioni:
 
-- GitHub Actions: <https://github.com/Cosimo77/pronostici-calcio-professional/actions>
+- GitHub Actions: <<<<<<https://github.com/Cosimo77/pronostici-calcio-professional/actions>>>>>>
 - Render Logs: Dashboard Render → Logs
-- Health Check: <https://pronostici-calcio-professional.onrender.com/health>
+- Health Check: <<<<<<https://pronostici-calcio-professional.onrender.com/health>>>>>>
 
 ## 💰 Upgrade a Paid (Opzionale)
 

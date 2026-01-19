@@ -3,14 +3,14 @@
 ## 📋 Prerequisiti
 
 - Account GitHub con repository `pronostici-calcio-professional`
-- Account Render gratuito (<https://render.com>)
+- Account Render gratuito (<<<<<<https://render.com>>>>>>)
 - Codice già committato con configurazioni aggiornate
 
 ## 🔧 Configurazione Automatica
 
 ### 1. Connetti Repository GitHub
 
-1. Login su **Render Dashboard**: <https://dashboard.render.com>
+1. Login su **Render Dashboard**: <<<<<<https://dashboard.render.com>>>>>>
 2. Click **"New +"** → **"Web Service"**
 3. **Connect a repository** → Autorizza GitHub
 4. Seleziona repository: `Cosimo77/pronostici-calcio-professional`
@@ -26,6 +26,7 @@ Branch: main
 Runtime: Docker
 Dockerfile Path: ./Dockerfile
 Docker Context: .
+
 ```
 
 #### Settings Avanzate
@@ -34,6 +35,7 @@ Docker Context: .
 Instance Type: Free
 Health Check Path: /api/health
 Auto-Deploy: Yes
+
 ```
 
 #### Variabili Ambiente
@@ -43,6 +45,7 @@ FLASK_ENV=production
 PORT=5008  # Render assegna dinamicamente
 PYTHONUNBUFFERED=1
 LOG_LEVEL=INFO
+
 ```
 
 ### 3. Deploy Automatico
@@ -50,7 +53,7 @@ LOG_LEVEL=INFO
 1. Click **"Create Web Service"**
 2. Render inizia build Docker automatico
 3. Attendi 5-10 minuti per primo deploy
-4. URL generato: `https://pronostici-calcio-pro.onrender.com`
+4. URL generato: `<<<<<https://pronostici-calcio-pro.onrender.com`>>>>>
 
 ## 🔄 Aggiornamenti Automatici (Cron Job)
 
@@ -66,6 +69,7 @@ Region: Frankfurt
 Runtime: Docker
 Schedule: 0 2 * * *  # Ogni giorno 2:00 AM
 Command: python3 scripts/aggiorna_quotidiano.py
+
 ```
 
 ## 📊 Monitoring & Health Check
@@ -74,16 +78,17 @@ Command: python3 scripts/aggiorna_quotidiano.py
 
 ```bash
 # Health Check (Render monitora automaticamente)
-GET https://pronostici-calcio-pro.onrender.com/api/health
+GET <<<<<https://pronostici-calcio-pro.onrender.com/api/health>>>>>
 
 # Status Sistema
-GET https://pronostici-calcio-pro.onrender.com/api/status
+GET <<<<<https://pronostici-calcio-pro.onrender.com/api/status>>>>>
 
 # Dashboard Monitoring
-GET https://pronostici-calcio-pro.onrender.com/monitoring
+GET <<<<<https://pronostici-calcio-pro.onrender.com/monitoring>>>>>
 
 # Automazione Status
-GET https://pronostici-calcio-pro.onrender.com/automation
+GET <<<<<https://pronostici-calcio-pro.onrender.com/automation>>>>>
+
 ```
 
 ### Logs in Tempo Reale
@@ -94,6 +99,7 @@ Dashboard → Service → Logs (tab)
 
 # Ultimi 100 log
 Dashboard → Service → Shell → tail -100 logs/automation_master.log
+
 ```
 
 ## 🎯 API Enterprise Endpoints
@@ -101,19 +107,21 @@ Dashboard → Service → Shell → tail -100 logs/automation_master.log
 ### Predizione Singola Partita
 
 ```bash
-curl -X POST https://pronostici-calcio-pro.onrender.com/api/predict_enterprise \
+curl -X POST <<<<<https://pronostici-calcio-pro.onrender.com/api/predict_enterprise>>>>> \
   -H "Content-Type: application/json" \
   -d '{
     "casa": "Inter",
     "trasferta": "Milan",
     "usa_cache": true
   }'
+
 ```
 
 ### Predizioni Giornata
 
 ```bash
-curl https://pronostici-calcio-pro.onrender.com/api/predictions/today
+curl <<<<<https://pronostici-calcio-pro.onrender.com/api/predictions/today>>>>>
+
 ```
 
 ## ⚠️ Limitazioni Piano Free Render
@@ -135,6 +143,7 @@ curl https://pronostici-calcio-pro.onrender.com/api/predictions/today
 - Workers ridotti: 2 invece di 4
 - Timeout aumentato: 120s per wake-up
 - Modelli pre-trained inclusi (no training online)
+
 ```
 
 ## 🔐 Sicurezza & Best Practices
@@ -147,6 +156,7 @@ curl https://pronostici-calcio-pro.onrender.com/api/predictions/today
 - Content-Security-Policy
 - X-Frame-Options: DENY
 - Strict-Transport-Security
+
 ```
 
 ### Rate Limiting (già attivo)
@@ -155,6 +165,7 @@ curl https://pronostici-calcio-pro.onrender.com/api/predictions/today
 # Flask-Limiter configurato
 /api/predict_enterprise: 60 richieste/ora per IP
 /api/*: 1000 richieste/giorno
+
 ```
 
 ## 📈 Upgrade a Piano Paid (Opzionale)
@@ -185,6 +196,7 @@ Dashboard → Service → Logs → Filter "ERROR"
 1. requirements.txt incompatibilità → Verifica versioni
 2. Dockerfile sintassi → Valida localmente: docker build -t test .
 3. Porta errata → Usa $PORT variabile Render
+
 ```
 
 ### App Non Risponde
@@ -197,7 +209,8 @@ Dashboard → Service → Metrics → Check "Requests"
 Dashboard → Service → Manual Deploy → "Deploy latest commit"
 
 # 3. Check health endpoint
-curl https://pronostici-calcio-pro.onrender.com/api/health
+curl <<<<<https://pronostici-calcio-pro.onrender.com/api/health>>>>>
+
 ```
 
 ### Performance Lente
@@ -208,6 +221,7 @@ Soluzione: Upgrade a Starter per eliminare sleeping
 
 # Ottimizzazione cache
 Dashboard → Service → Environment → CACHE_SIZE=1000
+
 ```
 
 ## 🔄 CI/CD Automatico
@@ -222,6 +236,7 @@ Dashboard → Service → Environment → CACHE_SIZE=1000
 4. Deploy nuovo container
 5. Health check automatico
 6. Rollback se fallisce
+
 ```
 
 ### Rollback Manuale
@@ -229,14 +244,15 @@ Dashboard → Service → Environment → CACHE_SIZE=1000
 ```bash
 Dashboard → Service → Deploys → 
 Select previous deploy → "Rollback to this version"
+
 ```
 
 ## 📞 Support & Links
 
-- **Render Docs**: <https://render.com/docs>
-- **Status Page**: <https://status.render.com>
-- **Community**: <https://community.render.com>
-- **Repository**: <https://github.com/Cosimo77/pronostici-calcio-professional>
+- **Render Docs**: <<<<<<https://render.com/docs>>>>>>
+- **Status Page**: <<<<<<https://status.render.com>>>>>>
+- **Community**: <<<<<<https://community.render.com>>>>>>
+- **Repository**: <<<<<<https://github.com/Cosimo77/pronostici-calcio-professional>>>>>>
 
 ---
 

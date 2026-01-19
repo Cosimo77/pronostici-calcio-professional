@@ -18,6 +18,7 @@
 **Fonte:** [football-data.co.uk](https://www.football-data.co.uk/)
 
 ```
+
 ✅ Stagione 2018-19: 380 partite REALI
 ✅ Stagione 2019-20: 380 partite REALI
 ✅ Stagione 2020-21: 380 partite REALI
@@ -26,9 +27,11 @@
 ✅ Stagione 2023-24: 380 partite REALI
 ✅ Stagione 2024-25: 380 partite REALI
 ✅ Stagione 2025-26: 130 partite REALI (in corso)
+
 ```
 
 **Dati contenuti:**
+
 - `HomeTeam`, `AwayTeam`: Squadre effettive
 - `FTHG`, `FTAG`: Gol reali segnati
 - `FTR`: Risultato finale reale (H/D/A)
@@ -36,6 +39,7 @@
 
 ### 2. Quote Bookmaker (48 colonne)
 **Bookmaker verificati:**
+
 - ✅ Bet365 (B365H, B365D, B365A) - 99.9% copertura
 - ✅ Betway (BWH, BWD, BWA) - 94.5% copertura
 - ✅ Quote medie (AvgH, AvgD, AvgA) - 86.3% copertura
@@ -45,6 +49,7 @@
 
 ### 3. Statistiche Derivate
 Calcolate matematicamente da dati reali:
+
 - Media gol casa: **1.48** (da 2,920 partite REALI)
 - Media gol ospite: **1.27** (da 2,920 partite REALI)
 - Distribuzione risultati REALE:
@@ -65,26 +70,33 @@ Risultato 1:  H → H=46.5% D=30.1% A=23.4%
 Risultato 10: H → H=46.5% D=30.1% A=23.4%
 
 ✅ DETERMINISMO: Tutte identiche (0% varianza)
+
 ```
 
 **Conclusione:** Sistema 100% deterministico, zero randomizzazione.
 
 ### Verifica Codice
+
 ```bash
 grep "np.random\|random\|randint" *.py
+
 ```
 
 **Risultato:**
+
 - `random_state=42`: Solo per riproducibilità training ML ✅
 - `best_choice`: Selezione deterministica max probabilità ✅
 - **Zero funzioni random** nelle predizioni ✅
 
 ### Hash Cache
+
 ```python
 def _calcola_hash_deterministico(squadra_casa, squadra_ospite):
     combined = f"{squadra_casa.lower()}_{squadra_ospite.lower()}"
     return hashlib.md5(combined.encode()).hexdigest()[:12]
+
 ```
+
 **MD5 deterministico** - stesso input = stesso hash sempre.
 
 ---
@@ -92,26 +104,32 @@ def _calcola_hash_deterministico(squadra_casa, squadra_ospite):
 ## 🧮 Metodologia Calcolo
 
 ### 1. Statistiche Squadra
+
 ```python
 # Calcolo da partite REALI nel dataset
 partite = df[(df['HomeTeam'] == squadra) | (df['AwayTeam'] == squadra)]
 vittorie = len(partite[partite['FTR'] == 'H'])  # DATI REALI
 pareggi = len(partite[partite['FTR'] == 'D'])   # DATI REALI
+
 ```
 
 ### 2. Bayesian Prior
+
 ```python
 # Prior informativi da statistiche REALI campionato
 totale_partite = len(df)  # 2,920 partite REALI
 vittorie_casa = len(df[df['FTR'] == 'H'])  # 1,147 REALI
 prior = vittorie_casa / totale_partite  # 41.1% REALE
+
 ```
 
 ### 3. Calibrazione Probabilità
+
 ```python
 # Shrinkage matematico (non random)
 peso_prior = min(30 / n_partite, 0.5)  # Formula deterministica
 prob_final = prob_raw * (1 - peso_prior) + prior * peso_prior
+
 ```
 
 **Zero randomizzazione** - solo matematica applicata a dati reali.
@@ -121,6 +139,7 @@ prob_final = prob_raw * (1 - peso_prior) + prior * peso_prior
 ## 📋 Esclusioni Confermate
 
 ### ❌ NON presente nel sistema:
+
 - Simulazioni Monte Carlo
 - Generazione dati sintetici
 - Randomizzazione predizioni
@@ -129,6 +148,7 @@ prob_final = prob_raw * (1 - peso_prior) + prior * peso_prior
 - Placeholder o mock data
 
 ### ✅ Presente SOLO:
+
 - Dati storici verificabili
 - Calcoli matematici deterministici
 - Statistiche aggregate da dati reali
@@ -140,14 +160,18 @@ prob_final = prob_raw * (1 - peso_prior) + prior * peso_prior
 
 ### Verifica Pubblica
 Tutti i dati sono pubblicamente verificabili su:
+
 - **football-data.co.uk** (partite Serie A)
 - **Archivi ufficiali Lega Serie A**
 - **Siti bookmaker** (per quote storiche)
 
 ### Audit Codice
 Repository GitHub pubblico:
+
 ```
-https://github.com/Cosimo77/pronostici-calcio-professional
+
+<<<<<https://github.com/Cosimo77/pronostici-calcio-professional>>>>>
+
 ```
 
 Ogni commit tracciabile, zero obfuscation.

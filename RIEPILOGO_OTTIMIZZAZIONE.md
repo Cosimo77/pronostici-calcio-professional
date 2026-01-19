@@ -11,35 +11,45 @@ Ridurre divergenze irrealistiche (36-50%) tramite aumento dataset di training.
 ## 📈 Modifiche Implementate
 
 ### 1. Dataset Ampliato
+
 ```
+
 PRIMA:  1,973 partite (2020-2026)
 DOPO:   2,920 partite (2018-2026)
 DELTA:  +947 partite (+48%)
+
 ```
 
 **Stagioni aggiunte:**
+
 - Serie A 2018-19: 380 partite
 - Serie A 2019-20: 380 partite
 
 ### 2. Impatto su Squadre Critiche
 
 **Pisa (caso problematico):**
+
 - Partite totali: 16 → 26 (+63%)
 - Partite trasferta: 7 → 12 (+71%)
 - Shrinkage: 50% → 22% (meno aggressivo)
 
 **Altre squadre:**
+
 - Top teams (Napoli, Juve, Milan): 203 → 292 partite (+44%)
 - Mid-table: Miglioramenti 30-50%
 
 ### 3. Modelli ML Riaddestrati
+
 ```
+
 Training samples:  1,624 → 2,232 (+37%)
 Test samples:      406 → 558 (+37%)
 Features:          156 → 174 (+11%)
+
 ```
 
 **Modelli aggiornati:**
+
 - ✅ RandomForest (17.7 MB)
 - ✅ GradientBoosting (2.1 MB)  
 - ✅ LogisticRegression (19 KB)
@@ -49,13 +59,14 @@ Features:          156 → 174 (+11%)
 ## 📊 Risultati: Divergenze Prima vs Dopo
 
 | Partita | Prima | Dopo | Miglioramento |
-|---------|-------|------|---------------|
+| --------- | ------- | ------ | --------------- |
 | **Lecce vs Pisa** | 36.7% | 10.4% | ✅ -72% |
 | **Napoli vs Juve** | ~15% | 2.9% | ✅ -81% |
 | **Milan vs Sassuolo** | 50% | 11.5% | ✅ -77% |
 | **Atalanta vs Cagliari** | 42% | 16.1% | ✅ -62% |
 
 **Media divergenze:**
+
 - Prima: ~36%
 - Dopo: ~10%
 - **Miglioramento: -72%**
@@ -73,9 +84,11 @@ Features:          156 → 174 (+11%)
 20-25 partite: 35% shrinkage
 25-30 partite: 20% shrinkage (Pisa attuale: 12 trasferta)
 > 30 partite:  5% shrinkage minimo
+
 ```
 
 **Effetto su Pisa:**
+
 - Peso prior: 50% → 22%
 - Affidabilità: 0.23 → 0.40
 - Probabilità più data-driven, meno conservative
@@ -84,16 +97,19 @@ Features:          156 → 174 (+11%)
 
 ## ✅ Verifica Deploy Produzione
 
-**Server:** https://pronostici-calcio-professional.onrender.com
+**Server:** <<<<<https://pronostici-calcio-professional.onrender.com>>>>>
 
 ```
+
 ✅ Deploy completato (8 Dic 17:31)
 ✅ 20 squadre disponibili
 ✅ Sistema inizializzato correttamente
 ✅ Predizioni identiche locale/Render (0% diff)
+
 ```
 
 **Test predizioni:**
+
 - Lecce vs Pisa: ✅ Identico
 - Napoli vs Juventus: ✅ Identico  
 - Milan vs Sassuolo: ✅ Identico
@@ -104,6 +120,7 @@ Features:          156 → 174 (+11%)
 ## 📉 ROI e Backtest
 
 **Stato attuale (da ricalcolare):**
+
 - ROI su turnover: +3.15%
 - Return totale: +92.74%
 - Win rate: 29.4%

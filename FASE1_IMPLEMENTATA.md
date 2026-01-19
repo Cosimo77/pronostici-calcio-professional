@@ -16,16 +16,19 @@
 ### Filtri Aggiunti (Conservativi)
 
 1. **Quote Pareggi: 2.8-3.5**
+
    - Elimina quote >3.5 (alta varianza, ROI -24%)
    - Mantiene quote 2.8-3.5 (ROI +8%)
    - Riduce trade -44% (226 trade eliminati)
 
 2. **Expected Value: ≥25%**
+
    - Elimina EV <25% (ROI variabile)
    - Focus su EV 25-50% (ROI +5-19%)
    - **Controintuitivo**: EV alto (>50%) = ROI negativo!
 
 3. **Kelly Criterion: INVARIATO**
+
    - Mantiene Kelly × affidabilità (0.387)
    - NO cambio stake sizing (test Kelly × 0.5 fallito: drawdown -206%)
    - Stake medio rimane ~€17
@@ -43,6 +46,7 @@
 EV <25%:   ROI +19.2% ✅ (migliore!)
 EV 25-35%: ROI +5.1%  ✅
 EV >35%:   ROI -22.2% ❌ (peggiore!)
+
 ```
 
 **Spiegazione**: EV alto spesso correla con quote alte (>4.0) = maggiore imprevedibilità = più loss.
@@ -54,6 +58,7 @@ Quote <3.0:   38.0% WR, +€80 profit  ✅
 Quote 3.0-3.5: 35.0% WR, +€412 profit ✅✅
 Quote 3.5-4.0: 20.8% WR, -€515 loss  ❌
 Quote >5.0:    16.7% WR, -€90 loss   ❌
+
 ```
 
 ### 3. Selettività > Volume

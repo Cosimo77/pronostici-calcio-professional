@@ -20,6 +20,7 @@ Test set:     510 partite (Ago 2024 - Dic 2025)
 - Probabilità >35% (evita scommesse troppo rischiose)
 - Kelly Criterion 1/8 (conservativo)
 - Max 2% bankroll per bet
+
 ```
 
 ### Risultati Backtest
@@ -48,6 +49,7 @@ Bet 350:  -4.1%  (€959)   🔴
 Bet 400:  -17.3% (€827)   🔴
 Bet 450:  -7.3%  (€927)   🔴
 Bet 500:  +11.6% (€1,116)  🟢
+
 ```
 
 **Pattern:** Volatilità alta, trend recovery negli ultimi 100 bet (+16.53%).
@@ -99,6 +101,7 @@ Mostrare metriche backtest aggiornate automaticamente nel frontend invece di val
   },
   "timestamp": "2025-12-08T18:02:51Z"
 }
+
 ```
 
 **`/api/roi_history`** (IMPLEMENTATO - Ready)
@@ -129,6 +132,7 @@ async function loadROIDashboard() {
 
 // Chiamato all'avvio pagina
 loadROIDashboard();
+
 ```
 
 ### Screenshot Dashboard
@@ -144,6 +148,7 @@ loadROIDashboard();
 │  -€44.81 🔴   │  -51.82% 🔴   │  0.03            │
 └───────────────┴───────────────┴───────────────────┘
    📅 Periodo: 2024-08-17 → 2025-12-01
+
 ```
 
 ### Benefici
@@ -228,6 +233,7 @@ Top 3 features:
   1. Forma casa Napoli (ultimo 5): +8.2%
   2. Gol subiti trasferta Juve: +4.1%
   3. Prior bayesiano: +2.8%
+
 ```
 
 **Effort:** 6h
@@ -245,6 +251,7 @@ Top 3 features:
 
 ```text
 ⭐ Alta qualità dati - Predizione con forte supporto statistico
+
 ```
 
 **Effort:** 1h
