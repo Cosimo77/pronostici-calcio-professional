@@ -199,6 +199,7 @@ Output:
 ## 🎓 Lessons Learned (Deploy)
 
 ### Bug Fixed
+
 1. ❌ `get_upcoming_matches()` → ✅ `get_upcoming_odds()`
 2. ❌ Dict key `odds_draw_avg` → ✅ `odds_draw`
 3. ❌ `predici_partita_completa()` → ✅ `predici_partita_deterministica()`

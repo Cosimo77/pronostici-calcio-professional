@@ -284,6 +284,7 @@ git status | grep ".env"  # Non deve apparire
 - ✅ Tracking pulito e ottimizzato
 
 **Prossimo step:**
+
 1. Attendi partite 10-15 gennaio
 2. Lunedì 13/01: Aggiorna dataset
 3. Esegui UPDATE automatico

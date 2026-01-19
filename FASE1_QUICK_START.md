@@ -65,6 +65,7 @@ python3 fase1_automatico.py
 ```
 
 **Menu**:
+
 1. 🔍 **SCAN** - Identifica opportunità
 2. 🔄 **UPDATE** - Aggiorna risultati
 3. 📊 **REPORT** - Mostra performance
