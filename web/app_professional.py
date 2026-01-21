@@ -3151,20 +3151,34 @@ def api_health():
 def api_automation_status():
     """API stato automazione background"""
     try:
-        # Su Render, leggi timestamp da file invece del daemon
-        timestamp_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'logs', 'automation_status.json')
-        
+        # Su Render, leggi timestamp da Redis (più affidabile del file system)
         last_update = None
         last_retrain = None
         
-        if os.path.exists(timestamp_file):
-            try:
-                with open(timestamp_file, 'r') as f:
-                    data = json.load(f)
-                    last_update = data.get('last_update')
-                    last_retrain = data.get('last_retrain')
-            except:
-                pass
+        try:
+            from web.cache_manager import CacheManager
+            cache_mgr = CacheManager()
+            
+            # Prova a leggere da Redis
+            last_update = cache_mgr.redis_client.get('automation:last_update')
+            last_retrain = cache_mgr.redis_client.get('automation:last_retrain')
+            
+            # Decodifica bytes se presente
+            if last_update:
+                last_update = last_update.decode('utf-8')
+            if last_retrain:
+                last_retrain = last_retrain.decode('utf-8')
+        except:
+            # Fallback: prova file system
+            timestamp_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'automation_status.json')
+            if os.path.exists(timestamp_file):
+                try:
+                    with open(timestamp_file, 'r') as f:
+                        data = json.load(f)
+                        last_update = data.get('last_update')
+                        last_retrain = data.get('last_retrain')
+                except:
+                    pass
         
         return jsonify({
             'available': True,
@@ -3209,12 +3223,21 @@ def api_force_update():
         
         logger.info(f"✅ Dataset ricaricato: {records_loaded} partite")
         
-        # Salva timestamp aggiornamento
+        # Salva timestamp aggiornamento (Redis + file system)
         timestamp = datetime.now(timezone.utc).isoformat()
-        timestamp_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'logs', 'automation_status.json')
-        os.makedirs(os.path.dirname(timestamp_file), exist_ok=True)
         
         try:
+            from web.cache_manager import CacheManager
+            cache_mgr = CacheManager()
+            # Salva in Redis (TTL 7 giorni)
+            cache_mgr.redis_client.setex('automation:last_update', 604800, timestamp)
+            logger.info(f"✅ Timestamp salvato in Redis: {timestamp}")
+        except Exception as e:
+            logger.warning(f"⚠️ Redis non disponibile per timestamp: {e}")
+        
+        # Fallback: salva anche su file system (directory data/ è più sicura)
+        try:
+            timestamp_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'automation_status.json')
             existing_data = {}
             if os.path.exists(timestamp_file):
                 with open(timestamp_file, 'r') as f:
@@ -3224,8 +3247,9 @@ def api_force_update():
             
             with open(timestamp_file, 'w') as f:
                 json.dump(existing_data, f, indent=2)
+            logger.info(f"✅ Timestamp salvato su file: {timestamp_file}")
         except Exception as e:
-            logger.warning(f"Impossibile salvare timestamp: {e}")
+            logger.warning(f"⚠️ Impossibile salvare timestamp su file: {e}")
         
         return jsonify({
             'success': True,
