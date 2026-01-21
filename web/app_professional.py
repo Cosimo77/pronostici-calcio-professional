@@ -3151,18 +3151,29 @@ def api_health():
 def api_automation_status():
     """API stato automazione background"""
     try:
-        from background_automation import get_automation
-        automation = get_automation()
+        # Su Render, leggi timestamp da file invece del daemon
+        timestamp_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'logs', 'automation_status.json')
         
-        if automation:
-            status = automation.get_status()
-            status['available'] = True
-            return jsonify(status)
-        else:
-            return jsonify({
-                'available': False,
-                'message': 'Automazione non configurata'
-            })
+        last_update = None
+        last_retrain = None
+        
+        if os.path.exists(timestamp_file):
+            try:
+                with open(timestamp_file, 'r') as f:
+                    data = json.load(f)
+                    last_update = data.get('last_update')
+                    last_retrain = data.get('last_retrain')
+            except:
+                pass
+        
+        return jsonify({
+            'available': True,
+            'running': True,
+            'last_update': last_update,
+            'last_retrain': last_retrain,
+            'next_update_estimate': 'Ogni giorno alle 06:00 ITA',
+            'next_retrain_estimate': 'Ogni Domenica alle 02:00 ITA'
+        })
     except Exception as e:
         return jsonify({
             'available': False,
@@ -3198,11 +3209,29 @@ def api_force_update():
         
         logger.info(f"✅ Dataset ricaricato: {records_loaded} partite")
         
+        # Salva timestamp aggiornamento
+        timestamp = datetime.now(timezone.utc).isoformat()
+        timestamp_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'logs', 'automation_status.json')
+        os.makedirs(os.path.dirname(timestamp_file), exist_ok=True)
+        
+        try:
+            existing_data = {}
+            if os.path.exists(timestamp_file):
+                with open(timestamp_file, 'r') as f:
+                    existing_data = json.load(f)
+            
+            existing_data['last_update'] = timestamp
+            
+            with open(timestamp_file, 'w') as f:
+                json.dump(existing_data, f, indent=2)
+        except Exception as e:
+            logger.warning(f"Impossibile salvare timestamp: {e}")
+        
         return jsonify({
             'success': True,
             'message': 'Dataset ricaricato in memoria',
             'records': records_loaded,
-            'timestamp': datetime.now(timezone.utc).isoformat(),
+            'timestamp': timestamp,
             'note': 'Render FREE TIER: dati aggiornati via GitHub deploy'
         })
     except Exception as e:
