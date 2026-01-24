@@ -9,14 +9,92 @@ jobs:
   update-data:
     runs-on: ubuntu-latest
     steps:
-      - name: 📊 Trigger aggiornamento dati Render
+      - name: � Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      
+      - name: 📦 Install dependencies
         run: |
-          echo "🔄 Avvio aggiornamento automatico..."
-          response=$(curl -X POST -w "\n%{http_code}" -s https://pronostici-calcio-professional.onrender.com/api/automation/force_update)
-          http_code=$(echo "$response" | tail -n1)
-          if [ "$http_code" -eq 200 ]; then
-            echo "✅ Aggiornamento completato!"
+          pip install pandas requests beautifulsoup4
+      
+      - name: 📡 Download nuovi dati reali
+        run: |
+          echo "🔄 Download dati da football-data.co.uk..."
+          python3 << 'EOF'
+          import pandas as pd
+          import requests
+          from datetime import datetime
+          import os
+          
+          # URL dataset Serie A 2024-25
+          url = 'https://www.football-data.co.uk/mmz4281/2425/I1.csv'
+          
+          try:
+              # Download dati aggiornati
+              response = requests.get(url, timeout=30)
+              response.raise_for_status()
+              
+              # Salva temporaneamente
+              with open('I1_new.csv', 'wb') as f:
+                  f.write(response.content)
+              
+              # Carica dataset esistente
+              df_old = pd.read_csv('data/dataset_pulito.csv')
+              records_old = len(df_old)
+              
+              # Carica nuovi dati
+              df_new = pd.read_csv('I1_new.csv')
+              
+              # Aggiungi nuove partite (evita duplicati per data)
+              if 'Date' in df_old.columns and 'Date' in df_new.columns:
+                  df_merged = pd.concat([df_old, df_new], ignore_index=True)
+                  df_merged = df_merged.drop_duplicates(subset=['Date', 'HomeTeam', 'AwayTeam'], keep='last')
+                  
+                  # Salva dataset aggiornato
+                  df_merged.to_csv('data/dataset_pulito.csv', index=False)
+                  
+                  records_new = len(df_merged)
+                  added = records_new - records_old
+                  
+                  print(f"✅ Dataset aggiornato: {records_old} → {records_new} (+{added} partite)")
+                  
+                  # Crea file con info aggiornamento
+                  with open('update_info.txt', 'w') as f:
+                      f.write(f"{added}")
+              else:
+                  print("❌ Colonna Date non trovata")
+                  
+          except Exception as e:
+              print(f"❌ Errore download: {e}")
+              with open('update_info.txt', 'w') as f:
+                  f.write("0")
+          EOF
+      
+      - name: 📊 Commit nuovi dati
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          
+          ADDED=$(cat update_info.txt)
+          
+          if [ "$ADDED" -gt 0 ]; then
+            git add data/dataset_pulito.csv
+            git commit -m "🤖 Auto-update: +${ADDED} partite Serie A $(date +'%d/%m/%Y')"
+            git push
+            echo "✅ Push completato: $ADDED nuove partite"
           else
-            echo "❌ Errore HTTP $http_code"
-            exit 1
+            echo "ℹ️  Nessuna nuova partita da aggiornare"
           fi
+      
+      - name: 🔄 Reload Render server
+        if: success()
+        run: |
+          echo "🔄 Ricarico dataset su Render..."
+          curl -X POST -s https://pronostici-calcio-professional.onrender.com/api/automation/force_update
+          echo "✅ Render aggiornato!"
