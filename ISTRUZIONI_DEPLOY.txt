@@ -1,0 +1,60 @@
+========================================
+ISTRUZIONI DEPLOY MANUALE RENDER
+========================================
+
+SITUAZIONE ATTUALE:
+- Locale: 2663 partite (CORRETTO)
+- Render: 2863 partite (VECCHIO)
+- Commit GitHub: 5b51a96 (pushato correttamente)
+
+AZIONE RICHIESTA:
+1. Apri browser e vai su:
+   https://dashboard.render.com/web/srv-cu5lvj08fa8c73fnpug0
+
+2. In alto a destra, click bottone BLU "Manual Deploy"
+
+3. Nel menu che si apre, seleziona:
+   "Clear build cache & deploy"
+
+4. Aspetta 5-7 minuti
+   - Vedrai "Build in progress..."
+   - Quando compare "Deploy live" -> COMPLETATO
+
+5. Verifica che funzioni:
+   Torna nel terminale ed esegui:
+   ./check_render_status.sh
+   
+   Deve mostrare: 2663 partite su Render
+
+========================================
+DOPO IL DEPLOY (IMPORTANTE):
+========================================
+
+Per risparmiare build minutes (hai già usato >70%):
+
+1. Vai su Settings -> Build & Deploy
+
+2. Cambia "Auto-Deploy" da "Yes" -> "NO"
+
+3. Click "Save Changes"
+
+Questo previene rebuild automatici ad ogni push.
+Deploy manuale solo quando modifichi codice Python.
+
+========================================
+TROUBLESHOOTING:
+========================================
+
+Problema: Non trovo "Manual Deploy"
+Soluzione: Guarda in alto a destra, vicino "Settings"
+
+Problema: Deploy fallisce
+Soluzione: Click "Logs", copia errore e incollalo qui
+
+Problema: Render ancora mostra 2863 partite
+Soluzione: Aspetta altri 2 minuti, poi ricontrolla
+
+========================================
+
+Quando hai completato, scrivi "fatto" nella chat.
+Verificheremo insieme che tutto funzioni!
