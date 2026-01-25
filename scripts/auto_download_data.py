@@ -37,25 +37,53 @@ def download_and_merge():
         df_new = pd.read_csv('I1_new.csv')
         print(f"📊 Nuovi dati: {len(df_new)} partite")
         
+        # VALIDAZIONE: verifica che i nuovi dati siano ragionevoli
+        if len(df_new) < 50 or len(df_new) > 500:
+            print(f"⚠️  Nuovi dati sospetti: {len(df_new)} partite (atteso 100-400)")
+            with open('update_info.txt', 'w') as f:
+                f.write("0")
+            return 0
+        
+        # VALIDAZIONE: verifica colonne essenziali
+        required_cols = ['Date', 'HomeTeam', 'AwayTeam', 'FTHG', 'FTAG']
+        missing_cols = [col for col in required_cols if col not in df_new.columns]
+        if missing_cols:
+            print(f"❌ Colonne mancanti nei nuovi dati: {missing_cols}")
+            with open('update_info.txt', 'w') as f:
+                f.write("0")
+            return 0
+        
         # Merge ed eliminazione duplicati
         if 'Date' in df_old.columns and 'Date' in df_new.columns:
+            # SOLO nuove partite (non già presenti)
             df_merged = pd.concat([df_old, df_new], ignore_index=True)
             df_merged = df_merged.drop_duplicates(
                 subset=['Date', 'HomeTeam', 'AwayTeam'], 
-                keep='last'
+                keep='first'  # Mantieni versione vecchia (più affidabile)
             )
-            
-            # Salva dataset aggiornato
-            df_merged.to_csv('data/dataset_pulito.csv', index=False)
             
             records_new = len(df_merged)
             added = records_new - records_old
             
-            print(f"✅ Dataset aggiornato: {records_old} → {records_new} (+{added} partite)")
+            # VALIDAZIONE: non accettare riduzioni massicce
+            if added < -100:
+                print(f"❌ Merge eliminerebbe {-added} partite! Operazione annullata.")
+                with open('update_info.txt', 'w') as f:
+                    f.write("0")
+                return 0
+            
+            # Salva SOLO se ci sono aggiunte effettive
+            if added > 0:
+                df_merged.to_csv('data/dataset_pulito.csv', index=False)
+                # Aggiorna anche dataset_features
+                df_merged.to_csv('data/dataset_features.csv', index=False)
+                print(f"✅ Dataset aggiornato: {records_old} → {records_new} (+{added} partite)")
+            else:
+                print(f"ℹ️  Nessuna partita nuova trovata")
             
             # Scrivi numero partite aggiunte per GitHub Actions
             with open('update_info.txt', 'w') as f:
-                f.write(f"{added}")
+                f.write(f"{max(0, added)}")
             
             return added
         else:
