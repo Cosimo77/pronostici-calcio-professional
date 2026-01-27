@@ -2,6 +2,7 @@
 """
 Script per download automatico dati Serie A da football-data.co.uk
 Usato da GitHub Actions per aggiornamenti quotidiani
+FIXED: Validazione date, stagione corretta, blocco corruzione
 """
 
 import pandas as pd
@@ -12,8 +13,14 @@ import sys
 def download_and_merge():
     """Scarica dati aggiornati e merge con dataset esistente"""
     
-    # URL dataset Serie A 2024-25
-    url = 'https://www.football-data.co.uk/mmz4281/2425/I1.csv'
+    # Determina stagione corrente (2025-26 se siamo dopo agosto 2025)
+    now = datetime.now()
+    if now.month >= 8:
+        season = f"{str(now.year)[2:]}{str(now.year + 1)[2:]}"  # es. 2526
+    else:
+        season = f"{str(now.year - 1)[2:]}{str(now.year)[2:]}"  # es. 2425
+    
+    url = f'https://www.football-data.co.uk/mmz4281/{season}/I1.csv'
     
     try:
         print(f"📡 Download da {url}...")
@@ -53,8 +60,45 @@ def download_and_merge():
                 f.write("0")
             return 0
         
-        # Merge ed eliminazione duplicati
+        # VALIDAZIONE DATE: Converti e verifica
+        try:
+            df_old['Date'] = pd.to_datetime(df_old['Date'], format='%Y-%m-%d', errors='coerce')
+            df_new['Date'] = pd.to_datetime(df_new['Date'], format='%d/%m/%Y', errors='coerce')
+            
+            # Rimuovi righe con date invalide
+            df_old = df_old.dropna(subset=['Date'])
+            df_new = df_new.dropna(subset=['Date'])
+            
+            # VALIDAZIONE: Ultima data del vecchio dataset
+            last_date_old = df_old['Date'].max()
+            first_date_new = df_new['Date'].min()
+            last_date_new = df_new['Date'].max()
+            
+            print(f"📅 Date vecchio dataset: {df_old['Date'].min().date()} → {last_date_old.date()}")
+            print(f"📅 Date nuovi dati: {first_date_new.date()} → {last_date_new.date()}")
+            
+            # BLOCCO: Se le date dei nuovi dati sono PRIMA dell'ultimo del vecchio
+            if last_date_new < last_date_old:
+                print(f"❌ CORRUZIONE RILEVATA: Nuovi dati hanno date VECCHIE!")
+                print(f"   Ultimo vecchio: {last_date_old.date()}")
+                print(f"   Ultimo nuovo: {last_date_new.date()}")
+                print(f"   Merge BLOCCATO per prevenire corruzione")
+                with open('update_info.txt', 'w') as f:
+                    f.write("0")
+                return 0
+                
+        except Exception as e:
+            print(f"❌ Errore parsing date: {e}")
+            with open('update_info.txt', 'w') as f:
+                f.write("0")
+            return 0
+        
+        # Merge ed eliminazione duplicati (SOLO se validazione OK)
         if 'Date' in df_old.columns and 'Date' in df_new.columns:
+            # Formatta date uniform (YYYY-MM-DD)
+            df_old['Date'] = df_old['Date'].dt.strftime('%Y-%m-%d')
+            df_new['Date'] = df_new['Date'].dt.strftime('%Y-%m-%d')
+            
             # SOLO nuove partite (non già presenti)
             df_merged = pd.concat([df_old, df_new], ignore_index=True)
             df_merged = df_merged.drop_duplicates(
@@ -62,12 +106,23 @@ def download_and_merge():
                 keep='first'  # Mantieni versione vecchia (più affidabile)
             )
             
+            # Ordina per data crescente
+            df_merged = df_merged.sort_values('Date').reset_index(drop=True)
+            
             records_new = len(df_merged)
             added = records_new - records_old
             
             # VALIDAZIONE: non accettare riduzioni massicce
             if added < -100:
                 print(f"❌ Merge eliminerebbe {-added} partite! Operazione annullata.")
+                with open('update_info.txt', 'w') as f:
+                    f.write("0")
+                return 0
+            
+            # VALIDAZIONE: Non accettare aggiunte troppo grandi (>100 in un giorno)
+            if added > 100:
+                print(f"⚠️  Aggiunte sospette: +{added} partite in un aggiornamento!")
+                print(f"   Possibile duplicazione o errore. Merge BLOCCATO.")
                 with open('update_info.txt', 'w') as f:
                     f.write("0")
                 return 0
