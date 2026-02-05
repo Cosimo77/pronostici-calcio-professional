@@ -3002,36 +3002,80 @@ def api_model_performance():
     try:
         # Calcola partite validabili dinamicamente dal dataset
         total_matches = calculator._calcola_partite_validabili()
-        correct_predictions = int(total_matches * 0.432)  # Accuratezza 43.2%
+        correct_predictions = int(total_matches * 0.395)  # Accuratezza 39.5% (backtest 537 partite)
         
-        accuracy = 0.432
+        accuracy = 0.395  # Backtest validato 5 Feb 2026
         
-        # Distribuzione predizioni
+        # Distribuzione predizioni (da backtest reale)
         predictions_distribution = {
-            'vittoria_casa': 0.42,
-            'pareggio': 0.31, 
-            'vittoria_ospite': 0.27
+            'vittoria_casa': 0.575,  # 57.5% (bias casa rilevato)
+            'pareggio': 0.385,  # 38.5%
+            'vittoria_ospite': 0.039  # 3.9% (bias negativo trasferta)
         }
         
-        # Confidenza media
-        avg_confidence = 0.449
+        # Confidenza media (da backtest)
+        avg_confidence = 0.451  # 45.1%
         
         # Metriche per mercato (aggiornate con nuovi mercati)
         market_performance = {
-            'risultato_finale': {'accuracy': 0.541, 'total_predictions': total_matches},
-            'over_under_25': {'accuracy': 0.485, 'total_predictions': total_matches},     # Ridotto -13.8pp
-            'over_under_15': {'accuracy': 0.528, 'total_predictions': total_matches},     # Ridotto -18.4pp
-            'over_under_35': {'accuracy': 0.463, 'total_predictions': total_matches},     # Ridotto -12.4pp
-            'goal_nogoal': {'accuracy': 0.463, 'total_predictions': total_matches},       # Ridotto -12.4pp
-            'double_chance': {'accuracy': 0.587, 'total_predictions': total_matches},     # Ridotto -14.7pp (più facile: 2/3)
-            'casa_segna': {'accuracy': 0.532, 'total_predictions': total_matches},        # Ridotto -13.9pp
-            'ospite_segna': {'accuracy': 0.508, 'total_predictions': total_matches},      # Ridotto -13.5pp
-            'cartellini_totali': {'accuracy': 0.451, 'total_predictions': total_matches}, # Ridotto -12.7pp
-            'corner_totali': {'accuracy': 0.468, 'total_predictions': total_matches},     # Ridotto -12.4pp
-            'primo_tempo': {'accuracy': 0.381, 'total_predictions': total_matches},       # Ridotto -11.1pp (più difficile)
-            'exact_score': {'accuracy': 0.128, 'total_predictions': total_matches},       # Ridotto -2.5pp (già basso)
-            'asian_handicap': {'accuracy': 0.442, 'total_predictions': total_matches},    # Ridotto -11.5pp
-            'handicap_europeo': {'accuracy': 0.448, 'total_predictions': total_matches}   # Ridotto -11.7pp
+            'risultato_finale': {
+                'accuracy': 0.395,  # ✅ VALIDATO: Backtest 537 partite (5 Feb 2026)
+                'total_predictions': total_matches,
+                'note': '⚠️ Bias casa: predice casa 57.5%, trasferta 3.9%'
+            },
+            'over_under_25': {
+                'accuracy': 0.485,  # ⚠️ STIMATO (non validato)
+                'total_predictions': total_matches,
+                'note': 'Richiede backtest dedicato'
+            },     
+            'over_under_15': {
+                'accuracy': 0.528,  # ⚠️ STIMATO (non validato)
+                'total_predictions': total_matches
+            },     
+            'over_under_35': {
+                'accuracy': 0.463,  # ⚠️ STIMATO (non validato)
+                'total_predictions': total_matches
+            },     
+            'goal_nogoal': {
+                'accuracy': 0.463,  # ⚠️ STIMATO (non validato)
+                'total_predictions': total_matches
+            },       
+            'double_chance': {
+                'accuracy': 0.587,  # ⚠️ STIMATO (non validato)
+                'total_predictions': total_matches
+            },     
+            'casa_segna': {
+                'accuracy': 0.532,  # ⚠️ STIMATO (non validato)
+                'total_predictions': total_matches
+            },        
+            'ospite_segna': {
+                'accuracy': 0.508,  # ⚠️ STIMATO (non validato)
+                'total_predictions': total_matches
+            },      
+            'cartellini_totali': {
+                'accuracy': 0.451,  # ⚠️ STIMATO (non validato)
+                'total_predictions': total_matches
+            }, 
+            'corner_totali': {
+                'accuracy': 0.468,  # ⚠️ STIMATO (non validato)
+                'total_predictions': total_matches
+            },     
+            'primo_tempo': {
+                'accuracy': 0.381,  # ⚠️ STIMATO (non validato)
+                'total_predictions': total_matches
+            },       
+            'exact_score': {
+                'accuracy': 0.128,  # ⚠️ STIMATO (non validato)
+                'total_predictions': total_matches
+            },       
+            'asian_handicap': {
+                'accuracy': 0.442,  # ⚠️ STIMATO (non validato)
+                'total_predictions': total_matches
+            },    
+            'handicap_europeo': {
+                'accuracy': 0.448,  # ⚠️ STIMATO (non validato)
+                'total_predictions': total_matches
+            }   
         }
         
         response = {
@@ -3348,7 +3392,7 @@ def api_metrics_summary():
     try:
         # Calcola partite validabili dinamicamente
         partite_analizzate = calculator._calcola_partite_validabili()
-        predizioni_corrette = int(partite_analizzate * 0.432)  # 43.2% accuracy (backtest reale)
+        predizioni_corrette = int(partite_analizzate * 0.395)  # 39.5% accuracy (backtest 537 partite - 5 Feb 2026)
         
         summary = {
             'sistema': {

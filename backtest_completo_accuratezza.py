@@ -16,19 +16,14 @@ print('=' * 80)
 # 1. Carica dataset completo
 df = pd.read_csv('data/dataset_features.csv')
 
-# 2. Filtra solo partite validabili (con risultato + quote complete)
-df_valid = df[
-    df['FTR'].notna() &
-    df['B365H'].notna() &
-    df['B365D'].notna() &
-    df['B365A'].notna()
-].copy()
+# 2. Filtra solo partite con risultato (NON servono quote per backtest accuratezza)
+df_valid = df[df['FTR'].notna()].copy()
 
-df_valid['Date'] = pd.to_datetime(df_valid['Date'])
+df_valid['Date'] = pd.to_datetime(df_valid['Date'], errors='coerce')
 df_valid = df_valid.sort_values('Date')
 
 print(f'\n📁 Dataset totale: {len(df)} partite')
-print(f'📊 Partite validabili: {len(df_valid)} partite')
+print(f'📊 Partite validabili (con risultato FTR): {len(df_valid)} partite')
 print(f'   Periodo: {df_valid["Date"].min().date()} → {df_valid["Date"].max().date()}')
 
 # 3. Usa 80% training, 20% test (split temporale)
@@ -52,11 +47,12 @@ print(f'✅ Calculator pronto')
 
 # 5. Esegui predizioni su test set
 print(f'\n🔮 Esecuzione predizioni su {len(df_test)} partite...')
-print('   (Questo richiederà qualche minuto...)')
+print('   ⏱️  Tempo stimato: ~{} minuti'.format(int(len(df_test) / 10)))
 
 risultati = []
 correct = 0
 confidenze = []
+errors = 0
 
 for idx, (i, row) in enumerate(df_test.iterrows()):
     casa = row['HomeTeam']
@@ -87,10 +83,13 @@ for idx, (i, row) in enumerate(df_test.iterrows()):
         
         # Progress indicator
         if (idx + 1) % 50 == 0:
-            print(f'   Processate: {idx + 1}/{len(df_test)} ({(idx+1)/len(df_test)*100:.1f}%)')
+            acc_parziale = (correct / (idx + 1)) * 100
+            print(f'   Processate: {idx + 1}/{len(df_test)} ({(idx+1)/len(df_test)*100:.1f}%) - Acc: {acc_parziale:.1f}%')
         
     except Exception as e:
-        print(f'⚠️  Errore {casa} vs {trasferta}: {e}')
+        errors += 1
+        if errors <= 5:  # Mostra solo primi 5 errori
+            print(f'⚠️  Errore {casa} vs {trasferta}: {e}')
 
 # 6. Calcola metriche finali
 print(f'\n' + '=' * 80)
