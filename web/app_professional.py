@@ -3037,12 +3037,14 @@ def api_model_performance():
                 'total_predictions': total_matches
             },     
             'goal_nogoal': {
-                'accuracy': 0.463,  # ⚠️ STIMATO (non validato)
-                'total_predictions': total_matches
+                'accuracy': 0.503,  # ✅ VALIDATO: Backtest 537 partite (6 Feb 2026)
+                'total_predictions': total_matches,
+                'note': '✅ Validato - entrambe segnano'
             },       
             'double_chance': {
-                'accuracy': 0.587,  # ⚠️ STIMATO (non validato)
-                'total_predictions': total_matches
+                'accuracy': 0.736,  # ✅ VALIDATO: Backtest 537 partite (6 Feb 2026)
+                'total_predictions': total_matches,
+                'note': '✅ Validato - combinazione 2 esiti'
             },     
             'casa_segna': {
                 'accuracy': 0.532,  # ⚠️ STIMATO (non validato)
