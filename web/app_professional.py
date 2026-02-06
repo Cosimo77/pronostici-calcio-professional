@@ -3024,9 +3024,9 @@ def api_model_performance():
                 'note': '⚠️ Bias casa: predice casa 57.5%, trasferta 3.9%'
             },
             'over_under_25': {
-                'accuracy': 0.485,  # ⚠️ STIMATO (non validato)
+                'accuracy': 0.516,  # ✅ VALIDATO: Backtest 537 partite (5 Feb 2026)
                 'total_predictions': total_matches,
-                'note': 'Richiede backtest dedicato'
+                'note': '✅ Validato su 537 partite reali'
             },     
             'over_under_15': {
                 'accuracy': 0.528,  # ⚠️ STIMATO (non validato)
