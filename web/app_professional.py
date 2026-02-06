@@ -3000,11 +3000,11 @@ def api_model_performance():
         return jsonify({'error': 'Sistema non inizializzato'}), 500
     
     try:
-        # Calcola partite validabili dinamicamente dal dataset
-        total_matches = calculator._calcola_partite_validabili()
-        correct_predictions = int(total_matches * 0.395)  # Accuratezza 39.5% (backtest 537 partite)
+        # Valori backtest validati (6 Feb 2026 - 537 partite test)
+        total_matches = 537  # Partite backtest (20% di 2683)
+        correct_predictions = 212  # 39.5% accuracy
         
-        accuracy = 0.395  # Backtest validato 5 Feb 2026
+        accuracy = 0.395  # Backtest validato 6 Feb 2026 (212/537)
         
         # Distribuzione predizioni (da backtest reale)
         predictions_distribution = {
