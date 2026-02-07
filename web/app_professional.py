@@ -915,7 +915,7 @@ def api_roi_stats():
         'max_drawdown': -20.0,  # Stimato FASE 2 (vs -62.6% sistema vecchio)
         'sharpe_ratio': 0,
         'ev_medio': 0,
-        'periodo': {'da': '2024-12-21', 'a': '2026-01-15'},  # Periodo test set backtest
+        'periodo': {'da': '2024-12-21', 'a': '2026-01-15'},  # Test set backtest FASE 2
         'timestamp': datetime.now().isoformat()
     })
 
