@@ -3455,6 +3455,9 @@ def api_health():
     db_healthy = calculator.df_features is not None and len(calculator.df_features) > 0
     cache_healthy = len(calculator.cache_deterministica) >= 0  # Cache può essere vuota inizialmente
     
+    # Check ODDS_API_KEY configuration
+    odds_api_key = os.getenv('ODDS_API_KEY')
+    
     health_status = {
         'status': 'healthy' if (sistema_inizializzato and db_healthy) else 'unhealthy',
         'sistema_inizializzato': sistema_inizializzato,
@@ -3468,7 +3471,10 @@ def api_health():
         'environment': 'production' if os.environ.get('FLASK_ENV') == 'production' else 'development',
         'last_check': datetime.now().isoformat(),
         'security_headers_enabled': True,
-        'rate_limiting_enabled': True
+        'rate_limiting_enabled': True,
+        # NEW: The Odds API configuration check
+        'odds_api_key_configured': bool(odds_api_key),
+        'odds_api_key_length': len(odds_api_key) if odds_api_key else 0
     }
     
     return jsonify(health_status)
