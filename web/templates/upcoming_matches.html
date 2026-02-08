@@ -230,18 +230,165 @@
             line-height: 1.5;
             margin: 0;
         }
+        
+        /* FASE 2 Opportunità */
+        .opportunities-section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .opportunities-section h2 {
+            color: #667eea;
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+        
+        .opportunities-section .subtitle {
+            color: #666;
+            margin-bottom: 25px;
+            font-size: 1.1em;
+        }
+        
+        .opportunity-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .opportunity-card.double-chance {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+        
+        .opportunity-card.pareggio {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        
+        .opportunity-card.over-under {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+        
+        .opp-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.3);
+        }
+        
+        .opp-match {
+            font-size: 1.3em;
+            font-weight: 600;
+        }
+        
+        .opp-time {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+        
+        .opp-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .opp-detail {
+            text-align: center;
+        }
+        
+        .opp-detail-label {
+            font-size: 0.85em;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+        
+        .opp-detail-value {
+            font-size: 1.4em;
+            font-weight: 700;
+        }
+        
+        .opp-bet {
+            background: rgba(255,255,255,0.2);
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 1.1em;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        
+        .opp-strategy {
+            font-size: 0.85em;
+            opacity: 0.9;
+            text-align: center;
+        }
+        
+        .roi-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            font-weight: 600;
+            background: rgba(255,255,255,0.3);
+            margin-left: 8px;
+        }
+        
+        .no-opportunities {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+        }
+        
+        .no-opportunities h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+        
+        .fase2-badge {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            display: inline-block;
+            margin: 5px 5px 5px 0;
+        }
+        
+        .fase2-badge.high-roi {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+        
+        .fase2-badge.medium-roi {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        
+        .fase2-badge.low-roi {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1>⚽ Partite Prossime Serie A</h1>
-            <p>Quote reali da 25+ bookmaker · Predizioni ML · Value Betting</p>
+            <p>Quote reali da 25+ bookmaker · Predizioni ML · Value Betting FASE 2</p>
         </div>
         
         <div class="info-banner">
             <h3>📊 Dati in tempo reale</h3>
-            <p>Quote aggiornate automaticamente. Predizioni basate su modelli ML addestrati su 2.920 partite. Sistema value betting per identificare opportunità con EV positivo.</p>
+            <p>Quote aggiornate automaticamente. Predizioni basate su modelli ML addestrati su 2.920 partite. Sistema value betting FASE 2 con ROI backtest +7% a +75%.</p>
+        </div>
+        
+        <!-- SEZIONE OPPORTUNITÀ FASE 2 -->
+        <div id="opportunities-section" style="display: none;">
+            <!-- Popolato dinamicamente -->
         </div>
         
         <div id="matches-container">
@@ -279,6 +426,9 @@
                         container.innerHTML = '<div class="loading">😴 Nessuna partita disponibile al momento<br><small style="color: #666; margin-top: 10px; display: block;">Controlla più tardi per nuove partite Serie A</small></div>';
                         return;
                     }
+                    
+                    // FASE 2: Mostra opportunità validate
+                    displayOpportunities(data.matches);
                     
                     // Raggruppa per data
                     const byDate = {};
@@ -412,15 +562,43 @@
                                     
                                     ${predictionHTML}
                                     
-                                    ${isRealValue ? `
-                                        <div class="value-bet-banner">
-                                            <h3>💎 Opportunità Value Betting</h3>
-                                            <div class="detail">
-                                                <strong>${bestMarket}: ${bestOutcome}</strong> @ ${bestOdds.toFixed(2)}
-                                                · Expected Value: <strong>+${bestEV.toFixed(1)}%</strong>
-                                            </div>
-                                        </div>
-                                    ` : ''}
+                                    ${(() => {
+                                        // Mostra opportunità FASE 2 se presenti
+                                        const vb = match.value_betting || {};
+                                        if (vb.fase2_validated && vb.fase2_opportunities && vb.fase2_opportunities.length > 0) {
+                                            let oppHTML = '<div style="margin-top: 20px;">';
+                                            oppHTML += '<h3 style="color: #667eea; margin-bottom: 15px;">🎯 Opportunità FASE 2 Validate</h3>';
+                                            
+                                            vb.fase2_opportunities.forEach((opp, idx) => {
+                                                let badgeClass = 'low-roi';
+                                                if (opp.roi_backtest > 50) badgeClass = 'high-roi';
+                                                else if (opp.roi_backtest > 10) badgeClass = 'medium-roi';
+                                                
+                                                oppHTML += `
+                                                    <div class="fase2-badge ${badgeClass}">
+                                                        ${opp.market}: ${opp.outcome} @ ${opp.odds.toFixed(2)}
+                                                        · EV +${opp.ev.toFixed(1)}%
+                                                        · ROI Backtest +${opp.roi_backtest.toFixed(1)}%
+                                                    </div>
+                                                `;
+                                            });
+                                            
+                                            oppHTML += '</div>';
+                                            return oppHTML;
+                                        } else if (isRealValue) {
+                                            // Fallback al vecchio value betting se non ha FASE 2
+                                            return `
+                                                <div class="value-bet-banner">
+                                                    <h3>💎 Opportunità Value Betting</h3>
+                                                    <div class="detail">
+                                                        <strong>${bestMarket}: ${bestOutcome}</strong> @ ${bestOdds.toFixed(2)}
+                                                        · Expected Value: <strong>+${bestEV.toFixed(1)}%</strong>
+                                                    </div>
+                                                </div>
+                                            `;
+                                        }
+                                        return '';
+                                    })()}
                                 </div>
                             `;
                         });
@@ -435,6 +613,122 @@
                     document.getElementById('matches-container').innerHTML = 
                         '<div class="loading">❌ Errore nel caricamento dei dati</div>';
                 });
+        }
+        
+        function displayOpportunities(matches) {
+            const oppSection = document.getElementById('opportunities-section');
+            
+            // Trova tutte le opportunità FASE 2
+            const opportunities = [];
+            matches.forEach(match => {
+                const vb = match.value_betting || {};
+                if (vb.fase2_validated && vb.fase2_opportunities && vb.fase2_opportunities.length > 0) {
+                    vb.fase2_opportunities.forEach(opp => {
+                        opportunities.push({
+                            match: match,
+                            opportunity: opp
+                        });
+                    });
+                }
+            });
+            
+            if (opportunities.length === 0) {
+                oppSection.innerHTML = `
+                    <div class="opportunities-section">
+                        <h2>🎯 Scommesse Consigliate FASE 2</h2>
+                        <div class="no-opportunities">
+                            <h3>⚠️ Nessuna opportunità validata al momento</h3>
+                            <p>I filtri FASE 2 sono molto conservativi (ROI backtest da +7% a +75%)</p>
+                            <p style="margin-top: 10px;">Controlla più tardi per nuove opportunità validate</p>
+                        </div>
+                    </div>
+                `;
+                oppSection.style.display = 'block';
+                return;
+            }
+            
+            // Ordina per ROI backtest (più alto prima)
+            opportunities.sort((a, b) => b.opportunity.roi_backtest - a.opportunity.roi_backtest);
+            
+            let html = `
+                <div class="opportunities-section">
+                    <h2>🎯 Scommesse Consigliate FASE 2</h2>
+                    <p class="subtitle">Opportunità validate con ROI backtest positivo · ${opportunities.length} segnale/i trovato/i</p>
+            `;
+            
+            opportunities.forEach((item, index) => {
+                const match = item.match;
+                const opp = item.opportunity;
+                
+                const time = new Date(match.commence_time).toLocaleString('it-IT', {
+                    day: 'numeric',
+                    month: 'short',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                // Classe card in base alla strategia
+                let cardClass = '';
+                if (opp.strategy === 'FASE2_DOUBLE_CHANCE') cardClass = 'double-chance';
+                else if (opp.strategy === 'FASE1_PAREGGIO') cardClass = 'pareggio';
+                else if (opp.strategy === 'FASE2_OVER_UNDER') cardClass = 'over-under';
+                
+                // Badge ROI
+                let roiEmoji = '';
+                if (opp.roi_backtest > 50) roiEmoji = '🏆';
+                else if (opp.roi_backtest > 10) roiEmoji = '📈';
+                else roiEmoji = '💰';
+                
+                html += `
+                    <div class="opportunity-card ${cardClass}">
+                        <div class="opp-header">
+                            <div class="opp-match">
+                                ${index + 1}. ${match.home_team_display || match.home_team} vs ${match.away_team_display || match.away_team}
+                            </div>
+                            <div class="opp-time">📅 ${time}</div>
+                        </div>
+                        
+                        <div class="opp-bet">
+                            🎯 <strong>${opp.market}: ${opp.outcome}</strong>
+                        </div>
+                        
+                        <div class="opp-details">
+                            <div class="opp-detail">
+                                <div class="opp-detail-label">Quota</div>
+                                <div class="opp-detail-value">${opp.odds.toFixed(2)}</div>
+                            </div>
+                            <div class="opp-detail">
+                                <div class="opp-detail-label">Expected Value</div>
+                                <div class="opp-detail-value">${opp.ev > 0 ? '+' : ''}${opp.ev.toFixed(1)}%</div>
+                            </div>
+                            <div class="opp-detail">
+                                <div class="opp-detail-label">${roiEmoji} ROI Backtest</div>
+                                <div class="opp-detail-value">+${opp.roi_backtest.toFixed(1)}%</div>
+                            </div>
+                        </div>
+                        
+                        <div class="opp-strategy">
+                            📊 Probabilità modello: ${opp.prob_model.toFixed(1)}% · Strategia: ${opp.strategy.replace('FASE2_', '').replace('FASE1_', '').replace('_', ' ')}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += `
+                    <div class="info-banner" style="margin-top: 20px;">
+                        <h3>💡 Come usare questi segnali</h3>
+                        <p><strong>1.</strong> Punta SOLO sulle opportunità con ROI Backtest positivo<br>
+                        <strong>2.</strong> Max 2% del bankroll per scommessa<br>
+                        <strong>3.</strong> Double Chance (verde) = ROI +75% ma quote basse<br>
+                        <strong>4.</strong> Pareggi (rosa) = ROI +7% con quote medie<br>
+                        <strong>5.</strong> Over/Under (arancio) = ROI +6% con quote interessanti<br>
+                        <strong>⚠️</strong> Performance passate non garantiscono risultati futuri</p>
+                    </div>
+                </div>
+            `;
+            
+            oppSection.innerHTML = html;
+            oppSection.style.display = 'block';
         }
         
         // Carica al caricamento pagina
