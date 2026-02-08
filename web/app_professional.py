@@ -1373,8 +1373,13 @@ def api_upcoming_matches():
         
         for match in upcoming[:10]:  # Max 10 partite
             try:
-                home = match['home_team']
-                away = match['away_team']
+                # Normalizza nomi squadre da The Odds API (es. "Inter Milan" → "Inter")
+                home_display = match['home_team']  # Nome originale per display
+                away_display = match['away_team']
+                home = normalize_team_name(home_display)  # Nome normalizzato per dataset
+                away = normalize_team_name(away_display)
+                
+                logger.info(f"🔄 Normalizzazione: '{home_display}' → '{home}', '{away_display}' → '{away}'")
                 
                 # Estrai quote REALI (già processate come medie da OddsAPIClient)
                 odds_home = match.get('odds_home')
@@ -1601,8 +1606,10 @@ def api_upcoming_matches():
                         analysis_level = 'low_divergence'
                     
                     match_data = {
-                        'home_team': home,
+                        'home_team': home,  # Normalizzato per compatibilità
                         'away_team': away,
+                        'home_team_display': home_display,  # Nome originale per UI
+                        'away_team_display': away_display,
                         'commence_time': match.get('commence_time'),
                         'odds_real': {
                             'home': round(odds_home, 2),
