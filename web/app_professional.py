@@ -1611,6 +1611,7 @@ def api_upcoming_matches():
                         'home_team_display': home_display,  # Nome originale per UI
                         'away_team_display': away_display,
                         'commence_time': match.get('commence_time'),
+                        'has_prediction': True,  # Indica che ha predizione ML
                         'odds_real': {
                             'home': round(odds_home, 2),
                             'draw': round(odds_draw, 2),
@@ -1719,7 +1720,37 @@ def api_upcoming_matches():
                     
                     matches_with_predictions.append(match_data)
                 else:
-                    logger.warning(f"⚠️ {home} o {away} non in dataset training")
+                    # Squadra non nel dataset: mostra comunque la partita con solo quote bookmaker
+                    logger.warning(f"⚠️ {home} o {away} non in dataset training (mostro solo quote)")
+                    
+                    # Match data senza predizione ML
+                    match_data_no_prediction = {
+                        'home_team': home,
+                        'away_team': away,
+                        'home_team_display': home_display,
+                        'away_team_display': away_display,
+                        'commence_time': match.get('commence_time'),
+                        'odds_real': {
+                            'home': round(odds_home, 2),
+                            'draw': round(odds_draw, 2),
+                            'away': round(odds_away, 2),
+                            'source': 'The Odds API (REAL)',
+                            'n_bookmakers': match.get('num_bookmakers', 0)
+                        },
+                        'odds_totals': {
+                            'over_25': round(odds_over_25, 2) if odds_over_25 else None,
+                            'under_25': round(odds_under_25, 2) if odds_under_25 else None,
+                            'n_bookmakers': match.get('num_bookmakers_totals', 0)
+                        } if odds_over_25 and odds_under_25 else None,
+                        'has_prediction': False,
+                        'no_prediction_reason': f"Una o entrambe le squadre non hanno dati storici sufficienti nel dataset",
+                        'value_betting': {
+                            'fase2_validated': False,
+                            'fase2_opportunities': [],
+                            'fase2_total_opportunities': 0
+                        }
+                    }
+                    matches_with_predictions.append(match_data_no_prediction)
                     
             except Exception as e:
                 logger.warning(f"⚠️ Errore processing {match.get('home_team', '?')} vs {match.get('away_team', '?')}: {e}")

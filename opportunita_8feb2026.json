@@ -1,0 +1,62 @@
+{
+  "data_analisi": "2026-02-08",
+  "partite_analizzate": 19,
+  "opportunita_validate": 3,
+  "quota_api_rimanente": "366/500",
+  "opportunita": [
+    {
+      "id": 1,
+      "partita": "Udinese vs Sassuolo",
+      "inizio": "2026-02-15T11:30:00Z",
+      "mercato": "Over 2.5",
+      "quota": 2.35,
+      "probabilita_modello": 64.3,
+      "expected_value": 17.5,
+      "strategia": "FASE2_OverUnder",
+      "roi_backtest": "+5.86%",
+      "filtri": {
+        "quote_range": "2.0-2.5",
+        "ev_minimo": "15%"
+      }
+    },
+    {
+      "id": 2,
+      "partita": "Cremonese vs Genoa",
+      "inizio": "2026-02-15T14:00:00Z",
+      "mercato": "Pareggio (X)",
+      "quota": 3.12,
+      "probabilita_modello": 44.9,
+      "expected_value": 40.1,
+      "strategia": "FASE1_Pareggi",
+      "roi_backtest": "+7.17%",
+      "filtri": {
+        "quote_range": "2.8-3.5",
+        "ev_minimo": "25%"
+      },
+      "nota": "EV molto alto ma win rate 31% (pareggi imprevedibili)"
+    },
+    {
+      "id": 3,
+      "partita": "Lecce vs Inter",
+      "inizio": "2026-02-21T17:00:00Z",
+      "mercato": "Under 2.5",
+      "quota": 2.33,
+      "probabilita_modello": 40.7,
+      "expected_value": 16.5,
+      "strategia": "FASE2_OverUnder",
+      "roi_backtest": "+5.86%",
+      "filtri": {
+        "quote_range": "2.0-2.5",
+        "ev_minimo": "15%"
+      }
+    }
+  ],
+  "note_sistema": {
+    "fase2_attiva": true,
+    "mercati_multi": 3,
+    "roi_sistema": "+47.6%",
+    "win_rate": "60%",
+    "trade_backtest": 430,
+    "periodo_test": "2024-12-21 → 2026-01-15"
+  }
+}

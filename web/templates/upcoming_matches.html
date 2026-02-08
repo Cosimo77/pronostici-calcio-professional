@@ -349,28 +349,18 @@
                             };
                             const consiglioLabel = consiglioMap[consiglio] || consiglio;
                             
-                            html += `
-                                <div class="match-card">
-                                    <div class="match-header">
-                                        <div class="teams">${match.home_team} vs ${match.away_team}</div>
-                                        <div class="match-time">⏰ ${time}</div>
+                            // HTML predizione ML (se disponibile)
+                            let predictionHTML = '';
+                            if (match.has_prediction === false) {
+                                predictionHTML = `
+                                    <div class="market-box" style="background: #fff3cd;">
+                                        <h3>⚠️ Predizione Non Disponibile</h3>
+                                        <p style="color: #856404; margin: 10px 0;">${match.no_prediction_reason || 'Dati insufficienti'}</p>
+                                        <p style="font-size: 0.9em; color: #666;">Quote bookmaker comunque mostrate sopra.</p>
                                     </div>
-                                    
-                                    <div class="odds-banner">
-                                        <div>
-                                            <h4>Casa</h4>
-                                            <div class="price">${oddsHome.toFixed(2)}</div>
-                                        </div>
-                                        <div>
-                                            <h4>Pareggio</h4>
-                                            <div class="price">${oddsDraw.toFixed(2)}</div>
-                                        </div>
-                                        <div>
-                                            <h4>Trasferta</h4>
-                                            <div class="price">${oddsAway.toFixed(2)}</div>
-                                        </div>
-                                    </div>
-                                    
+                                `;
+                            } else {
+                                predictionHTML = `
                                     <div class="market-box">
                                         <h3>🤖 Predizione ML</h3>
                                         <div class="prediction-item">
@@ -391,13 +381,36 @@
                                                 <span class="confidence">${(prob.A * 100 || 0).toFixed(1)}%</span>
                                             </div>
                                         </div>
-                                        <div class="prediction-item" style="background: #e3f2fd;">
-                                            <span class="pred-label"><strong>Consiglio:</strong> ${consiglioLabel}</span>
-                                            <div class="pred-value">
-                                                <span class="confidence" style="background: #667eea;">Confidenza ${confidenza.toFixed(1)}%</span>
-                                            </div>
+                                        <div class="recommendation">
+                                            <strong>Consiglio:</strong> ${consiglioLabel} (${confidenza.toFixed(1)}% confidenza)
                                         </div>
                                     </div>
+                                `;
+                            }
+                            
+                            html += `
+                                <div class="match-card">
+                                    <div class="match-header">
+                                        <div class="teams">${match.home_team_display || match.home_team} vs ${match.away_team_display || match.away_team}</div>
+                                        <div class="match-time">⏰ ${time}</div>
+                                    </div>
+                                    
+                                    <div class="odds-banner">
+                                        <div>
+                                            <h4>Casa</h4>
+                                            <div class="price">${oddsHome.toFixed(2)}</div>
+                                        </div>
+                                        <div>
+                                            <h4>Pareggio</h4>
+                                            <div class="price">${oddsDraw.toFixed(2)}</div>
+                                        </div>
+                                        <div>
+                                            <h4>Trasferta</h4>
+                                            <div class="price">${oddsAway.toFixed(2)}</div>
+                                        </div>
+                                    </div>
+                                    
+                                    ${predictionHTML}
                                     
                                     ${isRealValue ? `
                                         <div class="value-bet-banner">
