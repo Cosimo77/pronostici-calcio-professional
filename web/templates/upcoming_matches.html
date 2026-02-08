@@ -258,8 +258,25 @@
                 .then(data => {
                     const container = document.getElementById('matches-container');
                     
+                    // Gestione errori configurazione
+                    if (data.error) {
+                        let errorMsg = '<div class="loading" style="color: #ff6b6b;">';
+                        errorMsg += '<h3>⚠️ Configurazione Richiesta</h3>';
+                        errorMsg += `<p><strong>Errore:</strong> ${data.error}</p>`;
+                        if (data.hint) {
+                            errorMsg += `<p><strong>Soluzione:</strong> ${data.hint}</p>`;
+                        }
+                        errorMsg += '<p style="margin-top: 20px; font-size: 0.9em; color: #666;">Per configurare ODDS_API_KEY su Render:<br>';
+                        errorMsg += '1. Vai su <a href="https://dashboard.render.com" target="_blank">Render Dashboard</a><br>';
+                        errorMsg += '2. Seleziona il servizio → Environment<br>';
+                        errorMsg += '3. Aggiungi variabile: ODDS_API_KEY = [tua chiave da <a href="https://the-odds-api.com" target="_blank">The Odds API</a>]</p>';
+                        errorMsg += '</div>';
+                        container.innerHTML = errorMsg;
+                        return;
+                    }
+                    
                     if (!data.matches || data.matches.length === 0) {
-                        container.innerHTML = '<div class="loading">Nessuna partita disponibile al momento</div>';
+                        container.innerHTML = '<div class="loading">😴 Nessuna partita disponibile al momento<br><small style="color: #666; margin-top: 10px; display: block;">Controlla più tardi per nuove partite Serie A</small></div>';
                         return;
                     }
                     
