@@ -699,6 +699,99 @@ def automation_page():
         logger.error(f"Errore caricamento automation page: {e}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/debug/odds_api_test')
+def debug_odds_api_test():
+    """Endpoint di debug per testare The Odds API passo per passo"""
+    debug_info = {
+        'timestamp': datetime.now().isoformat(),
+        'steps': []
+    }
+    
+    try:
+        # Step 1: Verifica API key
+        api_key = os.getenv('ODDS_API_KEY')
+        debug_info['steps'].append({
+            'step': 1,
+            'name': 'Check API Key',
+            'status': 'OK' if api_key else 'FAIL',
+            'api_key_present': bool(api_key),
+            'api_key_length': len(api_key) if api_key else 0
+        })
+        
+        if not api_key:
+            debug_info['error'] = 'ODDS_API_KEY not configured'
+            return jsonify(debug_info), 503
+        
+        # Step 2: Inizializza client
+        sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+        from integrations.odds_api import OddsAPIClient
+        odds_client = OddsAPIClient(api_key=api_key)
+        debug_info['steps'].append({
+            'step': 2,
+            'name': 'Initialize OddsAPIClient',
+            'status': 'OK'
+        })
+        
+        # Step 3: Chiama API
+        upcoming = odds_client.get_upcoming_odds()
+        debug_info['steps'].append({
+            'step': 3,
+            'name': 'Get upcoming odds',
+            'status': 'OK',
+            'matches_received': len(upcoming) if upcoming else 0,
+            'has_data': bool(upcoming)
+        })
+        
+        if upcoming and len(upcoming) > 0:
+            # Step 4: Mostra prime 3 partite raw
+            debug_info['steps'].append({
+                'step': 4,
+                'name': 'Sample matches (first 3)',
+                'status': 'OK',
+                'matches': [{
+                    'home_team': m.get('home_team'),
+                    'away_team': m.get('away_team'),
+                    'odds_home': m.get('odds_home'),
+                    'odds_draw': m.get('odds_draw'),
+                    'odds_away': m.get('odds_away'),
+                    'commence_time': m.get('commence_time')
+                } for m in upcoming[:3]]
+            })
+            
+            # Step 5: Test normalizzazione nomi
+            first_match = upcoming[0]
+            home_display = first_match['home_team']
+            away_display = first_match['away_team']
+            home_normalized = normalize_team_name(home_display)
+            away_normalized = normalize_team_name(away_display)
+            
+            debug_info['steps'].append({
+                'step': 5,
+                'name': 'Test normalization',
+                'status': 'OK',
+                'example': {
+                    'home_display': home_display,
+                    'home_normalized': home_normalized,
+                    'away_display': away_display,
+                    'away_normalized': away_normalized,
+                    'home_in_dataset': home_normalized in calculator.squadre_disponibili,
+                    'away_in_dataset': away_normalized in calculator.squadre_disponibili
+                }
+            })
+        
+        debug_info['summary'] = {
+            'total_steps': len(debug_info['steps']),
+            'all_ok': all(s.get('status') == 'OK' for s in debug_info['steps']),
+            'api_working': len(upcoming) > 0 if upcoming else False
+        }
+        
+        return jsonify(debug_info), 200
+        
+    except Exception as e:
+        debug_info['error'] = str(e)
+        debug_info['error_type'] = type(e).__name__
+        return jsonify(debug_info), 500
+
 @app.route('/api/automation_status')
 def automation_status_api():
     """API stato automazione - Sistema Ibrido (Locale + Cloud)"""
