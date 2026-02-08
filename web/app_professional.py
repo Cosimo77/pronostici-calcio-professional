@@ -686,8 +686,9 @@ def monitoring():
     return render_template('monitoring.html')
 
 @app.route('/upcoming')
+@app.route('/upcoming_matches')  # Alias per compatibilità
 def upcoming_matches_page():
-    """Pagina partite prossime con quote reali"""
+    """Pagina partite prossime con quote reali e opportunità FASE 2"""
     return render_template('upcoming_matches.html')
 
 @app.route('/automation')
