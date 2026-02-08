@@ -1091,6 +1091,75 @@ def api_rigenera_cache():
         logger.error(f"Errore rigenerazione cache: {e}")
         return jsonify({'error': str(e)}), 500
 
+# ============================================
+# 🎯 FUNZIONI VALIDAZIONE FASE 1 & FASE 2
+# ============================================
+def _valida_opportunita_fase2(mercato, pred, odds, ev_pct, mercati_data=None):
+    """
+    Filtri FASE 2 validati - Multi-mercato
+    
+    Returns: (is_valid, reason, market_type)
+    """
+    # 1. PAREGGI (FASE 1 - Validato 13 Dic 2025)
+    if mercato == '1X2' and pred == 'D':
+        if odds < 2.8:
+            return False, 'pareggio_quota_bassa', '1X2'
+        if odds > 3.5:
+            return False, 'pareggio_quota_alta', '1X2'
+        if ev_pct < 25:
+            return False, 'pareggio_ev_basso', '1X2'
+        return True, 'fase1_pareggio', '1X2'
+    
+    # 2. DOUBLE CHANCE (FASE 2 - Validato 6 Feb 2026)
+    if mercato == 'DC':
+        if odds < 1.2:
+            return False, 'dc_quota_bassa', 'DC'
+        if odds > 1.8:
+            return False, 'dc_quota_alta', 'DC'
+        if ev_pct < 10:
+            return False, 'dc_ev_basso', 'DC'
+        return True, 'fase2_double_chance', 'DC'
+    
+    # 3. OVER/UNDER 2.5 (FASE 2 - Validato 6 Feb 2026)
+    if mercato == 'OU25':
+        if odds < 2.0:
+            return False, 'ou_quota_bassa', 'OU25'
+        if odds > 2.5:
+            return False, 'ou_quota_alta', 'OU25'
+        if ev_pct < 15:
+            return False, 'ou_ev_basso', 'OU25'
+        return True, 'fase2_over_under', 'OU25'
+    
+    return False, 'mercato_non_validato', mercato
+
+def _valida_opportunita_fase1(pred, odds, ev_pct):
+    """
+    Filtri FASE 1 validati su 510 trade:
+    - Solo PAREGGI
+    - Quote: 2.8-3.5 (no >3.5, alta varianza)
+    - EV: ≥25% (sweet spot, no >50%)
+    
+    Returns: (is_valid, reason)
+    """
+    # Solo pareggi
+    if pred != 'D':
+        return False, 'not_draw'
+    
+    # Quote range validato
+    if odds < 2.8:
+        return False, 'odds_too_low'
+    if odds > 3.5:
+        return False, 'odds_too_high'  # Quote >3.5: WR 20.8%, ROI -24%
+    
+    # EV minimo (controintuitivo: EV <25% ha ROI +19%)
+    if ev_pct < 25:
+        return False, 'ev_too_low'
+    
+    # EV troppo alto spesso = quote alte = imprevedibile
+    # Ma non filtriamo il max (test su range 25-50% migliore)
+    
+    return True, 'validated'
+
 @app.route('/api/predict_enterprise', methods=['POST'])
 @limiter.limit("30 per minute")  # Rate limiting per endpoint critico
 def api_predict_enterprise():
@@ -1175,74 +1244,6 @@ def api_predict_enterprise():
         # - Over/Under 2.5: ROI +5.9%, WR 46.5%, 144 trade
         # - Pareggi FASE1: ROI +7.17%, WR 31%, 158 trade
         # ============================================
-        def _valida_opportunita_fase2(mercato, pred, odds, ev_pct, mercati_data=None):
-            """
-            Filtri FASE 2 validati - Multi-mercato
-            
-            Returns: (is_valid, reason, market_type)
-            """
-            # 1. PAREGGI (FASE 1 - Validato 13 Dic 2025)
-            if mercato == '1X2' and pred == 'D':
-                if odds < 2.8:
-                    return False, 'pareggio_quota_bassa', '1X2'
-                if odds > 3.5:
-                    return False, 'pareggio_quota_alta', '1X2'
-                if ev_pct < 25:
-                    return False, 'pareggio_ev_basso', '1X2'
-                return True, 'fase1_pareggio', '1X2'
-            
-            # 2. DOUBLE CHANCE (FASE 2 - Validato 6 Feb 2026)
-            if mercato == 'DC':
-                if odds < 1.2:
-                    return False, 'dc_quota_bassa', 'DC'
-                if odds > 1.8:
-                    return False, 'dc_quota_alta', 'DC'
-                if ev_pct < 10:
-                    return False, 'dc_ev_basso', 'DC'
-                return True, 'fase2_double_chance', 'DC'
-            
-            # 3. OVER/UNDER 2.5 (FASE 2 - Validato 6 Feb 2026)
-            if mercato == 'OU25':
-                if odds < 2.0:
-                    return False, 'ou_quota_bassa', 'OU25'
-                if odds > 2.5:
-                    return False, 'ou_quota_alta', 'OU25'
-                if ev_pct < 15:
-                    return False, 'ou_ev_basso', 'OU25'
-                return True, 'fase2_over_under', 'OU25'
-            
-            return False, 'mercato_non_validato', mercato
-        
-        # ============================================
-        # LEGACY: FASE 1 (Solo Pareggi)
-        # ============================================
-        def _valida_opportunita_fase1(pred, odds, ev_pct):
-            """
-            Filtri FASE 1 validati su 510 trade:
-            - Solo PAREGGI
-            - Quote: 2.8-3.5 (no >3.5, alta varianza)
-            - EV: ≥25% (sweet spot, no >50%)
-            
-            Returns: (is_valid, reason)
-            """
-            # Solo pareggi
-            if pred != 'D':
-                return False, 'not_draw'
-            
-            # Quote range validato
-            if odds < 2.8:
-                return False, 'odds_too_low'
-            if odds > 3.5:
-                return False, 'odds_too_high'  # Quote >3.5: WR 20.8%, ROI -24%
-            
-            # EV minimo (controintuitivo: EV <25% ha ROI +19%)
-            if ev_pct < 25:
-                return False, 'ev_too_low'
-            
-            # EV troppo alto spesso = quote alte = imprevedibile
-            # Ma non filtriamo il max (test su range 25-50% migliore)
-            
-            return True, 'validated'
         
         # Valida opportunità con filtri FASE 1
         is_valid_fase1, validation_reason = _valida_opportunita_fase1(
