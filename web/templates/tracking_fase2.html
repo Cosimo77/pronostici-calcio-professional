@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📊 Tracking FASE 2 - Performance Reale</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem 0;
+        }
+        .tracking-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        .metric-box {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        .metric-box.positive {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        .trade-row.win {
+            background-color: rgba(40, 167, 69, 0.1);
+            border-left: 5px solid #28a745;
+        }
+        .trade-row.loss {
+            background-color: rgba(220, 53, 69, 0.1);
+            border-left: 5px solid #dc3545;
+        }
+        .trade-row.pending {
+            background-color: rgba(255, 193, 7, 0.1);
+            border-left: 5px solid #ffc107;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="text-center text-white mb-4">
+            <h1>📊 Tracking Performance FASE 2</h1>
+            <p>Monitoraggio P&L scommesse consigliate</p>
+        </div>
+
+        <!-- Metriche Summary -->
+        <div class="tracking-card">
+            <h3 class="mb-4">📈 Riepilogo Performance</h3>
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="metric-box" id="roi-box">
+                        <h5>ROI Reale</h5>
+                        <h2 id="roi-value">---%</h2>
+                        <small>vs Backtest: +29%</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="metric-box positive">
+                        <h5>Win Rate</h5>
+                        <h2 id="wr-value">---%</h2>
+                        <small>Atteso: 50.6%</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="metric-box">
+                        <h5>P&L Totale</h5>
+                        <h2 id="pl-value">€--</h2>
+                        <small>Su <span id="total-trades">0</span> trade</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="metric-box positive">
+                        <h5>Bankroll</h5>
+                        <h2 id="bankroll-value">€500</h2>
+                        <small>Iniziale: €500</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabella Trade -->
+        <div class="tracking-card">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3>📋 Lista Trade FASE 2</h3>
+                <button class="btn btn-primary" onclick="aggiornaRisultati()">
+                    🔄 Aggiorna Risultati
+                </button>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Partita</th>
+                            <th>Mercato</th>
+                            <th>Quota</th>
+                            <th>EV%</th>
+                            <th>Stake</th>
+                            <th>Strategia</th>
+                            <th>Risultato</th>
+                            <th>P&L</th>
+                        </tr>
+                    </thead>
+                    <tbody id="trades-tbody">
+                        <!-- Popolato da JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Grafico Performance -->
+        <div class="tracking-card">
+            <h3 class="mb-4">📉 Equity Curve</h3>
+            <canvas id="equityCurve" height="100"></canvas>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>
+        let tradesData = [];
+        
+        async function caricaTrade() {
+            try {
+                const response = await fetch('/api/tracking/fase2');
+                const data = await response.json();
+                tradesData = data.trades || [];
+                
+                aggiornaMetriche(data.summary);
+                popolaTabella(tradesData);
+                disegnaEquityCurve(tradesData);
+            } catch (error) {
+                console.error('Errore caricamento:', error);
+            }
+        }
+        
+        function aggiornaMetriche(summary) {
+            document.getElementById('roi-value').textContent = 
+                (summary.roi || 0).toFixed(1) + '%';
+            document.getElementById('wr-value').textContent = 
+                (summary.win_rate || 0).toFixed(1) + '%';
+            document.getElementById('pl-value').textContent = 
+                '€' + (summary.profit_loss || 0).toFixed(2);
+            document.getElementById('total-trades').textContent = 
+                summary.total_trades || 0;
+            document.getElementById('bankroll-value').textContent = 
+                '€' + (summary.bankroll || 500).toFixed(2);
+                
+            // Colore ROI box
+            const roiBox = document.getElementById('roi-box');
+            if ((summary.roi || 0) > 0) {
+                roiBox.classList.add('positive');
+            }
+        }
+        
+        function popolaTabella(trades) {
+            const tbody = document.getElementById('trades-tbody');
+            tbody.innerHTML = '';
+            
+            trades.forEach(trade => {
+                const row = document.createElement('tr');
+                row.className = `trade-row ${trade.status.toLowerCase()}`;
+                row.innerHTML = `
+                    <td>${trade.data}</td>
+                    <td><strong>${trade.casa}</strong> vs ${trade.ospite}</td>
+                    <td>${trade.mercato} - ${trade.esito}</td>
+                    <td><span class="badge bg-info">${trade.quota}</span></td>
+                    <td><span class="badge bg-success">+${trade.ev_pct}%</span></td>
+                    <td><strong>€${trade.stake.toFixed(2)}</strong></td>
+                    <td><small>${trade.strategia}</small></td>
+                    <td>
+                        ${trade.status === 'WIN' ? '✅ Vinta' : 
+                          trade.status === 'LOSS' ? '❌ Persa' : 
+                          '⏳ Pending'}
+                    </td>
+                    <td>
+                        <strong style="color: ${trade.profit_loss >= 0 ? 'green' : 'red'}">
+                            ${trade.profit_loss >= 0 ? '+' : ''}€${trade.profit_loss.toFixed(2)}
+                        </strong>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+        
+        function disegnaEquityCurve(trades) {
+            const ctx = document.getElementById('equityCurve').getContext('2d');
+            
+            // Calcola bankroll cumulativo
+            let bankroll = 500;
+            const labels = ['Inizio'];
+            const values = [500];
+            
+            trades.forEach((trade, idx) => {
+                if (trade.status !== 'PENDING') {
+                    bankroll += trade.profit_loss;
+                    labels.push(`Trade ${idx + 1}`);
+                    values.push(bankroll);
+                }
+            });
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Bankroll (€)',
+                        data: values,
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        tension: 0.1,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: true },
+                        title: { 
+                            display: true, 
+                            text: 'Evoluzione Bankroll FASE 2' 
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            ticks: {
+                                callback: function(value) {
+                                    return '€' + value;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        async function aggiornaRisultati() {
+            // Ricarica partite e aggiorna risultati trade
+            alert('🔄 Aggiornamento risultati in corso...');
+            await caricaTrade();
+            alert('✅ Risultati aggiornati!');
+        }
+        
+        // Carica all'avvio
+        caricaTrade();
+    </script>
+</body>
+</html>

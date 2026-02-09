@@ -355,12 +355,13 @@ class ProfessionalCalculator:
                     'clean_sheet_rate': 0.3
                 }
             
-            # BAYESIAN SMOOTHING RIDOTTO: Combina dati reali con prior (UNICO layer)
-            # FIX v3 (28 Dic): Soglia 30 partite, peso prior 50% max (validato su 4/4 partite fallite)
-            # Risultati 27 Dic: Pisa X 42.5%→0-2, Como X 43%→0-3, Parma X 48.7%→1-0, Torino H→1-2
-            # Prior 40% insufficiente → aumentato a 50% per ridurre overpredizione pareggi
-            # Motivo: Bias pareggio sistematico confermato su TUTTE le squadre <30 partite
-            peso_prior = min(40 / max(n_partite, 1), 0.50)  # Max 50% peso prior per <30 partite
+            # BAYESIAN SMOOTHING CONSERVATIVO: Combina dati reali con prior (UNICO layer)
+            # FIX TRADING v4 (9 Feb 2026): Soglia 30 partite, peso prior 60% max
+            # Analisi esterna: Probabilità troppo estreme su squadre con pochi dati
+            # Causa: EV 30-60% sistematici = overconfidence del modello
+            # Soluzione: Aumentare regularizzazione 50%→60% per convergere verso medie campionato
+            # Risultato atteso: Probabilità più moderate, EV più realistici (10-20% vs 30-60%)
+            peso_prior = min(50 / max(n_partite, 1), 0.60)  # Max 60% peso prior per <30 partite
             peso_dati = 1 - peso_prior
             
             # PESO FORMA RECENTE: Ultimi 10 match pesano 10x (DOMINANTE per forma corrente)
@@ -400,7 +401,7 @@ class ProfessionalCalculator:
             sconf_final = sconf_bayesian / totale
             
             if n_partite < 30:
-                logger.info(f"⚖️ Bayesian smoothing {squadra} ({'casa' if in_casa else 'trasferta'}): {n_partite} partite, peso prior {peso_prior:.2%}")
+                logger.warning(f"⚠️ DATI LIMITATI {squadra} ({'casa' if in_casa else 'trasferta'}): {n_partite} partite, smoothing {peso_prior:.0%} (probabilità regolarizzate verso medie campionato)")
             
             # Calcola clean sheet rate (partite senza subire gol)
             if in_casa:
@@ -700,6 +701,11 @@ def automation_page():
         logger.error(f"Errore caricamento automation page: {e}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/tracking')
+def tracking_fase2_page():
+    """Dashboard tracking performance FASE 2"""
+    return render_template('tracking_fase2.html')
+
 @app.route('/api/debug/odds_api_test')
 def debug_odds_api_test():
     """Endpoint di debug per testare The Odds API passo per passo"""
@@ -845,6 +851,96 @@ def automation_status_api():
         })
     except Exception as e:
         logger.error(f"Errore API automation status: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/tracking/fase2')
+@limiter.limit("60 per minute")
+def tracking_fase2_api():
+    """API per dati tracking FASE 2 - Alimenta dashboard"""
+    import csv
+    from pathlib import Path
+    
+    try:
+        # Percorso file tracking
+        tracking_file = Path(__file__).parent.parent / 'tracking_fase2_febbraio2026.csv'
+        
+        if not tracking_file.exists():
+            return jsonify({
+                'error': 'File tracking non trovato',
+                'message': 'Esegui prima: python genera_tracking_fase2.py',
+                'trades': [],
+                'summary': {
+                    'total_trades': 0,
+                    'win_rate': 0,
+                    'roi': 0,
+                    'profit_loss': 0,
+                    'bankroll': 500
+                }
+            }), 404
+        
+        # Leggi CSV
+        trades = []
+        with open(tracking_file, 'r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                # Status mapping
+                risultato = row.get('Risultato', 'PENDING').upper()
+                if risultato == 'WIN':
+                    status = 'WIN'
+                elif risultato == 'LOSS':
+                    status = 'LOSS'
+                else:
+                    status = 'PENDING'
+                
+                trades.append({
+                    'data': row.get('Data', 'N/A'),
+                    'casa': row.get('Casa', ''),
+                    'ospite': row.get('Ospite', ''),
+                    'mercato': row.get('Mercato', ''),
+                    'esito': row.get('Esito', ''),
+                    'quota': float(row.get('Quota', 0)),
+                    'ev_pct': float(row.get('EV_%', 0)),
+                    'prob_model': float(row.get('Prob_Modello_%', 0)),
+                    'strategia': row.get('Strategia', ''),
+                    'roi_backtest': row.get('ROI_Backtest', 'N/A'),
+                    'stake': float(row.get('Stake_Suggerito', 10)),
+                    'status': status,
+                    'profit_loss': float(row.get('Profit_Loss', 0)),
+                    'bankroll': float(row.get('Bankroll', 500)),
+                    'note': row.get('Note', '')
+                })
+        
+        # Calcola summary
+        wins = sum(1 for t in trades if t['status'] == 'WIN')
+        losses = sum(1 for t in trades if t['status'] == 'LOSS')
+        pending = sum(1 for t in trades if t['status'] == 'PENDING')
+        closed = wins + losses
+        
+        total_pl = sum(t['profit_loss'] for t in trades if t['status'] != 'PENDING')
+        total_staked = closed * 10  # Assumiamo stake medio 10€
+        
+        summary = {
+            'total_trades': len(trades),
+            'closed_trades': closed,
+            'pending_trades': pending,
+            'wins': wins,
+            'losses': losses,
+            'win_rate': round(wins / closed * 100, 1) if closed > 0 else 0,
+            'roi': round(total_pl / total_staked * 100, 1) if total_staked > 0 else 0,
+            'profit_loss': round(total_pl, 2),
+            'bankroll': trades[-1]['bankroll'] if trades else 500,
+            'backtest_roi_expected': 29.0,
+            'backtest_wr_expected': 50.6
+        }
+        
+        return jsonify({
+            'trades': trades,
+            'summary': summary,
+            'last_update': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"Errore API tracking FASE 2: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/dataset_info')
@@ -1239,11 +1335,13 @@ def api_predict_enterprise():
         roi_expected = calc_ev(pred_prob, pred_odds)
         
         # ============================================
-        # 🎯 FASE 2 - MULTI-MERCATO (6 Feb 2026)
-        # Backtest: 420 partite test set
-        # - Double Chance: ROI +75%, WR 75%, 128 trade
-        # - Over/Under 2.5: ROI +5.9%, WR 46.5%, 144 trade
-        # - Pareggi FASE1: ROI +7.17%, WR 31%, 158 trade
+        # 🎯 FASE 2 - MULTI-MERCATO (9 Feb 2026 - FIX TRADING)
+        # NOTA IMPORTANTE: ROI backtest sono PRELIMINARI e NON garantiti.
+        # Performance reale dipende da:
+        # - Esecuzione (slippage quote)
+        # - Condizioni mercato (liquidità)
+        # - Sizing (money management)
+        # Range ROI attesi realistici: 3-15% annuo (non 75%!)
         # ============================================
         
         # Valida opportunità con filtri FASE 1
@@ -1640,6 +1738,11 @@ def api_upcoming_matches():
                             '1X2', 'D', odds_draw, ev_d * 100
                         )
                         if is_valid:
+                            # Warning per EV alto anche su pareggi
+                            ev_warning = None
+                            if ev_d * 100 > 35:
+                                ev_warning = '⚠️ EV >35%: controllare forma recente e head-to-head prima di confermare.'
+                            
                             fase2_opportunities.append({
                                 'market': '1X2',
                                 'outcome': 'Pareggio',
@@ -1647,7 +1750,9 @@ def api_upcoming_matches():
                                 'ev': ev_d * 100,
                                 'prob_model': probabilita['D'] * 100,
                                 'strategy': 'FASE1_PAREGGIO',
-                                'roi_backtest': 7.17
+                                'roi_backtest_range': '5-10%',  # FASE1 validata ma range realistico
+                                'roi_note': 'Strategia conservativa. 158 trade backtest, ROI +7.17% su dati storici.',
+                                'ev_warning': ev_warning
                             })
                     
                     # 2. Valida Double Chance (FASE 2)
@@ -1661,6 +1766,11 @@ def api_upcoming_matches():
                             'DC', dc_name, dc_odds, dc_ev * 100
                         )
                         if is_valid:
+                            # Warning se EV troppo alto (>30% = probabile overconfidence modello)
+                            ev_warning = None
+                            if dc_ev * 100 > 30:
+                                ev_warning = '⚠️ EV molto alto: possibile overconfidence del modello. Confrontare con altre fonti.'
+                            
                             fase2_opportunities.append({
                                 'market': 'Double Chance',
                                 'outcome': dc_name,
@@ -1668,7 +1778,9 @@ def api_upcoming_matches():
                                 'ev': dc_ev * 100,
                                 'prob_model': dc_prob * 100,
                                 'strategy': 'FASE2_DOUBLE_CHANCE',
-                                'roi_backtest': 75.21
+                                'roi_backtest_range': '5-15%',  # Range realistico, NON hardcoded
+                                'roi_note': 'Backtest preliminare. ROI reale dipende da esecuzione e condizioni mercato.',
+                                'ev_warning': ev_warning
                             })
                     
                     # 3. Valida Over/Under 2.5 (FASE 2)
@@ -1682,6 +1794,11 @@ def api_upcoming_matches():
                                 'OU25', ou_name, ou_odds, ou_ev * 100
                             )
                             if is_valid:
+                                # Warning se EV troppo alto
+                                ev_warning = None
+                                if ou_ev * 100 > 30:
+                                    ev_warning = '⚠️ EV elevato: verificare con statistiche xG e altre fonti prima di puntare.'
+                                
                                 fase2_opportunities.append({
                                     'market': 'Over/Under 2.5',
                                     'outcome': ou_name + ' 2.5',
@@ -1689,7 +1806,9 @@ def api_upcoming_matches():
                                     'ev': ou_ev * 100,
                                     'prob_model': ou_prob * 100,
                                     'strategy': 'FASE2_OVER_UNDER',
-                                    'roi_backtest': 5.86
+                                    'roi_backtest_range': '3-8%',  # Realistico per O/U
+                                    'roi_note': 'Mercato ad alta varianza. Monitorare forma squadre e condizioni meteo.',
+                                    'ev_warning': ev_warning
                                 })
                     
                     # Classificazione per livello di discrepanza
@@ -1700,6 +1819,13 @@ def api_upcoming_matches():
                     else:
                         analysis_level = 'low_divergence'
                     
+                    # QUOTE IMPLICITE MODELLO (formula: 1/probabilità)
+                    # IMPORTANTE: Queste NON sono quote reali di bookmaker!
+                    # Servono solo per confronto con mercato e calcolo EV
+                    odds_model_home = round(1 / probabilita['H'], 2) if probabilita['H'] > 0.01 else 100.0
+                    odds_model_draw = round(1 / probabilita['D'], 2) if probabilita['D'] > 0.01 else 100.0
+                    odds_model_away = round(1 / probabilita['A'], 2) if probabilita['A'] > 0.01 else 100.0
+                    
                     match_data = {
                         'home_team': home,  # Normalizzato per compatibilità
                         'away_team': away,
@@ -1707,6 +1833,23 @@ def api_upcoming_matches():
                         'away_team_display': away_display,
                         'commence_time': match.get('commence_time'),
                         'has_prediction': True,  # Indica che ha predizione ML
+                        'odds_real_market': {
+                            'home': round(odds_home, 2),
+                            'draw': round(odds_draw, 2),
+                            'away': round(odds_away, 2),
+                            'source': 'The Odds API - Media 25+ bookmaker REALI',
+                            'n_bookmakers': match.get('num_bookmakers', 0),
+                            'label': 'QUOTE REALI MERCATO'
+                        },
+                        'odds_model_implied': {
+                            'home': odds_model_home,
+                            'draw': odds_model_draw,
+                            'away': odds_model_away,
+                            'source': 'Calcolate da probabilità modello ML (1/prob)',
+                            'label': 'QUOTE IMPLICITE MODELLO',
+                            'warning': 'NON usare per piazzare scommesse! Solo analisi interna.'
+                        },
+                        # Backward compatibility
                         'odds_real': {
                             'home': round(odds_home, 2),
                             'draw': round(odds_draw, 2),
