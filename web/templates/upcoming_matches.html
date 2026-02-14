@@ -452,7 +452,13 @@
                 const diffMins = Math.floor((now - timestamp) / (1000 * 60)) % 60;
                 
                 let timeAgo = diffHours > 0 ? `${diffHours}h ${diffMins}m fa` : `${diffMins}m fa`;
-                cacheInfo.innerHTML = `📊 Ultimo aggiornamento: ${timeAgo} | TTL: 24h | Prossimo refresh: ${24 - diffHours}h`;
+                
+                // Quota API residue (se disponibile)
+                const quotaInfo = data.quota_rimanente !== undefined && data.quota_rimanente !== null 
+                    ? ` | 🎯 API quota: ${data.quota_rimanente}/500`
+                    : '';
+                
+                cacheInfo.innerHTML = `📊 Ultimo aggiornamento: ${timeAgo} | TTL: 24h | Prossimo refresh: ${24 - diffHours}h${quotaInfo}`;
             }
         }
         

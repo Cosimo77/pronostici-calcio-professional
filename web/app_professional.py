@@ -2022,6 +2022,7 @@ def api_upcoming_matches():
             'matches': matches_with_predictions,
             'data_source': 'The Odds API (REAL bookmaker odds)',
             'api_quota': api_quota,
+            'quota_rimanente': api_quota.get('remaining', 'N/A') if isinstance(api_quota, dict) else 'N/A',  # Valore diretto per frontend
             'timestamp': datetime.now().isoformat(),
             'cache_timestamp': int(datetime.now().timestamp()),  # Unix timestamp per calcolo "X ore fa"
             'disclaimer': '100% quote reali da bookmaker verificati'
