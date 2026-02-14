@@ -61,7 +61,7 @@
 - 9 backtest_*.py obsoleti (validazione già completata)
 - 12 script aggiorna/analizza duplicati
 - 4 demo/test vecchi
-- 7 file temporanei (*_backup_*.csv, duplicati)
+- 7 file temporanei (\*\_backup\_\*.csv, duplicati)
 
 **Dopo pulizia (7 file essenziali root)**:
 ```
@@ -203,7 +203,7 @@ python3 scripts/analysis/analizza_tracking.py
 - **Target ROI**: 8-12% cumulativo
 - **Sharpe Ratio**: >1.0 (excelente risk-adjusted)
 - **Profit Factor**: >1.2 (win/loss ratio positivo)
-- **Decision**: 
+- **Decision**:
   - ROI >10% + Sharpe >1.2 → Scale a €200-300
   - ROI 5-10% + Sharpe 0.8-1.2 → Mantieni €100, continua test
   - ROI <5% o Sharpe <0.8 → STOP, rianalizza sistema
