@@ -14,7 +14,7 @@
 - Causa: Formula approssimazione DC da quote 1X2 **SBAGLIATA**
 - Rischio: Puntare su quota inventata = perdita 100% certa
 
-**Root Cause**: 
+**Root Cause**:
 ```
 ❌ Controllo superficiale fatto:
    - Verificato esistenza file modelli ML ✓
@@ -140,7 +140,7 @@ if abs(somma_prob - 1.0) > 0.001:
 
 ## 🚀 Workflow Obbligatorio
 
-### PRIMA di dichiarare "Sistema Pronto":
+### PRIMA di dichiarare "Sistema Pronto"
 
 ```bash
 # 1. Verifica partite disponibili
@@ -167,7 +167,8 @@ python3 test_completo_betting_reale.py
 echo $?  # DEVE essere 0
 ```
 
-### SE Test Falliscono (exit code 1):
+### SE Test Falliscono (exit code 1)
+
 ```bash
 # Output esempio fallimento:
 # ❌ FALLIMENTI RILEVATI:
@@ -284,7 +285,7 @@ jobs:
 3. ✅ Checklist manuale pre-trading completata
 4. ✅ Exit code 0 verificato
 
-**Controllo superficiale = INACCETTABILE per sistema trading reale**
+### Controllo superficiale = INACCETTABILE per sistema trading reale
 
 ---
 
@@ -297,4 +298,4 @@ jobs:
 
 ---
 
-**Processo verificato implementato. Zero tolleranza errori trading. 🎯**
+## Processo verificato implementato. Zero tolleranza errori trading 🎯
