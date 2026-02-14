@@ -2501,24 +2501,10 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
         'consiglio': 'goal' if prob_gg > prob_ng else 'nogoal'
     }
     
-    # Double Chance
-    prob_1x = prob_base.get('H', 0.33) + prob_base.get('D', 0.33)
-    prob_x2 = prob_base.get('D', 0.33) + prob_base.get('A', 0.33)
-    prob_12 = prob_base.get('H', 0.33) + prob_base.get('A', 0.33)
-    
-    max_dc = max(prob_1x, prob_x2, prob_12)
-    best_dc = '1X' if prob_1x == max_dc else ('X2' if prob_x2 == max_dc else '12')
-    
-    mercati['mdc'] = {
-        'nome': 'Double Chance',
-        'probabilita': {
-            '1X': round(prob_1x, 3),
-            'X2': round(prob_x2, 3),
-            '12': round(prob_12, 3)
-        },
-        'confidenza': max_dc,
-        'consiglio': best_dc
-    }
+    # Double Chance - ⚠️ RIMOSSO (quote non disponibili da The Odds API)
+    # The Odds API fornisce SOLO h2h (1X2) e totals (Over/Under 2.5)
+    # Calcolare probabilità DC senza quote reali è PERICOLOSO (vedi bug +317%)
+    # mercati['mdc'] RIMOSSO - frontend non mostrerà più Double Chance
     
     # Asian Handicap - basato su differenza probabilità FT
     prob_h_ft = prob_base.get('H', 0.33)
@@ -3453,11 +3439,6 @@ def api_model_performance():
                 'total_predictions': total_matches,
                 'note': '✅ Validato - entrambe segnano'
             },       
-            'double_chance': {
-                'accuracy': 0.736,  # ✅ VALIDATO: Backtest 537 partite (6 Feb 2026)
-                'total_predictions': total_matches,
-                'note': '✅ Validato - combinazione 2 esiti'
-            },     
             'casa_segna': {
                 'accuracy': 0.532,  # ⚠️ STIMATO (non validato)
                 'total_predictions': total_matches
@@ -3543,7 +3524,6 @@ def api_accuracy_report():
                 'over_under_25': 48.5,         # Stimato proporzionale
                 'over_under_15': 52.8,         # Più facile (meno gol)
                 'goal_nogoal': 46.3,           # Stimato proporzionale
-                'double_chance': 58.7,         # Più facile (2 esiti su 3)
                 'primo_tempo': 38.1,           # Più difficile (meno dati)
                 'exact_score': 12.8,           # Molto difficile (11 esiti)
                 'asian_handicap': 44.2,        # Simile a 1X2
@@ -3837,8 +3817,7 @@ def api_metrics_summary():
             'mercati_principali': {
                 'risultato_finale': {'accuratezza': 43.2, 'confidenza': 'Media'},  # Backtest reale
                 'over_under_25': {'accuratezza': 48.5, 'confidenza': 'Media'},
-                'goal_nogoal': {'accuratezza': 46.3, 'confidenza': 'Media'},
-                'double_chance': {'accuratezza': 58.7, 'confidenza': 'Alta'}  # Più facile: 2/3 esiti
+                'goal_nogoal': {'accuratezza': 46.3, 'confidenza': 'Media'}
             },
             'qualita_dati': {
                 'fonte': 'Dati ufficiali Serie A',

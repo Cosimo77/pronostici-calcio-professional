@@ -284,10 +284,6 @@
             box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
         }
         
-        .opportunity-card.double-chance {
-            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-        }
-        
         .opportunity-card.pareggio {
             background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
         }
@@ -766,8 +762,7 @@
                 
                 // Classe card in base alla strategia
                 let cardClass = '';
-                if (opp.strategy === 'FASE2_DOUBLE_CHANCE') cardClass = 'double-chance';
-                else if (opp.strategy === 'FASE1_PAREGGIO') cardClass = 'pareggio';
+                if (opp.strategy === 'FASE1_PAREGGIO') cardClass = 'pareggio';
                 else if (opp.strategy === 'FASE2_OVER_UNDER') cardClass = 'over-under';
                 
                 // Badge ROI (con controllo per undefined)
@@ -817,7 +812,7 @@
                         <div style="text-align: center; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.2);">
                             <button onclick='addToDiario(${JSON.stringify({
                                 partita: `${match.home_team_display || match.home_team} vs ${match.away_team_display || match.away_team}`,
-                                mercato: opp.market === 'Double Chance' ? opp.outcome.replace(' ', '') : (opp.market === 'Pareggio' ? 'X' : opp.outcome.replace(' ', '')),
+                                mercato: opp.market === 'Pareggio' ? 'X' : opp.outcome.replace(' ', ''),
                                 quota: parseFloat(odds.toFixed(2)),
                                 ev_modello: ev.toFixed(1),
                                 ev_reale: (ev / 3.5).toFixed(1),
@@ -836,9 +831,8 @@
                         <h3>💡 Come usare questi segnali</h3>
                         <p><strong>1.</strong> Punta SOLO sulle opportunità con ROI Backtest positivo<br>
                         <strong>2.</strong> Max 2% del bankroll per scommessa<br>
-                        <strong>3.</strong> Double Chance (verde) = ROI +21.8% (backtest), quote basse ma sicure<br>
-                        <strong>4.</strong> Pareggi (rosa) = ROI +7% con quote medie<br>
-                        <strong>5.</strong> Over/Under (arancio) = ROI +6% con quote interessanti<br>
+                        <strong>3.</strong> Pareggi (rosa) = ROI +7% con quote medie<br>
+                        <strong>4.</strong> Over/Under (arancio) = ROI +6% con quote interessanti<br>
                         <strong>⚠️</strong> Performance passate non garantiscono risultati futuri</p>
                     </div>
                 </div>
