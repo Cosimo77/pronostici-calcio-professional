@@ -1,0 +1,17 @@
+Data,Casa,Ospite,Mercato,Esito,Quota,EV_%,Prob_Modello_%,Strategia,ROI_Backtest,Stake_Suggerito,Giocata,Risultato,Profit_Loss,Bankroll,Note
+2026-02-09,Roma,Cagliari,Over/Under 2.5,Over 2.5,2.10,17.7,53.2,FASE2_OVER_UNDER,N/A,10.0,SI,LOSS,-10.0,490.0,Partita finita 2-0 (Under 2.5)
+2026-02-14,Lazio,Atalanta,Over/Under 2.5,Over 2.5,2.09,46.4,70.0,FASE2_OVER_UNDER,N/A,10.0,NO,PENDING,0.0,490.0,Auto-generato 2026-02-12 21:26
+2026-02-14,Como,Fiorentina,Double Chance,1X,1.32,12.4,85.1,FASE2_DOUBLE_CHANCE,N/A,10.0,NO,PENDING,0.0,490.0,Auto-generato 2026-02-12 21:26
+2026-02-14,Inter,Juventus,Double Chance,1X,1.37,11.0,80.8,FASE2_DOUBLE_CHANCE,N/A,10.0,NO,PENDING,0.0,490.0,Auto-generato 2026-02-12 21:26
+2026-02-15,Napoli,Roma,Over/Under 2.5,Over 2.5,2.49,57.3,63.1,FASE2_OVER_UNDER,N/A,10.0,NO,PENDING,0.0,490.0,Auto-generato 2026-02-12 21:26
+2026-02-15,Udinese,Sassuolo,Over/Under 2.5,Over 2.5,2.25,45.0,64.3,FASE2_OVER_UNDER,N/A,10.0,NO,PENDING,0.0,490.0,Auto-generato 2026-02-12 21:26
+2026-02-15,Torino,Bologna,Double Chance,1X,1.78,41.9,79.5,FASE2_DOUBLE_CHANCE,N/A,10.0,NO,PENDING,0.0,490.0,Auto-generato 2026-02-12 21:26
+2026-02-15,Cremonese,Genoa,Double Chance,1X,1.69,36.0,80.3,FASE2_DOUBLE_CHANCE,N/A,10.0,NO,PENDING,0.0,490.0,Auto-generato 2026-02-12 21:26
+2026-02-15,Cremonese,Genoa,1X2,Pareggio,2.97,28.4,43.3,FASE1_PAREGGIO,N/A,10.0,SI,PENDING,0.0,490.0,Auto-generato 2026-02-12 21:26
+2026-02-15,Parma,Verona,Over/Under 2.5,Over 2.5,2.48,25.4,50.6,FASE2_OVER_UNDER,N/A,10.0,SI,PENDING,0.0,490.0,Auto-generato 2026-02-12 21:26
+2026-02-15,Parma,Verona,Double Chance,1X,1.45,23.1,85.2,FASE2_DOUBLE_CHANCE,N/A,10.0,SI,PENDING,0.0,490.0,Auto-generato 2026-02-12 21:26
+2026-02-15,Napoli,Roma,Double Chance,1X,1.44,17.7,81.6,FASE2_DOUBLE_CHANCE,N/A,10.0,SI,PENDING,0.0,490.0,Auto-generato 2026-02-12 21:26
+2026-02-15,Udinese,Sassuolo,Double Chance,1X,1.46,17.2,80.1,FASE2_DOUBLE_CHANCE,N/A,10.0,NO,PENDING,0.0,490.0,Auto-generato 2026-02-12 21:26
+2026-02-15,Torino,Bologna,Over/Under 2.5,Over 2.5,2.04,15.8,56.7,FASE2_OVER_UNDER,N/A,10.0,NO,PENDING,0.0,490.0,Auto-generato 2026-02-12 21:26
+2026-02-15,Napoli,Roma,Double Chance,12,1.54,12.9,73.3,FASE2_DOUBLE_CHANCE,N/A,10.0,NO,PENDING,0.0,490.0,Auto-generato 2026-02-12 21:26
+2026-02-16,Cagliari,Lecce,Double Chance,1X,1.4,13.4,81.1,FASE2_DOUBLE_CHANCE,N/A,10.0,NO,PENDING,0.0,490.0,Auto-generato 2026-02-12 21:26

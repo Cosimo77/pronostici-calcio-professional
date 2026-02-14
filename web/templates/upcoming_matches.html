@@ -32,6 +32,12 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.2);
         }
         
+        .header-flex {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
         .header h1 {
             color: #667eea;
             font-size: 2.5em;
@@ -41,6 +47,23 @@
         .header p {
             color: #666;
             font-size: 1.1em;
+        }
+        
+        .btn-diario {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            transition: transform 0.2s;
+        }
+        
+        .btn-diario:hover {
+            transform: translateY(-2px);
+            color: white;
         }
         
         .loading {
@@ -372,22 +395,42 @@
         .fase2-badge.low-roi {
             background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
         }
+        
+        /* Utility classes */
+        .hidden {
+            display: none;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>⚽ Partite Prossime Serie A</h1>
-            <p>Quote reali da 25+ bookmaker · Predizioni ML · Value Betting FASE 2</p>
+            <div class="header-flex">
+                <div>
+                    <h1>⚽ Partite Prossime Serie A</h1>
+                    <p>Quote reali da 25+ bookmaker · Predizioni ML · Value Betting FASE 2</p>
+                    <div class="cache-info" id="cache-info">
+                        📊 Cache: caricamento...
+                    </div>
+                </div>
+                <div>
+                    <button class="btn-refresh" id="btn-refresh" onclick="refreshQuotes()" title="Forza aggiornamento quote (consuma 1 API call)">
+                        🔄 Refresh Quote
+                    </button>
+                    <a href="/diario" class="btn-diario">
+                        📔 Diario Betting
+                    </a>
+                </div>
+            </div>
         </div>
         
         <div class="info-banner">
             <h3>📊 Dati in tempo reale</h3>
-            <p>Quote aggiornate automaticamente. Predizioni basate su modelli ML addestrati su 2.920 partite. Sistema value betting FASE 2 con ROI backtest +7% a +75%.</p>
+            <p>Quote aggiornate automaticamente. Predizioni basate su modelli ML addestrati su 2.920 partite. Sistema value betting con ROI backtest certificati: +21.8% (DC), +7.2% (Pareggi). ⚠️ EV calcolato da modello ML, non garanzia futura.</p>
         </div>
         
         <!-- SEZIONE OPPORTUNITÀ FASE 2 -->
-        <div id="opportunities-section" style="display: none;">
+        <div id="opportunities-section" class="hidden">
             <!-- Popolato dinamicamente -->
         </div>
         
@@ -399,11 +442,53 @@
     </div>
 
     <script>
+        // Mostra info cache
+        function updateCacheInfo(data) {
+            const cacheInfo = document.getElementById('cache-info');
+            if (data && data.cache_timestamp) {
+                const timestamp = new Date(data.cache_timestamp * 1000);
+                const now = new Date();
+                const diffHours = Math.floor((now - timestamp) / (1000 * 60 * 60));
+                const diffMins = Math.floor((now - timestamp) / (1000 * 60)) % 60;
+                
+                let timeAgo = diffHours > 0 ? `${diffHours}h ${diffMins}m fa` : `${diffMins}m fa`;
+                cacheInfo.innerHTML = `📊 Ultimo aggiornamento: ${timeAgo} | TTL: 24h | Prossimo refresh: ${24 - diffHours}h`;
+            }
+        }
+        
+        // Refresh manuale quote
+        async function refreshQuotes() {
+            const btn = document.getElementById('btn-refresh');
+            btn.disabled = true;
+            btn.textContent = '⏳ Aggiornamento...';
+            
+            try {
+                const response = await fetch('/api/refresh_quotes', {method: 'POST'});
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(`✅ Quote aggiornate!\n\n${result.message}\n\nAPI calls rimanenti: ${result.quota_rimanente || '?'}`);
+                    // Ricarica partite
+                    location.reload();
+                } else {
+                    alert('❌ Errore: ' + (result.error || 'Unknown'));
+                }
+            } catch (error) {
+                alert('❌ Errore connessione: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '🔄 Refresh Quote';
+            }
+        }
+        
         function loadMatches() {
             fetch('/api/upcoming_matches')
                 .then(response => response.json())
                 .then(data => {
                     const container = document.getElementById('matches-container');
+                    
+                    // Aggiorna info cache (timestamp ultimo refresh)
+                    updateCacheInfo(data);
                     
                     // Gestione errori configurazione
                     if (data.error) {
@@ -532,7 +617,7 @@
                                             </div>
                                         </div>
                                         <div class="recommendation">
-                                            <strong>Consiglio:</strong> ${consiglioLabel} (${confidenza.toFixed(1)}% confidenza)
+                                            <strong>Consiglio:</strong> ${consiglioLabel} (${(confidenza || 0).toFixed(1)}% confidenza)
                                         </div>
                                     </div>
                                 `;
@@ -548,15 +633,15 @@
                                     <div class="odds-banner">
                                         <div>
                                             <h4>Casa</h4>
-                                            <div class="price">${oddsHome.toFixed(2)}</div>
+                                            <div class="price">${(oddsHome || 0).toFixed(2)}</div>
                                         </div>
                                         <div>
                                             <h4>Pareggio</h4>
-                                            <div class="price">${oddsDraw.toFixed(2)}</div>
+                                            <div class="price">${(oddsDraw || 0).toFixed(2)}</div>
                                         </div>
                                         <div>
                                             <h4>Trasferta</h4>
-                                            <div class="price">${oddsAway.toFixed(2)}</div>
+                                            <div class="price">${(oddsAway || 0).toFixed(2)}</div>
                                         </div>
                                     </div>
                                     
@@ -570,15 +655,19 @@
                                             oppHTML += '<h3 style="color: #667eea; margin-bottom: 15px;">🎯 Opportunità FASE 2 Validate</h3>';
                                             
                                             vb.fase2_opportunities.forEach((opp, idx) => {
+                                                const roiBacktest = opp.roi_backtest || 0;
                                                 let badgeClass = 'low-roi';
-                                                if (opp.roi_backtest > 50) badgeClass = 'high-roi';
-                                                else if (opp.roi_backtest > 10) badgeClass = 'medium-roi';
+                                                if (roiBacktest > 50) badgeClass = 'high-roi';
+                                                else if (roiBacktest > 10) badgeClass = 'medium-roi';
+                                                
+                                                const oppOdds = opp.odds || 0;
+                                                const oppEv = opp.ev || 0;
                                                 
                                                 oppHTML += `
                                                     <div class="fase2-badge ${badgeClass}">
-                                                        ${opp.market}: ${opp.outcome} @ ${opp.odds.toFixed(2)}
-                                                        · EV +${opp.ev.toFixed(1)}%
-                                                        · ROI Backtest +${opp.roi_backtest.toFixed(1)}%
+                                                        ${opp.market}: ${opp.outcome} @ ${oppOdds.toFixed(2)}
+                                                        · EV +${oppEv.toFixed(1)}%
+                                                        · ROI Backtest +${roiBacktest.toFixed(1)}%
                                                     </div>
                                                 `;
                                             });
@@ -587,12 +676,14 @@
                                             return oppHTML;
                                         } else if (isRealValue) {
                                             // Fallback al vecchio value betting se non ha FASE 2
+                                            const safeOdds = bestOdds || 0;
+                                            const safeEV = bestEV || 0;
                                             return `
                                                 <div class="value-bet-banner">
                                                     <h3>💎 Opportunità Value Betting</h3>
                                                     <div class="detail">
-                                                        <strong>${bestMarket}: ${bestOutcome}</strong> @ ${bestOdds.toFixed(2)}
-                                                        · Expected Value: <strong>+${bestEV.toFixed(1)}%</strong>
+                                                        <strong>${bestMarket}: ${bestOutcome}</strong> @ ${safeOdds.toFixed(2)}
+                                                        · Expected Value: <strong>+${safeEV.toFixed(1)}%</strong>
                                                     </div>
                                                 </div>
                                             `;
@@ -638,7 +729,7 @@
                         <h2>🎯 Scommesse Consigliate FASE 2</h2>
                         <div class="no-opportunities">
                             <h3>⚠️ Nessuna opportunità validata al momento</h3>
-                            <p>I filtri FASE 2 sono molto conservativi (ROI backtest da +7% a +75%)</p>
+                            <p>I filtri FASE 2 sono conservativi (sweet spot EV 20-25%, backtest +21.8% ROI su 24 trade)</p>
                             <p style="margin-top: 10px;">Controlla più tardi per nuove opportunità validate</p>
                         </div>
                     </div>
@@ -673,11 +764,17 @@
                 else if (opp.strategy === 'FASE1_PAREGGIO') cardClass = 'pareggio';
                 else if (opp.strategy === 'FASE2_OVER_UNDER') cardClass = 'over-under';
                 
-                // Badge ROI
+                // Badge ROI (con controllo per undefined)
+                const roiValue = opp.roi_backtest || 0;
                 let roiEmoji = '';
-                if (opp.roi_backtest > 50) roiEmoji = '🏆';
-                else if (opp.roi_backtest > 10) roiEmoji = '📈';
+                if (roiValue > 50) roiEmoji = '🏆';
+                else if (roiValue > 10) roiEmoji = '📈';
                 else roiEmoji = '💰';
+                
+                // Valori con fallback per undefined
+                const odds = opp.odds || 0;
+                const ev = opp.ev || 0;
+                const probModel = opp.prob_model || 0;
                 
                 html += `
                     <div class="opportunity-card ${cardClass}">
@@ -695,20 +792,34 @@
                         <div class="opp-details">
                             <div class="opp-detail">
                                 <div class="opp-detail-label">Quota</div>
-                                <div class="opp-detail-value">${opp.odds.toFixed(2)}</div>
+                                <div class="opp-detail-value">${odds.toFixed(2)}</div>
                             </div>
                             <div class="opp-detail">
                                 <div class="opp-detail-label">Expected Value</div>
-                                <div class="opp-detail-value">${opp.ev > 0 ? '+' : ''}${opp.ev.toFixed(1)}%</div>
+                                <div class="opp-detail-value">${ev > 0 ? '+' : ''}${ev.toFixed(1)}%</div>
                             </div>
                             <div class="opp-detail">
                                 <div class="opp-detail-label">${roiEmoji} ROI Backtest</div>
-                                <div class="opp-detail-value">+${opp.roi_backtest.toFixed(1)}%</div>
+                                <div class="opp-detail-value">+${roiValue.toFixed(1)}%</div>
                             </div>
                         </div>
                         
                         <div class="opp-strategy">
-                            📊 Probabilità modello: ${opp.prob_model.toFixed(1)}% · Strategia: ${opp.strategy.replace('FASE2_', '').replace('FASE1_', '').replace('_', ' ')}
+                            📊 Probabilità modello: ${probModel.toFixed(1)}% · Strategia: ${opp.strategy.replace('FASE2_', '').replace('FASE1_', '').replace('_', ' ')}
+                        </div>
+                        
+                        <div style="text-align: center; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.2);">
+                            <button onclick='addToDiario(${JSON.stringify({
+                                partita: `${match.home_team_display || match.home_team} vs ${match.away_team_display || match.away_team}`,
+                                mercato: opp.market === 'Double Chance' ? opp.outcome.replace(' ', '') : (opp.market === 'Pareggio' ? 'X' : opp.outcome.replace(' ', '')),
+                                quota: parseFloat(odds.toFixed(2)),
+                                ev_modello: ev.toFixed(1),
+                                ev_reale: (ev / 3.5).toFixed(1),
+                                data: match.commence_time.split('T')[0],
+                                note: `${opp.strategy.replace('FASE2_', '').replace('FASE1_', '').replace('_', ' ')} - EV ${ev.toFixed(1)}%`
+                            })})' class="btn btn-sm" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 8px 16px; border-radius: 20px; font-weight: bold; cursor: pointer;">
+                                📝 Aggiungi al Diario
+                            </button>
                         </div>
                     </div>
                 `;
@@ -719,7 +830,7 @@
                         <h3>💡 Come usare questi segnali</h3>
                         <p><strong>1.</strong> Punta SOLO sulle opportunità con ROI Backtest positivo<br>
                         <strong>2.</strong> Max 2% del bankroll per scommessa<br>
-                        <strong>3.</strong> Double Chance (verde) = ROI +75% ma quote basse<br>
+                        <strong>3.</strong> Double Chance (verde) = ROI +21.8% (backtest), quote basse ma sicure<br>
                         <strong>4.</strong> Pareggi (rosa) = ROI +7% con quote medie<br>
                         <strong>5.</strong> Over/Under (arancio) = ROI +6% con quote interessanti<br>
                         <strong>⚠️</strong> Performance passate non garantiscono risultati futuri</p>
@@ -733,6 +844,82 @@
         
         // Carica al caricamento pagina
         loadMatches();
+        
+        // Aggiungi opportunità al diario automaticamente
+        async function addToDiario(oppData) {
+            try {
+                // Mappa mercato al formato CSV corretto
+                const marketMap = {
+                    '1X': '1X', 'X2': 'X2', '12': '12',
+                    'X': 'X',
+                    'Over': 'Over 2.5', 'Under': 'Under 2.5'
+                };
+                
+                const mercatoFormattato = marketMap[oppData.mercato] || oppData.mercato;
+                
+                // ⚠️ PROMPT VERIFICA QUOTA (potrebbe essere cambiata su Sisal!)
+                const quotaVerificata = prompt(
+                    `🎯 VERIFICA QUOTA SU SISAL:\n\n` +
+                    `Partita: ${oppData.partita}\n` +
+                    `Mercato: ${mercatoFormattato}\n\n` +
+                    `Quota modello: ${parseFloat(oppData.quota).toFixed(2)}\n\n` +
+                    `⚠️ CONTROLLA su Sisal e inserisci la quota REALE attuale.\n` +
+                    `Se è uguale a quella del modello, clicca OK:`,
+                    parseFloat(oppData.quota).toFixed(2)  // Default = quota modello
+                );
+                
+                // Se cancella, esci
+                if (quotaVerificata === null || quotaVerificata.trim() === '') {
+                    return;
+                }
+                
+                // Valida quota inserita
+                const quotaFinale = parseFloat(quotaVerificata);
+                if (isNaN(quotaFinale) || quotaFinale < 1.01) {
+                    alert('❌ Quota non valida! Deve essere ≥ 1.01');
+                    return;
+                }
+                
+                const formData = {
+                    partita: oppData.partita,
+                    mercato: mercatoFormattato,
+                    quota: parseFloat(quotaFinale.toFixed(2)),  // Quota verificata + arrotondata
+                    stake: 'MONITOR',  // Default MONITOR, user può editare dopo
+                    data: oppData.data,
+                    ev_modello: '+' + oppData.ev_modello + '%',
+                    ev_reale: '+' + oppData.ev_reale + '%',
+                    note: oppData.note + (quotaFinale !== parseFloat(oppData.quota) ? ` | Quota aggiornata: ${oppData.quota} → ${quotaFinale.toFixed(2)}` : '')
+                };
+                
+                const response = await fetch('/api/diario/add', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(formData)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Notifica success con opzione vai al diario
+                    if (confirm(`✅ Aggiunto al diario come MONITOR!\n\nPartita: ${oppData.partita}\nMercato: ${mercatoFormattato} @ ${quotaFinale.toFixed(2)}\n\n📔 Vuoi aprire il diario ora?`)) {
+                        window.location.href = '/diario';
+                    }
+                } else {
+                    // Gestione errore duplicato con messaggio specifico
+                    if (result.error === 'duplicate') {
+                        const goToDiary = confirm(result.message + '\n\nVuoi aprire il diario per modificarla?');
+                        if (goToDiary) {
+                            window.location.href = '/diario';
+                        }
+                    } else {
+                        // Errore generico
+                        alert('❌ Errore: ' + (result.message || result.error || 'Unknown error'));
+                    }
+                }
+            } catch (error) {
+                alert('❌ Errore connessione: ' + error.message);
+            }
+        }
     </script>
 </body>
 </html>

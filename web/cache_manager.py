@@ -261,8 +261,8 @@ class CacheManager:
     def cache_upcoming_matches(self) -> Optional[Dict]:
         """
         Recupera lista partite future da cache
-        TTL: 10 ore - ottimizzato per quota mensile (36 richieste → 13 giorni)
-        Budget: 2.4 calls/giorno con margine +5 calls
+        TTL: 24 ore - ultra-conservativo per quota API (1 call/giorno)
+        Budget: 30 calls/mese (94% risparmio su 500 quota)
         
         Returns:
             Dict con lista partite o None
@@ -281,7 +281,7 @@ class CacheManager:
             True se salvato
         """
         key = 'upcoming_matches:latest'
-        ttl = 36000  # 10 ore - garantisce 31 calls in 13 giorni (36 rimaste, margine +5)
+        ttl = 86400  # 24 ore - 1 call/giorno = 30 calls/mese (470 calls risparmiate!)
         return self.set(key, matches_data, ttl)
     
     def cache_dataset_info(self) -> Optional[Dict]:

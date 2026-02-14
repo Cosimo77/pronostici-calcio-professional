@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📔 Diario Betting Professionale</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px 0;
+        }
+        .container {
+            max-width: 1200px;
+        }
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+        }
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px 15px 0 0 !important;
+            padding: 20px;
+        }
+        .bet-pending {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+        }
+        .bet-win {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+        }
+        .bet-loss {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+        }
+        .bet-skip {
+            background: #e0e0e0;
+            border-left: 4px solid #6c757d;
+        }
+        .stat-card {
+            text-align: center;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 10px 0;
+        }
+        .stat-positive {
+            background: #d4edda;
+            color: #155724;
+        }
+        .stat-negative {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .stat-neutral {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+        .btn-add-bet {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        .btn-add-bet:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+            color: white;
+        }
+        .nav-pills .nav-link {
+            border-radius: 25px;
+            margin: 0 5px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            font-weight: 600;
+            font-size: 1.05rem;
+            padding: 12px 24px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+        }
+        .nav-pills .nav-link:hover {
+            background: rgba(255, 255, 255, 1);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+            border-color: rgba(102, 126, 234, 0.5);
+        }
+        .nav-pills .nav-link.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: 2px solid white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.6);
+        }
+        .bet-card {
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .badge-ev {
+            font-size: 0.9em;
+            padding: 5px 10px;
+            border-radius: 15px;
+        }
+        .stat-info-small {
+            font-size: 0.75rem;
+            margin-top: 4px;
+        }
+        .hidden {
+            display: none;
+        }
+        .tabs-container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+            margin-bottom: 3rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="text-center mb-4">
+            <h1 class="text-white mb-3">
+                <i class="bi bi-journal-bookmark-fill"></i> Diario Betting Professionale
+            </h1>
+            <div>
+                <a href="/upcoming_matches" class="btn btn-light btn-sm me-2">
+                    <i class="bi bi-arrow-left"></i> Torna alle Opportunità
+                </a>
+                <button onclick="resetDiario()" class="btn btn-danger btn-sm">
+                    <i class="bi bi-trash"></i> Reset Diario
+                </button>
+            </div>
+        </div>
+
+        <!-- Statistiche Riepilogo -->
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0"><i class="bi bi-graph-up"></i> Performance Globale</h4>
+            </div>
+            <div class="card-body">
+                <!-- Performance Stats -->
+                <div class="row" id="stats-container">
+                    <div class="col-md-3">
+                        <div class="stat-card stat-neutral">
+                            <h2 id="stat-total">0</h2>
+                            <small>Puntate Totali</small>
+                            <div class="text-muted stat-info-small" id="stat-skipped-info"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card stat-neutral">
+                            <h2 id="stat-pending">0</h2>
+                            <small>In Attesa</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card" id="stat-roi-card">
+                            <h2 id="stat-roi">0%</h2>
+                            <small>ROI</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card stat-neutral">
+                            <h2 id="stat-wr">0%</h2>
+                            <small>Win Rate</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Bankroll Management -->
+                <div class="row mt-3">
+                    <div class="col-md-12">
+                        <h6 class="text-muted mb-2"><i class="bi bi-wallet2"></i> Bankroll Management</h6>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card stat-neutral">
+                            <h3 id="bankroll-iniziale">€1000</h3>
+                            <small>Capitale Iniziale</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card" id="bankroll-corrente-card">
+                            <h3 id="bankroll-corrente">€1000</h3>
+                            <small>Bankroll Corrente</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card stat-neutral">
+                            <h3 id="unita-betting">€10</h3>
+                            <small>Unit\u00e0 Betting (1%)</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card" id="roi-bankroll-card">
+                            <h3 id="roi-bankroll">0%</h3>
+                            <small>ROI Bankroll</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Risk Metrics -->
+                <div class="row mt-3">
+                    <div class="col-md-12">
+                        <h6 class="text-muted mb-2"><i class="bi bi-shield-check"></i> Risk Metrics</h6>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card stat-neutral">
+                            <h4 id="sharpe-ratio">0.0</h4>
+                            <small>Sharpe Ratio</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card stat-negative">
+                            <h4 id="max-drawdown">€0</h4>
+                            <small>Max Drawdown</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card stat-neutral">
+                            <h4 id="win-loss-ratio">0.0</h4>
+                            <small>Win/Loss Ratio</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card stat-neutral">
+                            <h4 id="profit-factor">0.0</h4>
+                            <small>Profit Factor</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs Navigazione -->
+        <div class="tabs-container">
+            <ul class="nav nav-pills justify-content-center" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="pending-tab" data-bs-toggle="pill" data-bs-target="#pending" type="button" role="tab" aria-controls="pending" aria-selected="true">
+                        <i class="bi bi-clock-history"></i> In Attesa
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="completed-tab" data-bs-toggle="pill" data-bs-target="#completed" type="button" role="tab" aria-controls="completed" aria-selected="false">
+                        <i class="bi bi-check-circle"></i> Completate
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="trading-tab" data-bs-toggle="pill" data-bs-target="#trading-dashboard" type="button" role="tab" aria-controls="trading-dashboard" aria-selected="false">
+                        <i class="bi bi-graph-up-arrow"></i> Trading Dashboard
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="add-tab" data-bs-toggle="pill" data-bs-target="#add-bet" type="button" role="tab" aria-controls="add-bet" aria-selected="false">
+                        <i class="bi bi-plus-circle"></i> Nuova Puntata
+                    </button>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="tab-content">
+            <!-- Puntate In Attesa -->
+            <div class="tab-pane fade show active" id="pending" role="tabpanel">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-hourglass-split"></i> Puntate In Attesa</h5>
+                    </div>
+                    <div class="card-body" id="pending-bets">
+                        <p class="text-muted text-center">Caricamento...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Puntate Completate -->
+            <div class="tab-pane fade" id="completed" role="tabpanel">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-check2-all"></i> Storico Puntate</h5>
+                    </div>
+                    <div class="card-body" id="completed-bets">
+                        <p class="text-muted text-center">Caricamento...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trading Dashboard -->
+            <div class="tab-pane fade" id="trading-dashboard" role="tabpanel">
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-graph-up-arrow"></i> Equity Curve</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="equityCurveChart" height="80"></canvas>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0"><i class="bi bi-calculator"></i> Kelly Criterion Calculator</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label">
+                                        Probabilità Vincita (%) 
+                                        <i class="bi bi-info-circle text-muted" title="Probabilità che il modello assegna all'esito. La trovi nella dashboard opportunità (es. EV 22% con quota 3.20 → prob ~32%)"></i>
+                                    </label>
+                                    <input type="number" id="kelly-prob" class="form-control" placeholder="es. 45 (dalla dashboard opportunità)" min="1" max="99" step="0.1">
+                                    <small class="text-muted">
+                                        💡 <strong>Dove trovarla:</strong> Dashboard Opportunità → colonna "EV Modello". 
+                                        Formula inversa: <code>prob = (EV/100 + 1) / quota</code>
+                                    </small>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">
+                                        Quota 
+                                        <i class="bi bi-info-circle text-muted" title="Quota bookmaker reale (verificata su Sisal)"></i>
+                                    </label>
+                                    <input type="number" id="kelly-quota" class="form-control" placeholder="es. 3.20 (da Sisal)" min="1.01" step="0.01">
+                                    <small class="text-muted">⚠️ Usa quota <strong>REALE</strong> da Sisal, non quella del modello</small>
+                                </div>
+                                
+                                <!-- Helper: Calcola probabilità da EV -->
+                                <div class="alert alert-info py-2 mb-3">
+                                    <small>
+                                        <strong>🎯 Calcolo Rapido Probabilità:</strong><br>
+                                        Se hai solo <strong>EV % + Quota</strong> dalla dashboard:<br>
+                                        <div class="row mt-2">
+                                            <div class="col-6">
+                                                <input type="number" id="helper-ev" class="form-control form-control-sm" placeholder="EV %" step="0.1">
+                                            </div>
+                                            <div class="col-6">
+                                                <button onclick="calcProbFromEV()" class="btn btn-sm btn-outline-primary w-100">
+                                                    → Calcola Prob
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </small>
+                                </div>
+                                
+                                <button onclick="calculateKelly()" class="btn btn-primary w-100">
+                                    <i class="bi bi-calculator-fill"></i> Calcola Stake Ottimale
+                                </button>
+                                
+                                <div id="kelly-result" class="mt-3 hidden">
+                                    <div class="alert alert-success">
+                                        <h6><i class="bi bi-check-circle"></i> Stake Suggerito</h6>
+                                        <p class="mb-1"><strong>Kelly Stake:</strong> <span id="kelly-stake-value">€0.00</span></p>
+                                        <p class="mb-1"><strong>Unit\u00e0:</strong> <span id="kelly-units-value">0.0 U</span></p>
+                                        <p class="mb-1"><strong>% Bankroll:</strong> <span id="kelly-pct-value">0%</span></p>
+                                        <p class="mb-0"><strong>Expected Value:</strong> <span id="kelly-ev-value">0%</span></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0"><i class="bi bi-gear"></i> Configurazione Bankroll</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Capitale Iniziale (€)</label>
+                                    <input type="number" id="config-bankroll-iniziale" class="form-control" placeholder="1000" min="100" step="10">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label" for="config-kelly-fraction">Kelly Fraction (conservativo)</label>
+                                    <select id="config-kelly-fraction" class="form-control" aria-label="Seleziona frazione Kelly per stake sizing conservativo">
+                                        <option value="0.25">1/4 Kelly (Conservativo) - Raccomandato</option>
+                                        <option value="0.33">1/3 Kelly (Moderato)</option>
+                                        <option value="0.50">1/2 Kelly (Aggressivo)</option>
+                                        <option value="1.00">Full Kelly (Molto Rischioso)</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Stop Loss (%)</label>
+                                    <input type="number" id="config-stop-loss" class="form-control" placeholder="30" min="10" max="50" step="5">
+                                    <small class="text-muted">Ferma trading se bankroll scende sotto questa soglia</small>
+                                </div>
+                                <button onclick="updateBankrollConfig()" class="btn btn-warning w-100">
+                                    <i class="bi bi-save"></i> Salva Configurazione
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Nuova Puntata -->
+            <div class="tab-pane fade" id="add-bet" role="tabpanel">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-plus-lg"></i> Aggiungi Nuova Puntata</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="form-add-bet">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="bet-partita" class="form-label">Partita *</label>
+                                    <input type="text" class="form-control" id="bet-partita" placeholder="es. Parma-Verona" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="bet-mercato" class="form-label">Mercato *</label>
+                                    <select class="form-select" id="bet-mercato" required>
+                                        <option value="">Seleziona mercato</option>
+                                        <option value="1X">1X (Casa o Pareggio)</option>
+                                        <option value="X2">X2 (Pareggio o Ospite)</option>
+                                        <option value="12">12 (Casa o Ospite)</option>
+                                        <option value="X">X (Pareggio)</option>
+                                        <option value="UNDER_25">Under 2.5</option>
+                                        <option value="OVER_25">Over 2.5</option>
+                                        <option value="GG">GG (Goal)</option>
+                                        <option value="NG">NG (No Goal)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="bet-quota" class="form-label">Quota Sisal *</label>
+                                    <input type="number" class="form-control" id="bet-quota" step="0.01" min="1.01" placeholder="es. 1.45" required>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="bet-stake" class="form-label">Stake (€) *</label>
+                                    <input type="text" class="form-control" id="bet-stake" placeholder="es. 2.00 o MONITOR" pattern="^(\d+(\.\d{1,2})?|MONITOR)$" title="Inserisci un numero (es. 2.00) o MONITOR" required>
+                                    <small class="text-muted">Numero per bet reale, 'MONITOR' per tracciamento</small>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="bet-data" class="form-label">Data Partita</label>
+                                    <input type="date" class="form-control" id="bet-data">
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="bet-ev-modello" class="form-label">EV Modello</label>
+                                    <input type="text" class="form-control" id="bet-ev-modello" placeholder="es. +22.5%">
+                                    <small class="text-muted">EV calcolato dal sistema ML</small>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="bet-ev-reale" class="form-label">EV Realistico</label>
+                                    <input type="text" class="form-control" id="bet-ev-reale" placeholder="es. +7%">
+                                    <small class="text-muted">EV corretto (dopo shrinkage ~70%)</small>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="bet-note" class="form-label">Note</label>
+                                <textarea class="form-control" id="bet-note" rows="2" placeholder="es. Parma casa solida, Verona trasferta debole"></textarea>
+                            </div>
+
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle"></i> <strong>Ricorda:</strong> Verifica sempre la quota su Sisal prima di confermare!
+                            </div>
+
+                            <button type="submit" class="btn btn-add-bet w-100">
+                                <i class="bi bi-check-lg"></i> Salva Puntata
+                            </button>
+                        </form>
+
+                        <div id="add-bet-result" class="mt-3"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Flag lazy loading
+        let completedLoaded = false;
+        
+        // Carica dati al load (ottimizzato con debouncing)
+        document.addEventListener('DOMContentLoaded', function() {
+            loadStats();
+            
+            // Delay loadPendingBets per non bloccare rendering iniziale
+            setTimeout(loadPendingBets, 50);
+            
+            // Auto-fill data odierna
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('bet-data').value = today;
+        });
+
+        // Carica statistiche
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/diario/stats');
+                const data = await response.json();
+                
+                // Performance stats
+                document.getElementById('stat-total').textContent = data.total;
+                document.getElementById('stat-pending').textContent = data.pending;
+                
+                // Info puntate skipped (MONITOR non giocate)
+                const skippedInfo = document.getElementById('stat-skipped-info');
+                if (data.skipped  && data.skipped > 0) {
+                    skippedInfo.textContent = `(${data.skipped} non giocate)`;
+                } else {
+                    skippedInfo.textContent = '';
+                }
+                
+                document.getElementById('stat-roi').textContent = data.roi.toFixed(1) + '%';
+                document.getElementById('stat-wr').textContent = data.win_rate.toFixed(1) + '%';
+                
+                // Colora ROI
+                const roiCard = document.getElementById('stat-roi-card');
+                if (data.roi > 0) {
+                    roiCard.className = 'stat-card stat-positive';
+                } else if (data.roi < 0) {
+                    roiCard.className = 'stat-card stat-negative';
+                } else {
+                    roiCard.className = 'stat-card stat-neutral';
+                }
+                
+                // Bankroll Management
+                if (data.bankroll_iniziale) {
+                    document.getElementById('bankroll-iniziale').textContent = '€' + data.bankroll_iniziale.toFixed(0);
+                    document.getElementById('bankroll-corrente').textContent = '€' + data.bankroll_corrente.toFixed(2);
+                    document.getElementById('unita-betting').textContent = '€' + data.unita_betting.toFixed(2);
+                    document.getElementById('roi-bankroll').textContent = data.roi_bankroll.toFixed(1) + '%';
+                    
+                    // Colora bankroll corrente
+                    const bankrollCard = document.getElementById('bankroll-corrente-card');
+                    if (data.bankroll_corrente > data.bankroll_iniziale) {
+                        bankrollCard.className = 'stat-card stat-positive';
+                    } else if (data.bankroll_corrente < data.bankroll_iniziale) {
+                        bankrollCard.className = 'stat-card stat-negative';
+                    } else {
+                        bankrollCard.className = 'stat-card stat-neutral';
+                    }
+                    
+                    // Colora ROI bankroll
+                    const roiBankrollCard = document.getElementById('roi-bankroll-card');
+                    if (data.roi_bankroll > 0) {
+                        roiBankrollCard.className = 'stat-card stat-positive';
+                    } else if (data.roi_bankroll < 0) {
+                        roiBankrollCard.className = 'stat-card stat-negative';
+                    } else {
+                        roiBankrollCard.className = 'stat-card stat-neutral';
+                    }
+                }
+                
+                // Risk Metrics
+                if (data.sharpe_ratio !== undefined) {
+                    document.getElementById('sharpe-ratio').textContent = data.sharpe_ratio.toFixed(2);
+                    document.getElementById('max-drawdown').textContent = '€' + Math.abs(data.max_drawdown).toFixed(2) + ' (' + data.max_drawdown_pct.toFixed(1) + '%)';
+                    document.getElementById('win-loss-ratio').textContent = data.win_loss_ratio.toFixed(2);
+                    document.getElementById('profit-factor').textContent = data.profit_factor.toFixed(2);
+                }
+            } catch (error) {
+                console.error('Errore caricamento stats:', error);
+            }
+        }
+
+        // Carica puntate pending
+        async function loadPendingBets() {
+            try {
+                const response = await fetch('/api/diario/pending');
+                const data = await response.json();
+                
+                const container = document.getElementById('pending-bets');
+                
+                // Gestione errori API
+                if (data.error) {
+                    container.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> Errore: ${data.error}</div>`;
+                    return;
+                }
+                
+                if (!data.bets || data.bets.length === 0) {
+                    container.innerHTML = '<p class="text-muted text-center"><i class="bi bi-inbox"></i> Nessuna puntata in attesa</p>';
+                    return;
+                }
+                
+                let html = '';
+                data.bets.forEach((bet, idx) => {
+                    html += `
+                        <div class="bet-card bet-pending">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h5><i class="bi bi-calendar3"></i> ${bet.data} - ${bet.partita}</h5>
+                                    <p class="mb-2">
+                                        <strong>Mercato:</strong> <span class="badge bg-primary">${bet.mercato}</span> 
+                                        @ <strong>${parseFloat(bet.quota).toFixed(2)}</strong>
+                                    </p>
+                                    <p class="mb-2">
+                                        <strong>Stake:</strong> €${bet.stake}
+                                        ${bet.ev_reale !== 'N/A' ? `<span class="badge-ev bg-success text-white ms-2">EV: ${bet.ev_reale}</span>` : ''}
+                                    </p>
+                                    ${bet.note ? `<p class="text-muted small mb-0"><i class="bi bi-sticky"></i> ${bet.note}</p>` : ''}
+                                </div>
+                                <div>
+                                    <button class="btn btn-sm btn-warning me-1" onclick='editBet(${JSON.stringify(bet)})' title="Modifica stake/quota/note">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-success me-1" onclick="updateBet(${bet.id}, 'WIN')" title="Puntata vincente">
+                                        <i class="bi bi-check-lg"></i> WIN
+                                    </button>
+                                    <button class="btn btn-sm btn-danger me-1" onclick="updateBet(${bet.id}, 'LOSS')" title="Puntata persa">
+                                        <i class="bi bi-x-lg"></i> LOSS
+                                    </button>
+                                    <button class="btn btn-sm btn-secondary" onclick="updateBet(${bet.id}, 'SKIP')" title="Non giocata (archivia senza impatto su ROI)">
+                                        <i class="bi bi-dash-circle"></i> SKIP
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                container.innerHTML = html;
+            } catch (error) {
+                console.error('Errore caricamento pending:', error);
+            }
+        }
+
+        // Carica puntate completate (lazy loading ottimizzato con skeleton)
+        document.getElementById('completed-tab').addEventListener('click', function() {
+            // Skip se già caricato
+            if (completedLoaded) return;
+            completedLoaded = true;
+            
+            const container = document.getElementById('completed-bets');
+            
+            // Mostra skeleton IMMEDIATAMENTE (evita blocking handler warning)
+            container.innerHTML = `
+                <div class="text-center text-muted py-4">
+                    <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                    <span>Caricamento storico...</span>
+                </div>
+            `;
+            
+            // Fetch async non bloccante
+            setTimeout(async () => {
+                try {
+                    const response = await fetch('/api/diario/completed');
+                    const data = await response.json();
+                    
+                    // Gestione errori API
+                    if (data.error) {
+                        container.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> Errore: ${data.error}</div>`;
+                        return;
+                    }
+                
+                if (!data.bets || data.bets.length === 0) {
+                    container.innerHTML = '<p class="text-muted text-center">Nessuna puntata completata ancora</p>';
+                    return;
+                }
+                
+                let html = '';
+                data.bets.forEach(bet => {
+                    // Gestione stili per risultato
+                    let cardClass, icon, profitClass;
+                    
+                    if (bet.risultato === 'WIN') {
+                        cardClass = 'bet-win';
+                        icon = 'trophy-fill';
+                        profitClass = 'text-success';
+                    } else if (bet.risultato === 'SKIP') {
+                        cardClass = 'bet-skip';  // Grigio neutro
+                        icon = 'dash-circle';
+                        profitClass = 'text-muted';
+                    } else if (bet.risultato === 'VOID') {
+                        cardClass = 'bet-skip';  // Grigio anche per VOID
+                        icon = 'arrow-clockwise';
+                        profitClass = 'text-muted';
+                    } else {
+                        // LOSS
+                        cardClass = 'bet-loss';
+                        icon = 'x-circle-fill';
+                        profitClass = 'text-danger';
+                    }
+                    
+                    html += `
+                        <div class="bet-card ${cardClass}">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6><i class="bi bi-${icon}"></i> ${bet.data} - ${bet.partita}</h6>
+                                    <p class="mb-1 small">
+                                        <strong>${bet.mercato}</strong> @ ${parseFloat(bet.quota).toFixed(2)} 
+                                        | Stake: ${bet.stake_raw || bet.stake}
+                                    </p>
+                                    ${bet.note ? `<p class="text-muted small mb-0">${bet.note}</p>` : ''}
+                                </div>
+                                <div class="text-end">
+                                    <h5 class="mb-0 ${profitClass}">
+                                        ${bet.risultato === 'SKIP' || bet.risultato === 'VOID' ? '—' : (bet.profit > 0 ? '+' : '') + '€' + bet.profit.toFixed(2)}
+                                    </h5>
+                                    <small class="text-muted">
+                                        ${bet.risultato === 'SKIP' ? '🚫 NON GIOCATA' : 
+                                          bet.risultato === 'VOID' ? '↻ ANNULLATA' : 
+                                          bet.risultato}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                container.innerHTML = html;
+                } catch (error) {
+                    container.innerHTML = '<p class="text-danger">Errore caricamento dati</p>';
+                    console.error('Errore caricamento completed:', error);
+                }
+            }, 0);  // setTimeout 0ms = async non bloccante
+        });
+
+        // Form submit nuova puntata
+        document.getElementById('form-add-bet').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Gestione MONITOR per stake (no float conversion)
+            const stakeInput = document.getElementById('bet-stake').value.trim().toUpperCase();
+            const stakeValue = stakeInput === 'MONITOR' ? 'MONITOR' : parseFloat(stakeInput);
+            
+            const formData = {
+                partita: document.getElementById('bet-partita').value,
+                mercato: document.getElementById('bet-mercato').value,
+                quota: parseFloat(document.getElementById('bet-quota').value),
+                stake: stakeValue,
+                data: document.getElementById('bet-data').value,
+                ev_modello: document.getElementById('bet-ev-modello').value || 'N/A',
+                ev_reale: document.getElementById('bet-ev-reale').value || 'N/A',
+                note: document.getElementById('bet-note').value
+            };
+            
+            try {
+                const response = await fetch('/api/diario/add', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(formData)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    document.getElementById('add-bet-result').innerHTML = `
+                        <div class="alert alert-success">
+                            <i class="bi bi-check-circle"></i> Puntata salvata con successo!
+                        </div>
+                    `;
+                    
+                    // Reset form
+                    document.getElementById('form-add-bet').reset();
+                    const today = new Date().toISOString().split('T')[0];
+                    document.getElementById('bet-data').value = today;
+                    
+                    // Ricarica stats e pending
+                    loadStats();
+                    loadPendingBets();
+                    
+                    // Vai a pending dopo 1.5s
+                    setTimeout(() => {
+                        document.getElementById('pending-tab').click();
+                    }, 1500);
+                } else {
+                    // Gestione errore duplicato con messaggio specifico
+                    if (result.error === 'duplicate') {
+                        document.getElementById('add-bet-result').innerHTML = `
+                            <div class="alert alert-warning">
+                                <i class="bi bi-exclamation-circle"></i>
+                                <strong>⚠️ DUPLICATO RILEVATO</strong><br>
+                                <small>${result.message.replace(/\n/g, '<br>')}</small><br><br>
+                                <button class="btn btn-sm btn-primary" onclick="document.getElementById('pending-tab').click()">
+                                    📋 Vai a Puntate in Attesa
+                                </button>
+                            </div>
+                        `;
+                    } else {
+                        // Errore generico
+                        document.getElementById('add-bet-result').innerHTML = `
+                            <div class="alert alert-danger">
+                                <i class="bi bi-exclamation-triangle"></i> Errore: ${result.message || result.error}
+                            </div>
+                        `;
+                    }
+                }
+            } catch (error) {
+                document.getElementById('add-bet-result').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i> Errore: ${error.message}
+                    </div>
+                `;
+            }
+        });
+
+        // Modifica puntata pending (stake, quota, note)
+        async function editBet(bet) {
+            const nuovoStake = prompt(`💰 Modifica Stake per:\n${bet.partita} - ${bet.mercato}\n\nStake attuale: ${bet.stake}\nInserisci nuovo stake (es. 2.00 o MONITOR):`, bet.stake);
+            if (nuovoStake === null) return;  // Annullato
+            
+            const nuovaQuota = prompt(`🎯 Modifica Quota:\n\nQuota attuale: ${parseFloat(bet.quota).toFixed(2)}\nInserisci nuova quota (es. 1.45):`, parseFloat(bet.quota).toFixed(2));
+            if (nuovaQuota === null) return;
+            
+            const nuoveNote = prompt(`📝 Modifica Note:\n\nNote attuali: ${bet.note || 'Nessuna'}\nInserisci nuove note (opzionale):`, bet.note || '');
+            if (nuoveNote === null) return;
+            
+            try {
+                const response = await fetch('/api/diario/edit', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        id: bet.id,
+                        stake: nuovoStake.trim().toUpperCase() === 'MONITOR' ? 'MONITOR' : parseFloat(nuovoStake),
+                        quota: parseFloat(nuovaQuota),
+                        note: nuoveNote.trim()
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(`✅ Puntata aggiornata!\n\nStake: ${nuovoStake}\nQuota: ${nuovaQuota}`);
+                    loadStats();
+                    loadPendingBets();
+                } else {
+                    alert('❌ Errore: ' + result.error);
+                }
+            } catch (error) {
+                alert('❌ Errore: ' + error.message);
+            }
+        }
+        
+        // Reset completo diario
+        async function resetDiario() {
+            const conferma1 = confirm('⚠️ ATTENZIONE: Stai per cancellare TUTTO il diario.\n\nUn backup sarà creato automaticamente.\n\nContinuare?');
+            if (!conferma1) return;
+            
+            const conferma2 = confirm('🔴 ULTIMA CONFERMA: Tutti i dati saranno persi irreversibilmente.\n\nSei SICURO di voler procedere?');
+            if (!conferma2) return;
+            
+            try {
+                const response = await fetch('/api/diario/reset', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'}
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(`✅ Diario resettato!\n\nBackup salvato: ${result.backup_file}`);
+                    location.reload();  // Ricarica pagina
+                } else {
+                    alert('❌ Errore: ' + result.error);
+                }
+            } catch (error) {
+                alert('❌ Errore reset: ' + error.message);
+            }
+        }
+        
+        // Aggiorna risultato puntata
+        async function updateBet(betId, risultato) {
+            if (!confirm(`Confermi risultato ${risultato}?`)) return;
+            
+            try {
+                const response = await fetch('/api/diario/update', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({id: betId, risultato: risultato})
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(`✅ Risultato aggiornato! Profit: €${result.profit.toFixed(2)}`);
+                    loadStats();
+                    loadPendingBets();
+                    completedLoaded = false;  // Reset per ricaricare tab completate
+                } else {
+                    alert('❌ Errore: ' + result.error);
+                }
+            } catch (error) {
+                alert('❌ Errore: ' + error.message);
+            }
+        }
+        
+        // ==================== KELLY CRITERION & TRADING ====================
+        
+        // Calcola probabilità da EV + Quota (helper rapido)
+        function calcProbFromEV() {
+            const ev = parseFloat(document.getElementById('helper-ev').value);
+            const quota = parseFloat(document.getElementById('kelly-quota').value);
+            
+            if (!ev || ev <= 0) {
+                alert('⚠️ Inserisci EV % dalla dashboard opportunità (es. 22.5)');
+                return;
+            }
+            
+            if (!quota || quota <= 1.0) {
+                alert('⚠️ Inserisci prima la quota (es. 3.20)');
+                return;
+            }
+            
+            // Formula corretta: prob = (EV/100 + 1) / quota
+            // Derivata da: EV = prob × (quota - 1) - (1 - prob)
+            const evDecimal = ev / 100;  // 22% → 0.22
+            const prob = (evDecimal + 1) / quota;
+            const probPercent = prob * 100;
+            
+            // Valida risultato (prob deve essere tra 0-100%)
+            if (probPercent <= 0 || probPercent >= 100) {
+                alert(`❌ Calcolo invalido: prob = ${probPercent.toFixed(1)}%\n\nVerifica EV e quota inseriti.`);
+                return;
+            }
+            
+            // Popola campo probabilità
+            document.getElementById('kelly-prob').value = probPercent.toFixed(1);
+            
+            alert(`✅ Probabilità calcolata: ${probPercent.toFixed(1)}%\n\nInput:\n• EV: ${ev}%\n• Quota: ${quota}\n\nOra clicca "Calcola Stake Ottimale"`);
+        }
+        
+        // Calcola stake Kelly Criterion
+        async function calculateKelly() {
+            const prob = parseFloat(document.getElementById('kelly-prob').value);
+            const quota = parseFloat(document.getElementById('kelly-quota').value);
+            
+            if (!prob || prob <= 0 || prob >= 100) {
+                alert('⚠️ Inserisci una probabilit\u00e0 tra 1 e 99%');
+                return;
+            }
+            
+            if (!quota || quota <= 1.0) {
+                alert('⚠️ Inserisci una quota > 1.0');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/calculate_kelly', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        prob_win: prob / 100,  // Converti % in decimale
+                        quota: quota
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (!result.success) {
+                    alert('❌ Errore: ' + result.error);
+                    return;
+                }
+                
+                // Mostra risultato
+                document.getElementById('kelly-stake-value').textContent = '€' + result.kelly_stake.toFixed(2);
+                document.getElementById('kelly-units-value').textContent = result.kelly_units.toFixed(2) + ' U';
+                document.getElementById('kelly-pct-value').textContent = result.stake_pct_bankroll.toFixed(2) + '%';
+                document.getElementById('kelly-ev-value').textContent = result.expected_value.toFixed(1) + '%';
+                
+                document.getElementById('kelly-result').classList.remove('hidden');
+                
+            } catch (error) {
+                alert('❌ Errore calcolo Kelly: ' + error.message);
+            }
+        }
+        
+        // Aggiorna configurazione bankroll
+        async function updateBankrollConfig() {
+            const bankrollIniziale = parseFloat(document.getElementById('config-bankroll-iniziale').value);
+            const kellyFraction = parseFloat(document.getElementById('config-kelly-fraction').value);
+            const stopLoss = parseFloat(document.getElementById('config-stop-loss').value);
+            
+            if (!bankrollIniziale || bankrollIniziale < 100) {
+                alert('⚠️ Capitale iniziale minimo: €100');
+                return;
+            }
+            
+            if (!confirm(`Confermi aggiornamento configurazione?\n\nCapitale: €${bankrollIniziale}\nKelly Fraction: ${kellyFraction}\nStop Loss: ${stopLoss}%`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/bankroll', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        bankroll_iniziale: bankrollIniziale,
+                        kelly_fraction: kellyFraction,
+                        stop_loss_percentage: stopLoss
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(`✅ Configurazione aggiornata!\n\nBankroll: €${result.bankroll.bankroll_iniziale}\nUnit\u00e0: €${result.bankroll.unita_betting.toFixed(2)}`);
+                    loadStats();  // Ricarica stats
+                } else {
+                    alert('❌ Errore: ' + result.error);
+                }
+            } catch (error) {
+                alert('❌ Errore: ' + error.message);
+            }
+        }
+        
+        // Carica equity curve
+        let equityChart = null;
+        
+        async function loadEquityCurve() {
+            try {
+                const response = await fetch('/api/equity_curve');
+                const data = await response.json();
+                
+                const ctx = document.getElementById('equityCurveChart').getContext('2d');
+                
+                // Distruggi chart esistente se presente
+                if (equityChart) {
+                    equityChart.destroy();
+                }
+                
+                // Crea nuovo chart
+                equityChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            label: 'Bankroll (€)',
+                            data: data.bankroll_curve,
+                            borderColor: '#667eea',
+                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4
+                        }, {
+                            label: 'Capitale Iniziale',
+                            data: Array(data.labels.length).fill(data.bankroll_iniziale),
+                            borderColor: '#ffc107',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            fill: false,
+                            pointRadius: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                            },
+                            title: {
+                                display: true,
+                                text: 'Andamento Bankroll - Equity Curve'
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    afterLabel: function(context) {
+                                        if (data.bet_details && data.bet_details[context.dataIndex]) {
+                                            const bet = data.bet_details[context.dataIndex];
+                                            return `${bet.partita}\n${bet.risultato}: €${bet.profit.toFixed(2)}`;
+                                        }
+                                        return '';
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: false,
+                                ticks: {
+                                    callback: function(value) {
+                                        return '€' + value.toFixed(0);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+                
+            } catch (error) {
+                console.error('Errore caricamento equity curve:', error);
+            }
+        }
+        
+        // Event listener per tab Trading Dashboard
+        document.getElementById('trading-tab').addEventListener('shown.bs.tab', function() {
+            loadEquityCurve();
+            
+            // Carica config bankroll corrente nei form
+            fetch('/api/bankroll')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('config-bankroll-iniziale').value = data.bankroll.bankroll_iniziale;
+                        document.getElementById('config-kelly-fraction').value = data.bankroll.kelly_fraction;
+                        document.getElementById('config-stop-loss').value = data.bankroll.stop_loss_percentage;
+                    }
+                });
+        });
+    </script>
+    
+    <!-- Chart.js per equity curve -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</body>
+</html>

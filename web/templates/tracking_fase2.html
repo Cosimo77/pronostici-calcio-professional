@@ -172,7 +172,7 @@
                     <td>${trade.data}</td>
                     <td><strong>${trade.casa}</strong> vs ${trade.ospite}</td>
                     <td>${trade.mercato} - ${trade.esito}</td>
-                    <td><span class="badge bg-info">${trade.quota}</span></td>
+                    <td><span class="badge bg-info">${parseFloat(trade.quota).toFixed(2)}</span></td>
                     <td><span class="badge bg-success">+${trade.ev_pct}%</span></td>
                     <td><strong>€${trade.stake.toFixed(2)}</strong></td>
                     <td><small>${trade.strategia}</small></td>

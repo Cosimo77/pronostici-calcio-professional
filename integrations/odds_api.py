@@ -82,6 +82,18 @@ class OddsAPIClient:
             logger.error(f"Errore verifica quota: {e}")
             return {'error': str(e)}
     
+    def get_quota_rimanente(self) -> int:
+        """
+        Wrapper semplificato per ottenere solo quota rimanente
+        
+        Returns:
+            Numero richieste API rimanenti (int) o 0 se errore
+        """
+        quota_info = self.get_quota_usage()
+        if 'error' in quota_info:
+            return 0
+        return int(quota_info.get('remaining', 0))
+    
     def get_upcoming_odds(self, regions: str = 'eu', markets: str = 'h2h,totals') -> List[Dict]:
         """
         Ottieni quote per partite future Serie A
