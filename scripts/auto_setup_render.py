@@ -6,6 +6,7 @@ Eseguito automaticamente OGNI deploy/restart - zero intervento manuale
 
 import os
 import sys
+import subprocess
 import requests
 import pandas as pd
 from datetime import datetime
@@ -101,12 +102,22 @@ def retrain_models():
     log("🤖 Riaddestramento modelli ML...")
     
     try:
-        # Import script training
-        sys.path.insert(0, str(BASE_DIR))
-        from riaddestra_modelli_rapido import main as train_main
+        # Esegui script training come subprocess (no funzione main disponibile)
+        script_path = BASE_DIR / 'riaddestra_modelli_rapido.py'
+        result = subprocess.run(
+            [sys.executable, str(script_path)],
+            cwd=str(BASE_DIR),
+            capture_output=True,
+            text=True,
+            timeout=300  # 5 min timeout
+        )
         
-        # Esegui training
-        train_main()
+        if result.returncode != 0:
+            log(f"⚠️ Training script exit code: {result.returncode}")
+            if result.stderr:
+                log(f"   Stderr: {result.stderr[:200]}")
+        else:
+            log("✅ Training completato")
         
         # Verifica modelli creati
         expected_models = [
