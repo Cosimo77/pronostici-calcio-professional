@@ -1207,19 +1207,12 @@ def _valida_opportunita_fase2(mercato, pred, odds, ev_pct, mercati_data=None):
             return False, 'pareggio_ev_basso', '1X2'
         return True, 'fase1_pareggio', '1X2'
     
-    # 2. DOUBLE CHANCE (FASE 2 - Calibrato 13 Feb 2026 - Sweet Spot 20-25% EV)
+    # 2. DOUBLE CHANCE - ⚠️ DISABILITATO
+    # The Odds API NON fornisce quote Double Chance reali
+    # Quote DC approssimate da 1X2 portano a EV FALSI (es. +317% impossibile)
+    # RIABILITARE solo quando API fornirà quote DC reali
     if mercato == 'DC':
-        # Sweet spot matematico: EV 20-25% (backtest ROI +9.64%)
-        # Range validato su 45 trade profittevoli (WR 57.8%)
-        if ev_pct < 20:
-            return False, 'dc_ev_below_sweetspot', 'DC'
-        if ev_pct > 25:
-            return False, 'dc_ev_overconfident', 'DC'
-        
-        # Quote automatiche: sweet spot seleziona naturalmente 1.6-2.3
-        # No hard limit - EV già filtra quote ottimali
-        
-        return True, 'fase2_double_chance', 'DC'
+        return False, 'dc_disabled_no_real_odds', 'DC'
     
     # 3. OVER/UNDER 2.5 (FASE 2 - UNDER ONLY, OVER disabilitato)
     if mercato == 'OU25':
@@ -1646,77 +1639,29 @@ def api_upcoming_matches():
                         diff_over = prob_over - prob_market_over
                         diff_under = prob_under - prob_market_under
                     
-                    # Calcola Double Chance quote (approssimate da 1X2)
-                    # Formula: 1/q_DC ≈ 1/q_H + 1/q_D (con margine bookmaker)
-                    prob_h = 1 / odds_home
-                    prob_d = 1 / odds_draw
-                    prob_a = 1 / odds_away
-                    total_1x2 = prob_h + prob_d + prob_a
-                    prob_h /= total_1x2
-                    prob_d /= total_1x2
-                    prob_a /= total_1x2
+                    # ⚠️ RIMOSSO: Calcolo Double Chance quote INVENTATE
+                    # The Odds API fornisce SOLO h2h (1X2) e totals (Over/Under)
+                    # Quote Double Chance NON disponibili = NON mostrare opportunità DC
+                    # Calcolare quote DC approssimate porta a EV FALSI pericolosi
                     
-                    margin_factor = 1.05  # Margine 5% bookmaker
-                    odds_1x = margin_factor / (prob_h + prob_d)
-                    odds_x2 = margin_factor / (prob_d + prob_a)
-                    odds_12 = margin_factor / (prob_h + prob_a)
-                    
-                    # Expected Value Double Chance
-                    prob_model_1x = mercati['mdc']['probabilita']['1X']
-                    prob_model_x2 = mercati['mdc']['probabilita']['X2']
-                    prob_model_12 = mercati['mdc']['probabilita']['12']
-                    
-                    ev_1x = calc_ev(prob_model_1x, odds_1x)
-                    ev_x2 = calc_ev(prob_model_x2, odds_x2)
-                    ev_12 = calc_ev(prob_model_12, odds_12)
-                    
-                    # Discrepanze DC
-                    total_dc = (1/odds_1x + 1/odds_x2 + 1/odds_12)
-                    prob_market_1x = (1/odds_1x) / total_dc
-                    prob_market_x2 = (1/odds_x2) / total_dc
-                    prob_market_12 = (1/odds_12) / total_dc
-                    
-                    diff_1x = prob_model_1x - prob_market_1x
-                    diff_x2 = prob_model_x2 - prob_market_x2
-                    diff_12 = prob_model_12 - prob_market_12
-                    
-                    # Trova maggiore discrepanza (dove modello è più convinto vs mercato)
+                    # Trova maggiore discrepanza (SOLO mercati con quote REALI)
                     all_diffs = {
                         '1X2 Casa': abs(diff_h),
                         '1X2 Pareggio': abs(diff_d),
-                        '1X2 Trasferta': abs(diff_a),
-                        'DC 1X': abs(diff_1x),
-                        'DC X2': abs(diff_x2),
-                        'DC 12': abs(diff_12)
+                        '1X2 Trasferta': abs(diff_a)
                     }
                     if diff_over is not None:
                         all_diffs['Over 2.5'] = abs(diff_over)
-                    if diff_under is not None:
-                        all_diffs['Under 2.5'] = abs(diff_under)
                     if diff_under is not None:
                         all_diffs['Under 2.5'] = abs(diff_under)
                     
                     best_market_key = max(all_diffs.keys(), key=lambda k: all_diffs[k])
                     best_diff = all_diffs[best_market_key]
                     
-                    # Determina mercato e outcome per maggiore discrepanza
+                    # Determina mercato e outcome per maggiore discrepanza (SOLO quote REALI)
                     best_odds: float
                     best_ev: float
-                    if 'DC' in best_market_key:
-                        best_market = 'Double Chance'
-                        if '1X' in best_market_key:
-                            best_outcome = '1X (Casa o Pareggio)'
-                            best_odds = odds_1x
-                            best_ev = ev_1x
-                        elif 'X2' in best_market_key:
-                            best_outcome = 'X2 (Pareggio o Trasferta)'
-                            best_odds = odds_x2
-                            best_ev = ev_x2
-                        else:
-                            best_outcome = '12 (Casa o Trasferta)'
-                            best_odds = odds_12
-                            best_ev = ev_12
-                    elif 'Over' in best_market_key:
+                    if 'Over' in best_market_key:
                         best_market = 'Over/Under 2.5'
                         best_outcome = 'Over 2.5'
                         best_odds = odds_over_25 if odds_over_25 else 1.0
@@ -1726,7 +1671,7 @@ def api_upcoming_matches():
                         best_outcome = 'Under 2.5'
                         best_odds = odds_under_25 if odds_under_25 else 1.0
                         best_ev = ev_under if ev_under else 0
-                    else:
+                    else:  # 1X2
                         best_market = '1X2'
                         best_outcome = best_market_key.split(' ')[1]
                         best_odds = odds_home if best_outcome == 'Casa' else (odds_draw if best_outcome == 'Pareggio' else odds_away)
