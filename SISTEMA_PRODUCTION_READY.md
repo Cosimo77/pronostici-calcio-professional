@@ -1,13 +1,51 @@
 # 🎯 SISTEMA TRADING PRODUCTION-READY
 
-**Data certificazione finale**: 14 febbraio 2026  
-**Status**: ✅ OPERATIVO - PRONTO PER TRADING REALE
+**Data ultima verifica**: 14 febbraio 2026  
+**Status**: ⚠️ **PENDING CERTIFICAZIONE FINALE** - Fix deployati, test end-to-end bloccato  
+
+> **IMPORTANTE**: Bug critico Double Chance (EV +317% inventato) fixato, ma serve test su partite REALI.  
+> The Odds API: 0 partite Serie A disponibili NOW → Test end-to-end non eseguibile.  
+> 📋 **Processo verificato obbligatorio**: [PROCESSO_VERIFICA_RIGOROSA.md](PROCESSO_VERIFICA_RIGOROSA.md)
 
 ---
 
-## ✅ Checklist Completamento
+## ⚠️ Status Certificazione
 
-### 1. Certificazione Tecnica (9/9 Test PASS)
+### 🔴 CRITICA E FIX CRITICO (14 Febbraio 2026)
+
+**Problema segnalato**: Bug Double Chance Como vs Fiorentina
+- Opportunità mostrata: "Double Chance 1X @ 4.90 · EV +317.1%"
+- Quota REALE Double Chance: ~1.15-1.20 (non 4.90!)
+- Causa: Formula approssimazione DC da quote 1X2 **ERRATA**
+- Rischio: Puntare su quota inventata = perdita 100% certa
+
+**Root Cause**: Controllo superficiale (verificato solo esistenza file, non opportunità reali)
+
+**Fix Deployati** (commit 09bc8db, a4e6176):
+1. ✅ **Double Chance RIMOSSO**: Calcolo quote DC inventate eliminato da codice
+2. ✅ **Validazione FASE2**: Mercato DC disabilitato (no quote reali da API)
+3. ✅ **Test End-to-End**: `test_completo_betting_reale.py` (5 verifiche critiche)
+   - Test 1: Quote REALI vs INVENTATE (blocca mercati non supportati)
+   - Test 2: Coerenza matematica EV (ricalcolo manuale)
+   - Test 3: Filtri FASE1/FASE2 applicati
+   - Test 4: Dati freschi (<7 giorni)
+   - Test 5: Probabilità coerenti (somma = 1.0)
+
+**Blocco Corrente**:
+- ❌ The Odds API: 0 partite Serie A disponibili (14/02/2026)
+- ❌ Test end-to-end NON eseguibile senza partite reali
+- ⏰ **Certificazione sospesa** fino a disponibilità partite
+
+**Mercati Supportati Post-Fix**:
+- ✅ **1X2 Pareggi** (FASE1): Quote REALI da The Odds API
+- ✅ **Over/Under 2.5** (FASE2): Quote REALI da The Odds API
+- ❌ **Double Chance**: DISABILITATO (quote non disponibili)
+- ❌ **Asian Handicap**: Non supportato (quote non disponibili)
+
+---
+
+### 1. Certificazione Base (9/9 Test PASS - ⚠️ SUPERFICIALE)
+> **Nota**: Questi test verificano solo esistenza file/formule, NON opportunità reali
 - ✅ **Dati Serie A**: 239 partite, ultima 09/02/2026 (5 giorni freschi)
 - ✅ **Modelli ML**: 4 modelli riaddestrati 14/02/2026 13:12
 - ✅ **Bankroll Config**: €100 capital, Kelly 0.25, cap 5%, stop loss 30%
@@ -16,7 +54,7 @@
 - ✅ **Formula EV→Probabilità**: Test inverso 22% → 38.12% → 22.00% ✅
 - ✅ **Predizioni**: Inter vs Milan prob 51%/29.3%/19.7%, somma 1.0000
 - ✅ **Server Flask**: Online :5008, 17 endpoint operativi
-- ✅ **API The Odds**: 10 partite disponibili, quote reali 25+ bookmaker
+- ✅ **API The Odds**: Collegamento funzionante (quota 441/500 usate)
 
 ### 2. Workspace Cleanup (Completato)
 **Prima pulizia (48 file Python root)**:
@@ -182,45 +220,53 @@ python3 scripts/analysis/analizza_tracking.py
 - ✅ Error handling: Logging strutturato con structlog
 
 ### Backup Policy
-- **Database**: `tracking_giocate.csv` backup manuale pre-operazioni critiche
-- **Config**: `config_bankroll.json` backup prima modifiche parametri
-- **Modelli ML**: 4 file pkl backup pre-riaddestramento
-- **Workspace**: Archive obsoleti in `backups/archive/YYYYMMDD/`
-
-### Manutenzione Programmata
-| Task | Frequenza | Script |
-|------|-----------|--------|
-| Aggiorna dati Serie A | 7 giorni | `scripts/maintenance/aggiorna_risultati_auto.py` |
-| Riaddestra modelli ML | 14 giorni | `riaddestra_modelli_rapido.py` |
-| Verifica sistema completo | Pre-trading | `verifica_sistema_completa.py` |
-| Backup tracking CSV | Settimanale | Manuale copy |
-| Clean cache Redis | 30 giorni | `curl POST /api/cache/clear` |
-
----
-
-## 📚 Documentazione di Riferimento
-
-### Core Docs
-- [CERTIFICAZIONE_SISTEMA_14FEB2026.md](CERTIFICAZIONE_SISTEMA_14FEB2026.md) - Report certificazione 9/9 test
-- [FASE1_IMPLEMENTATA.md](FASE1_IMPLEMENTATA.md) - Filtri validati ROI +7.17%
-- [FASE2_IMPLEMENTATA.md](FASE2_IMPLEMENTATA.md) - Calibrazione ROI +21.8%
-- [PRODUCTION_READY.md](PRODUCTION_READY.md) - Deploy status e features
-- [GUIDA_OPERATIVA_FASE1.md](GUIDA_OPERATIVA_FASE1.md) - Workflow operativo dettagliato
-
-### Quick Start
-- [README.md](README.md) - Setup generale e installazione
-- [DIARIO_BETTING_QUICK_START.md](DIARIO_BETTING_QUICK_START.md) - Guida diario web 4 tab
-
-### Architettura
-- [.github/copilot-instructions.md](.github/copilot-instructions.md) - Istruzioni developer completo
-
----
-
-## ✅ SISTEMA CERTIFICATO - AUTORIZZATO TRADING
+- *⚠️ CERTIFICAZIONE PENDING - NON AUTORIZZATO TRADING
 
 ```
 ╔══════════════════════════════════════════════════════════════════╗
 ║                                                                  ║
+║  ⚠️  SISTEMA PENDING CERTIFICAZIONE FINALE                      ║
+║                                                                  ║
+║  ✅ Fix critici deployati (DC rimosso)                          ║
+║  ✅ Test end-to-end creato (5 verifiche rigorose)               ║
+║  ❌ Test NON eseguibile (0 partite API disponibili)             ║
+║                                                                  ║
+║  🔴 NON AUTORIZZATO TRADING fino a:                             ║
+║     python3 test_completo_betting_reale.py → 5/5 PASS          ║
+║                                                                  ║
+║  📋 Processo obbligatorio:                                      ║
+║     → PROCESSO_VERIFICA_RIGOROSA.md                             ║
+║                                                                  ║
+╚══════════════════════════════════════════════════════════════════╝
+```
+
+**Blocco Corrente** (14 Febbraio 2026):
+- The Odds API: 0 partite Serie A disponibili
+- Test end-to-end richiede almeno 1 partita con quote reali
+- **Non procedere con trading** fino a certificazione completa
+
+**Workflow Certificazione Finale**:
+1. ⏰ **Attendi** partite disponibili su The Odds API
+2. 🧪 **Esegui**: `python3 test_completo_betting_reale.py`
+3. ✅ **Verifica**: 5/5 test PASS (quote reali, EV corretti, filtri applicati)
+4. 📸 **Screenshot**: Almeno 1 opportunità validata manualmente
+5. ✅ **Autorizza**: Solo dopo 5/5 PASS → trading operativo
+
+**Checklist Manuale Pre-Trading** (safety):
+- [ ] Mercato è "1X2" o "Over/Under 2.5"? (SOLO questi hanno quote reali)
+- [ ] Quota opportunità = quota API mostrata? (no discrepanze)
+- [ ] EV < 100%? (nessun +300% impossibile)
+- [ ] Verifica quote su bookmaker reale prima di puntare
+
+**Target Performance Post-Certificazione** (50-100 bet):
+- ROI: 5-10% mensile sostenibile
+- Sharpe: >1.0 (excellent risk-adjusted)
+- Win Rate: 28-32% (realistico pareggi)
+- Drawdown: <20% (hedge fund level)
+
+---
+
+**Sistema fix deployati. Certificazione finale pending partite API. NON procedere con trading.                ║
 ║  🎯 SISTEMA PRODUCTION-READY CERTIFICATO                        ║
 ║                                                                  ║
 ║  ✅ 9/9 Test certificazione PASS                                ║
