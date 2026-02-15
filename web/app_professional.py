@@ -10,6 +10,7 @@ import logging
 import os
 import sys
 import math
+import json
 from datetime import datetime, timezone
 import hashlib
 from typing import Dict, Tuple, Any, Optional
@@ -1761,8 +1762,8 @@ def api_upcoming_matches():
                                     'market': 'Over/Under 2.5',
                                     'outcome': ou_name + ' 2.5',
                                     'odds': ou_odds,
-                                    'ev': ou_ev * 100,
-                                    'prob_model': ou_prob * 100,
+                                    'ev': ou_ev * 100,  # type: ignore[operator]
+                                    'prob_model': ou_prob * 100,  # type: ignore[operator]
                                     'strategy': 'FASE2_UNDER_ONLY',
                                     'roi_backtest': 91.00,  # UNDER certificato (13 Feb 2026) - OVER disabilitato
                                     'roi_backtest_range': 'N/A',  # Sample size ridotto (1 trade)
@@ -3631,14 +3632,14 @@ def api_automation_status():
             cache_mgr = CacheManager()
             
             # Prova a leggere da Redis
-            last_update = cache_mgr.redis_client.get('automation:last_update')
-            last_retrain = cache_mgr.redis_client.get('automation:last_retrain')
+            last_update = cache_mgr.redis_client.get('automation:last_update')  # type: ignore[union-attr]
+            last_retrain = cache_mgr.redis_client.get('automation:last_retrain')  # type: ignore[union-attr]
             
             # Decodifica bytes se presente
             if last_update:
-                last_update = last_update.decode('utf-8')
+                last_update = last_update.decode('utf-8')  # type: ignore[union-attr]
             if last_retrain:
-                last_retrain = last_retrain.decode('utf-8')
+                last_retrain = last_retrain.decode('utf-8')  # type: ignore[union-attr]
         except:
             # Fallback: prova file system
             timestamp_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'automation_status.json')
@@ -3701,7 +3702,7 @@ def api_force_update():
             from web.cache_manager import CacheManager
             cache_mgr = CacheManager()
             # Salva in Redis (TTL 7 giorni)
-            cache_mgr.redis_client.setex('automation:last_update', 604800, timestamp)
+            cache_mgr.redis_client.setex('automation:last_update', 604800, timestamp)  # type: ignore[union-attr]
             logger.info(f"✅ Timestamp salvato in Redis: {timestamp}")
         except Exception as e:
             logger.warning(f"⚠️ Redis non disponibile per timestamp: {e}")
@@ -3999,12 +4000,12 @@ def calculate_risk_metrics(df_completed: pd.DataFrame) -> Dict:
     profits = df_completed['Profit'].values
     
     # Sharpe Ratio (annualizzato, assumendo 1 bet/giorno)
-    mean_profit = np.mean(profits)
-    std_profit = np.std(profits)
+    mean_profit = np.mean(profits)  # type: ignore[arg-type]
+    std_profit = np.std(profits)  # type: ignore[arg-type]
     sharpe_ratio = (mean_profit / std_profit * np.sqrt(252)) if std_profit > 0 else 0.0
     
     # Max Drawdown (equity curve)
-    cumulative = np.cumsum(profits)
+    cumulative = np.cumsum(profits)  # type: ignore[arg-type]
     running_max = np.maximum.accumulate(cumulative)
     drawdown = running_max - cumulative
     max_dd = np.max(drawdown) if len(drawdown) > 0 else 0.0
@@ -4213,14 +4214,14 @@ def api_diario_add():
         # ⚠️ CONTROLLO DUPLICATI: Verifica se partita+mercato già in pending
         if len(df) > 0:
             duplicati = df[
-                (df['Partita'] == data['partita']) & 
-                (df['Mercato'] == data['mercato']) & 
-                (df['Risultato'] == 'PENDING')
+                (df['Partita'] == data['partita']) &  # type: ignore[index]
+                (df['Mercato'] == data['mercato']) &  # type: ignore[index]
+                (df['Risultato'] == 'PENDING')  # type: ignore[index]
             ]
             
             if len(duplicati) > 0:
-                existing_quota = float(duplicati.iloc[0]['Quota_Sisal'])
-                existing_stake = duplicati.iloc[0]['Stake']
+                existing_quota = float(duplicati.iloc[0]['Quota_Sisal'])  # type: ignore[index]
+                existing_stake = duplicati.iloc[0]['Stake']  # type: ignore[index]
                 
                 logger.warning(f"⚠️ Duplicato rilevato: {data['partita']} {data['mercato']} già in pending")
                 
@@ -4229,28 +4230,28 @@ def api_diario_add():
                     'error': 'duplicate',
                     'message': f"⚠️ DUPLICATO!\n\n{data['partita']}\n{data['mercato']} è già nel tuo diario.\n\nPuntata esistente:\n• Quota: {existing_quota}\n• Stake: {existing_stake}\n\nVai al diario per modificarla.",
                     'existing_bet': {
-                        'partita': duplicati.iloc[0]['Partita'],
-                        'mercato': duplicati.iloc[0]['Mercato'],
+                        'partita': duplicati.iloc[0]['Partita'],  # type: ignore[index]
+                        'mercato': duplicati.iloc[0]['Mercato'],  # type: ignore[index]
                         'quota': existing_quota,
                         'stake': str(existing_stake)
                     }
                 }), 409  # HTTP 409 Conflict
         
         # Nuova riga (arrotonda quote a 2 decimali)
-        quota_arrotondata = round(float(data['quota']), 2)
+        quota_arrotondata = round(float(data['quota']), 2)  # type: ignore[arg-type]
         
         nuova_bet = {
-            'Data': data.get('data', datetime.now().strftime('%d/%m/%Y')),
-            'Partita': data['partita'],
-            'Mercato': data['mercato'],
+            'Data': data.get('data', datetime.now().strftime('%d/%m/%Y')),  # type: ignore[union-attr]
+            'Partita': data['partita'],  # type: ignore[index]
+            'Mercato': data['mercato'],  # type: ignore[index]
             'Quota_Sistema': quota_arrotondata,
             'Quota_Sisal': quota_arrotondata,
-            'EV_Modello': data.get('ev_modello', 'N/A'),
-            'EV_Realistico': data.get('ev_reale', 'N/A'),
-            'Stake': data['stake'],
+            'EV_Modello': data.get('ev_modello', 'N/A'),  # type: ignore[union-attr]
+            'EV_Realistico': data.get('ev_reale', 'N/A'),  # type: ignore[union-attr]
+            'Stake': data['stake'],  # type: ignore[index]
             'Risultato': 'PENDING',
             'Profit': 0.0,
-            'Note': data.get('note', '')
+            'Note': data.get('note', '')  # type: ignore[union-attr]
         }
         
         df = pd.concat([df, pd.DataFrame([nuova_bet])], ignore_index=True)
@@ -4271,11 +4272,11 @@ def api_diario_update():
     try:
         data = request.json
         
-        if 'id' not in data or 'risultato' not in data:
+        if 'id' not in data or 'risultato' not in data:  # type: ignore[operator]
             return jsonify({'success': False, 'error': 'Parametri mancanti'}), 400
         
-        bet_id = int(data['id'])
-        risultato = data['risultato']
+        bet_id = int(data['id'])  # type: ignore[index]
+        risultato = data['risultato']  # type: ignore[index]
         
         if risultato not in ['WIN', 'LOSS', 'VOID', 'SKIP']:
             return jsonify({'success': False, 'error': 'Risultato non valido'}), 400
