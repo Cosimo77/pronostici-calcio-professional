@@ -1750,12 +1750,12 @@ def api_upcoming_matches():
                         ]
                         for ou_name, ou_odds, ou_ev, ou_prob in ou_options:
                             is_valid, reason, market = _valida_opportunita_fase2(
-                                'OU25', ou_name, ou_odds, ou_ev * 100
+                                'OU25', ou_name, ou_odds, ou_ev * 100  # type: ignore[operator]
                             )
                             if is_valid:
                                 # Warning se EV troppo alto
                                 ev_warning = None
-                                if ou_ev * 100 > 30:
+                                if ou_ev * 100 > 30:  # type: ignore[operator]
                                     ev_warning = '⚠️ EV elevato: verificare con statistiche xG e altre fonti prima di puntare.'
                                 
                                 fase2_opportunities.append({
@@ -4195,6 +4195,8 @@ def api_diario_add():
     """Aggiungi nuova puntata"""
     try:
         data = request.json
+        if not data:
+            return jsonify({'success': False, 'error': 'Request body richiesto'}), 400
         
         # Validazione
         required = ['partita', 'mercato', 'quota', 'stake']
@@ -4214,9 +4216,9 @@ def api_diario_add():
         # ⚠️ CONTROLLO DUPLICATI: Verifica se partita+mercato già in pending
         if len(df) > 0:
             duplicati = df[
-                (df['Partita'] == data['partita']) &  # type: ignore[index]
-                (df['Mercato'] == data['mercato']) &  # type: ignore[index]
-                (df['Risultato'] == 'PENDING')  # type: ignore[index]
+                (df['Partita'] == data['partita']) &
+                (df['Mercato'] == data['mercato']) &
+                (df['Risultato'] == 'PENDING')
             ]
             
             if len(duplicati) > 0:
@@ -4238,20 +4240,20 @@ def api_diario_add():
                 }), 409  # HTTP 409 Conflict
         
         # Nuova riga (arrotonda quote a 2 decimali)
-        quota_arrotondata = round(float(data['quota']), 2)  # type: ignore[arg-type]
+        quota_arrotondata = round(float(data['quota']), 2)
         
         nuova_bet = {
-            'Data': data.get('data', datetime.now().strftime('%d/%m/%Y')),  # type: ignore[union-attr]
-            'Partita': data['partita'],  # type: ignore[index]
-            'Mercato': data['mercato'],  # type: ignore[index]
+            'Data': data.get('data', datetime.now().strftime('%d/%m/%Y')),
+            'Partita': data['partita'],
+            'Mercato': data['mercato'],
             'Quota_Sistema': quota_arrotondata,
             'Quota_Sisal': quota_arrotondata,
-            'EV_Modello': data.get('ev_modello', 'N/A'),  # type: ignore[union-attr]
-            'EV_Realistico': data.get('ev_reale', 'N/A'),  # type: ignore[union-attr]
-            'Stake': data['stake'],  # type: ignore[index]
+            'EV_Modello': data.get('ev_modello', 'N/A'),
+            'EV_Realistico': data.get('ev_reale', 'N/A'),
+            'Stake': data['stake'],
             'Risultato': 'PENDING',
             'Profit': 0.0,
-            'Note': data.get('note', '')  # type: ignore[union-attr]
+            'Note': data.get('note', '')
         }
         
         df = pd.concat([df, pd.DataFrame([nuova_bet])], ignore_index=True)
@@ -4271,12 +4273,14 @@ def api_diario_update():
     """Aggiorna risultato puntata - usa DiarioStorage (DB o CSV fallback)"""
     try:
         data = request.json
+        if not data:
+            return jsonify({'success': False, 'error': 'Request body richiesto'}), 400
         
-        if 'id' not in data or 'risultato' not in data:  # type: ignore[operator]
+        if 'id' not in data or 'risultato' not in data:
             return jsonify({'success': False, 'error': 'Parametri mancanti'}), 400
         
-        bet_id = int(data['id'])  # type: ignore[index]
-        risultato = data['risultato']  # type: ignore[index]
+        bet_id = int(data['id'])
+        risultato = data['risultato']
         
         if risultato not in ['WIN', 'LOSS', 'VOID', 'SKIP']:
             return jsonify({'success': False, 'error': 'Risultato non valido'}), 400
