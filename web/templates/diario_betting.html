@@ -1082,6 +1082,21 @@
                 const response = await fetch('/api/equity_curve');
                 const data = await response.json();
                 
+                // Check se ci sono dati disponibili
+                if (!data.labels || data.labels.length === 0) {
+                    // Mostra messaggio placeholder
+                    const canvas = document.getElementById('equityCurveChart');
+                    const parent = canvas.parentElement;
+                    parent.innerHTML = `
+                        <div class="text-center text-muted py-5">
+                            <i class="bi bi-graph-up-arrow" style="font-size: 3rem;"></i>
+                            <p class="mt-3 mb-0">Nessun dato disponibile</p>
+                            <small>Completa alcune puntate (WIN/LOSS) per visualizzare l'equity curve</small>
+                        </div>
+                    `;
+                    return;
+                }
+                
                 const ctx = document.getElementById('equityCurveChart').getContext('2d');
                 
                 // Distruggi chart esistente se presente
