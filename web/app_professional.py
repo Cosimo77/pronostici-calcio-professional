@@ -4040,6 +4040,7 @@ def calculate_risk_metrics(df_completed: pd.DataFrame) -> Dict:
 # ==================== DIARIO BETTING ====================
 
 @app.route('/diario')
+@app.route('/diario-betting')  # Alias per backward compatibility
 def diario_betting():
     """Pagina diario betting professionale"""
     return render_template('diario_betting.html')
