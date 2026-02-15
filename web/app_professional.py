@@ -35,6 +35,19 @@ except ImportError:
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'scripts'))
 # Aggiungi anche la directory web per imports locali
 sys.path.insert(0, os.path.dirname(__file__))
+# Aggiungi root project per database module
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+
+# Import database module (PostgreSQL)
+try:
+    from database import init_db, BetModel, is_db_available, close_db_pool
+    DATABASE_ENABLED = True
+except ImportError:
+    DATABASE_ENABLED = False
+    print("⚠️ Database module non disponibile - using CSV fallback")
+
+# Import diario storage adapter (auto-fallback DB → CSV)
+from diario_storage import DiarioStorage
 
 # Import cache manager per performance optimization
 from cache_manager import get_cache_manager
@@ -215,6 +228,20 @@ cache = get_cache_manager()
 logger.info("Cache Manager initialized", 
             enabled=cache.enabled,
             redis_status="connected" if cache.enabled else "disabled")
+
+# ==================== DATABASE INITIALIZATION ====================
+# Inizializza PostgreSQL connection pool
+if DATABASE_ENABLED:
+    try:
+        db_initialized = init_db()
+        logger.info("Database initialization", 
+                    enabled=db_initialized,
+                    db_status="connected" if db_initialized else "fallback to CSV")
+    except Exception as e:
+        logger.error("Database init failed", error=str(e))
+        DATABASE_ENABLED = False
+else:
+    logger.warning("Database module not available - using CSV fallback")
 
 @app.before_request 
 def log_request_info():
@@ -4095,38 +4122,32 @@ def api_diario_stats():
 @app.route('/api/diario/pending', methods=['GET'])
 @limiter.limit("60 per minute")
 def api_diario_pending():
-    """Puntate in attesa"""
+    """Puntate in attesa - usa DiarioStorage (DB o CSV fallback)"""
     try:
-        csv_file = 'tracking_giocate.csv'
+        bets = DiarioStorage.get_all_bets(risultato='PENDING')
         
-        if not os.path.exists(csv_file):
-            return jsonify({'bets': []})
-        
-        df = pd.read_csv(csv_file)
-        pending = df[df['Risultato'] == 'PENDING'].copy()
-        
-        # Converti in lista dizionari
-        bets = []
-        for idx, row in pending.iterrows():
-            # Gestione stake: se non numerico (es. MONITOR), metti 0
+        # Format per frontend
+        formatted_bets = []
+        for bet in bets:
+            # Gestione stake MONITOR
             try:
-                stake_val = float(row['Stake']) if pd.notna(row['Stake']) else 0.0
+                stake_val = float(bet['stake'])
             except (ValueError, TypeError):
-                stake_val = 0.0  # MONITOR o altro testo → 0
+                stake_val = 0.0
             
-            bets.append({
-                'id': int(idx),
-                'data': str(row['Data']),
-                'partita': str(row['Partita']),
-                'mercato': str(row['Mercato']),
-                'quota': float(row['Quota_Sisal']) if pd.notna(row['Quota_Sisal']) else 0.0,
+            formatted_bets.append({
+                'id': bet['id'],
+                'data': bet['data'],
+                'partita': bet['partita'],
+                'mercato': bet['mercato'],
+                'quota': bet['quota_sisal'],
                 'stake': stake_val,
-                'ev_modello': str(row['EV_Modello']) if pd.notna(row['EV_Modello']) else 'N/A',
-                'ev_reale': str(row['EV_Realistico']) if pd.notna(row['EV_Realistico']) else 'N/A',
-                'note': str(row['Note']) if pd.notna(row['Note']) else ''
+                'ev_modello': bet['ev_modello'],
+                'ev_reale': bet['ev_realistico'],
+                'note': bet['note']
             })
         
-        return jsonify({'bets': bets})
+        return jsonify({'bets': formatted_bets})
     
     except Exception as e:
         logger.error(f"❌ Errore pending diario: {e}")
@@ -4135,41 +4156,33 @@ def api_diario_pending():
 @app.route('/api/diario/completed', methods=['GET'])
 @limiter.limit("60 per minute")
 def api_diario_completed():
-    """Puntate completate"""
+    """Puntate completate - usa DiarioStorage (DB o CSV fallback)"""
     try:
-        csv_file = 'tracking_giocate.csv'
+        all_bets = DiarioStorage.get_all_bets()
+        completed = [b for b in all_bets if b['risultato'] in ['WIN', 'LOSS', 'VOID', 'SKIP']]
         
-        if not os.path.exists(csv_file):
-            return jsonify({'bets': []})
-        
-        df = pd.read_csv(csv_file)
-        # Include anche SKIP nelle completate (ma escluse da ROI nelle stats)
-        completed = df[df['Risultato'].isin(['WIN', 'LOSS', 'VOID', 'SKIP'])].copy()
-        
-        # Converti in lista dizionari
-        bets = []
-        for idx, row in completed.iterrows():
-            # Gestione stake MONITOR o numerico
-            stake_raw = row['Stake']
+        # Format per frontend
+        formatted_bets = []
+        for bet in completed:
             try:
-                stake = float(stake_raw)
+                stake_numeric = float(bet['stake'])
             except (ValueError, TypeError):
-                stake = 0.0  # MONITOR → stake virtuale 0
+                stake_numeric = 0.0
             
-            bets.append({
-                'id': int(idx),
-                'data': str(row['Data']),
-                'partita': str(row['Partita']),
-                'mercato': str(row['Mercato']),
-                'quota': float(row['Quota_Sisal']) if pd.notna(row['Quota_Sisal']) else 0.0,
-                'stake': stake,
-                'stake_raw': str(stake_raw),  # Mantiene MONITOR visibile
-                'risultato': str(row['Risultato']),
-                'profit': float(row['Profit']) if pd.notna(row['Profit']) else 0.0,
-                'note': str(row['Note']) if pd.notna(row['Note']) else ''
+            formatted_bets.append({
+                'id': bet['id'],
+                'data': bet['data'],
+                'partita': bet['partita'],
+                'mercato': bet['mercato'],
+                'quota': bet['quota_sisal'],
+                'stake': stake_numeric,
+                'stake_raw': bet['stake'],  # Mantiene MONITOR
+                'risultato': bet['risultato'],
+                'profit': bet['profit'],
+                'note': bet['note']
             })
         
-        return jsonify({'bets': bets})
+        return jsonify({'bets': formatted_bets})
     
     except Exception as e:
         logger.error(f"❌ Errore completed diario: {e}")
@@ -4254,56 +4267,21 @@ def api_diario_add():
 @app.route('/api/diario/update', methods=['POST'])
 @limiter.limit("30 per minute")
 def api_diario_update():
-    """Aggiorna risultato puntata"""
+    """Aggiorna risultato puntata - usa DiarioStorage (DB o CSV fallback)"""
     try:
         data = request.json
         
         if 'id' not in data or 'risultato' not in data:
             return jsonify({'success': False, 'error': 'Parametri mancanti'}), 400
         
-        csv_file = 'tracking_giocate.csv'
-        
-        if not os.path.exists(csv_file):
-            return jsonify({'success': False, 'error': 'Nessun diario trovato'}), 404
-        
-        df = pd.read_csv(csv_file)
-        idx = int(data['id'])
-        
-        if idx >= len(df):
-            return jsonify({'success': False, 'error': 'Puntata non trovata'}), 404
-        
+        bet_id = int(data['id'])
         risultato = data['risultato']
         
         if risultato not in ['WIN', 'LOSS', 'VOID', 'SKIP']:
             return jsonify({'success': False, 'error': 'Risultato non valido'}), 400
         
-        # Calcola profit
-        quota = float(df.at[idx, 'Quota_Sisal'])
-        
-        # Gestione stake: MONITOR o numerico
-        stake_raw = df.at[idx, 'Stake']
-        try:
-            stake = float(stake_raw)
-        except (ValueError, TypeError):
-            stake = 0.0  # MONITOR → stake virtuale 0
-        
-        if risultato == 'WIN':
-            profit = stake * (quota - 1)
-        elif risultato == 'LOSS':
-            profit = -stake
-        elif risultato == 'SKIP':
-            # SKIP = Non giocata (MONITOR ignorato)
-            profit = 0.0
-        else:  # VOID
-            profit = 0.0
-        
-        # Aggiorna
-        df.at[idx, 'Risultato'] = risultato
-        df.at[idx, 'Profit'] = round(profit, 2)
-        
-        df.to_csv(csv_file, index=False)
-        
-        logger.info(f"✅ Risultato aggiornato: {df.at[idx, 'Partita']} → {risultato} (€{profit:+.2f})")
+        profit = DiarioStorage.update_risultato(bet_id, risultato)
+        logger.info(f"✅ Risultato aggiornato: bet_id={bet_id} → {risultato} (€{profit:+.2f})")
         
         return jsonify({'success': True, 'profit': round(profit, 2)})
     
@@ -4314,52 +4292,27 @@ def api_diario_update():
 @app.route('/api/diario/edit', methods=['POST'])
 @limiter.limit("30 per minute")
 def api_diario_edit():
-    """Modifica puntata pending (stake, quota, note)"""
+    """Modifica puntata pending - usa DiarioStorage (DB o CSV fallback)"""
     try:
         data = request.get_json()
         bet_id = int(data.get('id'))
         
-        csv_file = os.path.join(os.path.dirname(__file__), '..', 'tracking_giocate.csv')
-        csv_file = os.path.abspath(csv_file)
+        # Verifica che sia PENDING
+        bet = DiarioStorage.get_all_bets()[bet_id]  # Throws if not exists
+        if bet['risultato'] != 'PENDING':
+            return jsonify({'success': False, 'error': 'Impossibile modificare bet completata'}), 400
         
-        if not os.path.exists(csv_file):
-            return jsonify({'success': False, 'error': 'File diario non trovato'}), 404
-        
-        df = pd.read_csv(csv_file)
-        
-        if bet_id < 0 or bet_id >= len(df):
-            return jsonify({'success': False, 'error': 'Puntata non trovata'}), 404
-        
-        # Verifica che sia PENDING (non modificabile se già completata)
-        if df.at[bet_id, 'Risultato'] != 'PENDING':
-            return jsonify({'success': False, 'error': 'Impossibile modificare puntata già completata'}), 400
-        
-        # Aggiorna campi editabili
+        # Prepara updates
+        updates = {}
         if 'stake' in data:
-            stake_val = data['stake']
-            # Gestione MONITOR
-            if isinstance(stake_val, str) and stake_val.upper() == 'MONITOR':
-                df.at[bet_id, 'Stake'] = 'MONITOR'
-            else:
-                try:
-                    df.at[bet_id, 'Stake'] = float(stake_val)
-                except (ValueError, TypeError):
-                    return jsonify({'success': False, 'error': 'Stake non valido'}), 400
-        
+            updates['stake'] = data['stake']
         if 'quota' in data:
-            try:
-                # Arrotonda quota a 2 decimali (standard bookmaker)
-                df.at[bet_id, 'Quota_Sisal'] = round(float(data['quota']), 2)
-            except (ValueError, TypeError):
-                return jsonify({'success': False, 'error': 'Quota non valida'}), 400
-        
+            updates['quota_sisal'] = data['quota']
         if 'note' in data:
-            df.at[bet_id, 'Note'] = data['note']
+            updates['note'] = data['note']
         
-        # Salva CSV
-        df.to_csv(csv_file, index=False)
-        
-        logger.info(f"✏️ Puntata modificata: {df.at[bet_id, 'Partita']} (stake={df.at[bet_id, 'Stake']}, quota={df.at[bet_id, 'Quota_Sisal']})")
+        DiarioStorage.update_fields(bet_id, updates)
+        logger.info(f"✏️ Bet modificata: id={bet_id}")
         
         return jsonify({'success': True})
     
@@ -4370,34 +4323,13 @@ def api_diario_edit():
 @app.route('/api/diario/delete', methods=['POST'])
 @limiter.limit("30 per minute")
 def api_diario_delete():
-    """Elimina puntata (pending o completed)"""
+    """Elimina puntata - usa DiarioStorage (DB o CSV fallback)"""
     try:
         data = request.get_json()
         bet_id = int(data.get('id'))
         
-        csv_file = os.path.join(os.path.dirname(__file__), '..', 'tracking_giocate.csv')
-        csv_file = os.path.abspath(csv_file)
-        
-        if not os.path.exists(csv_file):
-            return jsonify({'success': False, 'error': 'File diario non trovato'}), 404
-        
-        df = pd.read_csv(csv_file)
-        
-        if bet_id < 0 or bet_id >= len(df):
-            return jsonify({'success': False, 'error': 'Puntata non trovata'}), 404
-        
-        # Salva info per log
-        partita = df.at[bet_id, 'Partita']
-        risultato = df.at[bet_id, 'Risultato']
-        
-        # Elimina riga usando drop() e reset index
-        df = df.drop(bet_id)
-        df = df.reset_index(drop=True)  # Ricompatta indici
-        
-        # Salva CSV aggiornato
-        df.to_csv(csv_file, index=False)
-        
-        logger.info(f"🗑️ Puntata eliminata: {partita} ({risultato})")
+        DiarioStorage.delete_bet(bet_id)
+        logger.info(f"🗑️ Bet eliminata: id={bet_id}")
         
         return jsonify({'success': True})
     
@@ -4802,6 +4734,16 @@ if __name__ == '__main__':
         logger.error("❌ Errore critico avvio", error=str(e))
         if __name__ == '__main__':
             sys.exit(1)
+
+# Cleanup handler per chiusura pulita risorse
+@app.teardown_appcontext
+def shutdown_database(exception=None):
+    """Chiude connection pool database al shutdown"""
+    if DATABASE_ENABLED:
+        try:
+            close_db_pool()
+        except Exception as e:
+            logger.error("Errore chiusura database", error=str(e))
 
 # Configurazione per deployment produzione (Gunicorn)
 if __name__ != '__main__':
