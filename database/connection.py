@@ -132,8 +132,24 @@ def close_db_pool():
         _connection_pool = None
 
 def is_db_available():
-    """Check se database è disponibile"""
-    return _connection_pool is not None
+    """Check se database è disponibile (con lazy initialization)"""
+    global _connection_pool
+    
+    # Se pool già inizializzato, return True
+    if _connection_pool is not None:
+        return True
+    
+    # Altrimenti tenta lazy initialization
+    database_url = get_database_url()
+    if not database_url:
+        return False
+    
+    # Tenta init_db() in background
+    try:
+        return init_db()
+    except Exception as e:
+        logger.warning("Lazy init failed", error=str(e))
+        return False
 
 def execute_query(query, params=None, fetch=True):
     """
