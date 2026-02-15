@@ -3634,6 +3634,7 @@ def api_database_diagnostic():
         db_fingerprint = 'not_available'
         db_host = 'unknown'
         db_name = 'unknown'
+        db_url_length = len(db_url) if db_url != 'not_set' else 0
         
         if db_url != 'not_set':
             try:
@@ -3653,6 +3654,18 @@ def api_database_diagnostic():
         total_bets = 0
         pending_bets = 0
         completed_bets = 0
+        connection_error = None
+        
+        # Tenta connessione manuale per catturare errori specifici
+        if db_url != 'not_set' and not is_db_available():
+            try:
+                import psycopg2
+                # Tentativo diretto di connessione per diagnosticare errore
+                test_conn = psycopg2.connect(db_url)
+                test_conn.close()
+                connection_error = "Connection succeeded but pool not initialized"
+            except Exception as e:
+                connection_error = f"{type(e).__name__}: {str(e)}"
         
         if is_db_available():
             try:
@@ -3671,10 +3684,12 @@ def api_database_diagnostic():
         
         return jsonify({
             'database_url_set': db_url != 'not_set',
+            'database_url_length': db_url_length,  # Per verificare che sia completo
             'database_fingerprint': db_fingerprint,  # Traccia se database cambia tra deploys
             'database_host_masked': db_host[:8] + '***' if len(db_host) > 8 else db_host,
             'database_name': db_name,
             'database_connected': is_db_available(),
+            'connection_error': connection_error,  # Errore specifico se connessione fallisce
             'total_bets': total_bets,
             'pending_bets': pending_bets,
             'completed_bets': completed_bets,
