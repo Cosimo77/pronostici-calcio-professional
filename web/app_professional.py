@@ -4367,6 +4367,44 @@ def api_diario_edit():
         logger.error(f"❌ Errore edit puntata: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@app.route('/api/diario/delete', methods=['POST'])
+@limiter.limit("30 per minute")
+def api_diario_delete():
+    """Elimina puntata (pending o completed)"""
+    try:
+        data = request.get_json()
+        bet_id = int(data.get('id'))
+        
+        csv_file = os.path.join(os.path.dirname(__file__), '..', 'tracking_giocate.csv')
+        csv_file = os.path.abspath(csv_file)
+        
+        if not os.path.exists(csv_file):
+            return jsonify({'success': False, 'error': 'File diario non trovato'}), 404
+        
+        df = pd.read_csv(csv_file)
+        
+        if bet_id < 0 or bet_id >= len(df):
+            return jsonify({'success': False, 'error': 'Puntata non trovata'}), 404
+        
+        # Salva info per log
+        partita = df.at[bet_id, 'Partita']
+        risultato = df.at[bet_id, 'Risultato']
+        
+        # Elimina riga usando drop() e reset index
+        df = df.drop(bet_id)
+        df = df.reset_index(drop=True)  # Ricompatta indici
+        
+        # Salva CSV aggiornato
+        df.to_csv(csv_file, index=False)
+        
+        logger.info(f"🗑️ Puntata eliminata: {partita} ({risultato})")
+        
+        return jsonify({'success': True})
+    
+    except Exception as e:
+        logger.error(f"❌ Errore eliminazione puntata: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @app.route('/api/diario/reset', methods=['POST'])
 @limiter.limit("5 per hour")  # Limit aggressivo per operazione critica
 def api_diario_reset():

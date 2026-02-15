@@ -616,8 +616,11 @@
                                     <button class="btn btn-sm btn-danger me-1" onclick="updateBet(${bet.id}, 'LOSS')" title="Puntata persa">
                                         <i class="bi bi-x-lg"></i> LOSS
                                     </button>
-                                    <button class="btn btn-sm btn-secondary" onclick="updateBet(${bet.id}, 'SKIP')" title="Non giocata (archivia senza impatto su ROI)">
+                                    <button class="btn btn-sm btn-secondary me-1" onclick="updateBet(${bet.id}, 'SKIP')" title="Non giocata (archivia senza impatto su ROI)">
                                         <i class="bi bi-dash-circle"></i> SKIP
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteBet(${bet.id}, 'pending')" title="Elimina puntata">
+                                        <i class="bi bi-trash"></i>
                                     </button>
                                 </div>
                             </div>
@@ -703,11 +706,14 @@
                                     <h5 class="mb-0 ${profitClass}">
                                         ${bet.risultato === 'SKIP' || bet.risultato === 'VOID' ? '—' : (bet.profit > 0 ? '+' : '') + '€' + bet.profit.toFixed(2)}
                                     </h5>
-                                    <small class="text-muted">
+                                    <small class="text-muted d-block mb-2">
                                         ${bet.risultato === 'SKIP' ? '🚫 NON GIOCATA' : 
                                           bet.risultato === 'VOID' ? '↻ ANNULLATA' : 
                                           bet.risultato}
                                     </small>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteBet(${bet.id}, 'completed')" title="Elimina puntata">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -762,14 +768,19 @@
                     const today = new Date().toISOString().split('T')[0];
                     document.getElementById('bet-data').value = today;
                     
-                    // Ricarica stats e pending
+                    // Ricarica stats immediatamente
                     loadStats();
-                    loadPendingBets();
                     
-                    // Vai a pending dopo 1.5s
+                    // Delay anti-race-condition + auto-switch a tab "In Attesa"
                     setTimeout(() => {
-                        document.getElementById('pending-tab').click();
-                    }, 1500);
+                        // Switch a tab "In Attesa"
+                        const pendingTab = document.getElementById('pending-tab');
+                        const bsTab = new bootstrap.Tab(pendingTab);
+                        bsTab.show();
+                        
+                        // Reload pending dopo switch (bet ora visibile)
+                        setTimeout(() => loadPendingBets(), 100);
+                    }, 300);
                 } else {
                     // Gestione errore duplicato con messaggio specifico
                     if (result.error === 'duplicate') {
@@ -899,6 +910,43 @@
                         setTimeout(() => loadCompletedBets(), 100);
                     }, 300);
                     
+                } else {
+                    alert('❌ Errore: ' + result.error);
+                }
+            } catch (error) {
+                alert('❌ Errore: ' + error.message);
+            }
+        }
+        
+        // Elimina puntata (pending o completed)
+        async function deleteBet(betId, source) {
+            if (!confirm(`⚠️ Confermi eliminazione?\n\nQuesta azione è IRREVERSIBILE.`)) return;
+            
+            try {
+                const response = await fetch('/api/diario/delete', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({id: betId})
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Ricarica stats
+                    loadStats();
+                    
+                    // Delay + reload sezione appropriata
+                    setTimeout(() => {
+                        if (source === 'pending') {
+                            loadPendingBets();
+                        } else {
+                            // Reset flag completed e ricarica
+                            completedLoaded = false;
+                            loadCompletedBets();
+                        }
+                    }, 300);
+                    
+                    alert('✅ Puntata eliminata');
                 } else {
                     alert('❌ Errore: ' + result.error);
                 }
