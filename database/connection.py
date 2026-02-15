@@ -39,12 +39,17 @@ def init_db():
             dsn=database_url
         )
         
-        # Test connessione
-        with get_db_connection() as conn:
-            with conn.cursor() as cur:
+        # Test connessione DIRETTO (no context manager per evitare ricorsione)
+        test_conn = None
+        try:
+            test_conn = _connection_pool.getconn()
+            with test_conn.cursor() as cur:
                 cur.execute("SELECT version();")
                 version = cur.fetchone()[0]
                 logger.info("✅ PostgreSQL connesso", version=version[:50])
+        finally:
+            if test_conn:
+                _connection_pool.putconn(test_conn)
         
         # Esegui schema (idempotent - CREATE IF NOT EXISTS)
         _ensure_schema_exists()
@@ -99,14 +104,8 @@ def get_db_connection():
                 cur.execute("SELECT * FROM bets")
                 results = cur.fetchall()
     """
-    global _connection_pool
-    
-    # Lazy initialization: se pool non esiste, tenta init_db() automaticamente
     if _connection_pool is None:
-        logger.info("🔄 Connection pool non inizializzato, tentativo lazy init...")
-        success = init_db()
-        if not success or _connection_pool is None:
-            raise RuntimeError("Database non disponibile. Verifica DATABASE_URL.")
+        raise RuntimeError("Database non inizializzato. Chiama init_db() o is_db_available() prima.")
     
     conn = None
     try:
