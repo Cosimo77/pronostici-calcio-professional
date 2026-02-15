@@ -141,13 +141,17 @@ def is_db_available():
     # Altrimenti tenta lazy initialization
     database_url = get_database_url()
     if not database_url:
+        logger.warning("is_db_available: DATABASE_URL vuota")
         return False
     
     # Tenta init_db() in background
+    logger.info(f"🔄 Lazy init triggered - DATABASE_URL length: {len(database_url)}")
     try:
-        return init_db()
+        result = init_db()
+        logger. info(f"Lazy init result: {result}, pool state: {_connection_pool is not None}")
+        return result
     except Exception as e:
-        logger.warning("Lazy init failed", error=str(e))
+        logger.error(f"❌ Lazy init FAILED", error=str(e), exc_info=True)
         return False
 
 def execute_query(query, params=None, fetch=True):
