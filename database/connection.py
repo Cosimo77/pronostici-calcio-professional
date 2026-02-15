@@ -27,22 +27,28 @@ def init_db():
     
     database_url = get_database_url()
     
+    logger.info(f"🔧 init_db() chiamato - DATABASE_URL presente: {database_url is not None}, length: {len(database_url) if database_url else 0}")
+    
     if not database_url:
         logger.warning("⚠️ DATABASE_URL non configurata - falling back a CSV storage")
         return False
     
     try:
+        logger.info("🔧 Creando SimpleConnectionPool...")
         # Crea connection pool (min 1, max 10 connessioni)
         _connection_pool = SimpleConnectionPool(
             minconn=1,
             maxconn=10,
             dsn=database_url
         )
+        logger.info("🔧 Connection pool creato")
         
         # Test connessione DIRETTO (no context manager per evitare ricorsione)
+        logger.info("🔧 Test connessione diretto...")
         test_conn = None
         try:
             test_conn = _connection_pool.getconn()
+            logger.info("🔧 Connection ottenuta da pool")
             with test_conn.cursor() as cur:
                 cur.execute("SELECT version();")
                 version = cur.fetchone()[0]
@@ -50,22 +56,29 @@ def init_db():
         finally:
             if test_conn:
                 _connection_pool.putconn(test_conn)
+                logger.info("🔧 Connection restituita al pool")
         
         # Esegui schema (idempotent - CREATE IF NOT EXISTS)
+        logger.info("🔧 Chiamata _ensure_schema_exists()...")
         _ensure_schema_exists()
+        logger.info("🔧 _ensure_schema_exists() completato")
         
         return True
         
     except Exception as e:
-        logger.error("❌ Errore connessione PostgreSQL", error=str(e))
+        logger.error("❌ Errore connessione PostgreSQL", error=str(e), exc_info=True)
         _connection_pool = None
         return False
 
 def _ensure_schema_exists():
     """Esegue schema.sql se tabelle non esistono"""
+    logger.info("🔧 _ensure_schema_exists() iniziato")
     try:
+        logger.info("🔧 Tentativo get_db_connection()...")
         with get_db_connection() as conn:
+            logger.info("🔧 Connection ottenuta, creando cursor...")
             with conn.cursor() as cur:
+                logger.info("🔧 Check esistenza table bets...")
                 # Check se table bets esiste
                 cur.execute("""
                     SELECT EXISTS (
@@ -74,15 +87,22 @@ def _ensure_schema_exists():
                     );
                 """)
                 exists = cur.fetchone()[0]
+                logger.info(f"🔧 Table bets exists: {exists}")
                 
                 if not exists:
                     logger.info("📋 Creando schema database...")
                     
                     # Leggi e esegui schema.sql
                     schema_path = os.path.join(os.path.dirname(__file__), 'schema.sql')
+                    logger.info(f"🔧 Schema path: {schema_path}")
+                    
+                    if not os.path.exists(schema_path):
+                        raise FileNotFoundError(f"schema.sql non trovato: {schema_path}")
+                    
                     with open(schema_path, 'r') as f:
                         schema_sql = f.read()
                     
+                    logger.info(f"🔧 Schema SQL caricato ({len(schema_sql)} chars)")
                     cur.execute(schema_sql)
                     conn.commit()
                     logger.info("✅ Schema database creato")
@@ -90,7 +110,7 @@ def _ensure_schema_exists():
                     logger.info("✅ Schema database già esistente")
                     
     except Exception as e:
-        logger.error("❌ Errore creazione schema", error=str(e))
+        logger.error("❌ Errore creazione schema", error=str(e), exc_info=True)
         raise
 
 @contextmanager
