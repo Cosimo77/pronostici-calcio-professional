@@ -54,7 +54,7 @@ class DiarioStorage:
         bets = []
         for idx, row in df.iterrows():
             bets.append({
-                'id': int(idx),
+                'id': int(idx),  # type: ignore[arg-type]
                 'data': str(row['Data']),
                 'partita': str(row['Partita']),
                 'mercato': str(row['Mercato']),
@@ -124,11 +124,11 @@ class DiarioStorage:
         if bet_id >= len(df):
             raise ValueError(f"Bet {bet_id} not found")
         
-        quota = float(df.at[bet_id, 'Quota_Sisal'])
+        quota = float(df.at[bet_id, 'Quota_Sisal'])  # type: ignore[arg-type]
         stake_raw = df.at[bet_id, 'Stake']
         
         try:
-            stake = float(stake_raw)
+            stake = float(stake_raw)  # type: ignore[arg-type]
         except ValueError:
             stake = 0.0  # MONITOR
         
