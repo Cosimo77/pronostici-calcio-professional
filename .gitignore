@@ -65,5 +65,9 @@ temp/
 # Data files (se troppo grandi)
 # data/large_dataset.csv
 
+# Diario betting CSV - ora gestito da PostgreSQL
+tracking_giocate.csv
+tracking_fase2_febbraio2026.csv
+
 # Model files (se troppo grandi per Git)
 # models/*.pklbackup_*.zip
