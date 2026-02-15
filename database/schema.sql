@@ -23,13 +23,13 @@ CREATE TABLE IF NOT EXISTS bets (
     
     -- Constraints
     CONSTRAINT chk_risultato CHECK (risultato IN ('PENDING', 'WIN', 'LOSS', 'VOID', 'SKIP')),
-    CONSTRAINT chk_quota_sisal CHECK (quota_sisal >= 1.01),
-    
-    -- Index per query comuni
-    INDEX idx_risultato (risultato),
-    INDEX idx_data (data DESC),
-    INDEX idx_partita (partita)
+    CONSTRAINT chk_quota_sisal CHECK (quota_sisal >= 1.01)
 );
+
+-- Indici (PostgreSQL richiede CREATE INDEX separato)
+CREATE INDEX IF NOT EXISTS idx_risultato ON bets(risultato);
+CREATE INDEX IF NOT EXISTS idx_data ON bets(data DESC);
+CREATE INDEX IF NOT EXISTS idx_partita ON bets(partita);
 
 -- Trigger per auto-update updated_at
 CREATE OR REPLACE FUNCTION update_updated_at_column()
