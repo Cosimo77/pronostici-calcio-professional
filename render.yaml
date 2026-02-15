@@ -8,6 +8,10 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn --bind 0.0.0.0:$PORT --workers 2 --threads 2 --timeout 120 --worker-class gevent web.app_professional:app
     envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: pronostici-calcio-db
+          property: connectionString
       - key: SECRET_KEY
         generateValue: true
       - key: ODDS_API_KEY
@@ -24,8 +28,7 @@ services:
     numInstances: 1
 
 databases:
-  # Opzionale: PostgreSQL per logging e cache
-  # - name: pronostici-db
-  #   plan: free
-  #   databaseName: pronostici_calcio
-  #   user: pronostici_user
+  - name: pronostici-calcio-db
+    plan: free
+    databaseName: pronostici_calcio_production
+    user: postgres
