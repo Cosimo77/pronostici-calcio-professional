@@ -99,8 +99,14 @@ def get_db_connection():
                 cur.execute("SELECT * FROM bets")
                 results = cur.fetchall()
     """
+    global _connection_pool
+    
+    # Lazy initialization: se pool non esiste, tenta init_db() automaticamente
     if _connection_pool is None:
-        raise RuntimeError("Database non inizializzato. Chiama init_db() prima.")
+        logger.info("🔄 Connection pool non inizializzato, tentativo lazy init...")
+        success = init_db()
+        if not success or _connection_pool is None:
+            raise RuntimeError("Database non disponibile. Verifica DATABASE_URL.")
     
     conn = None
     try:
