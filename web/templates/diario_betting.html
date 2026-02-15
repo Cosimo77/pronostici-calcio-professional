@@ -880,9 +880,25 @@
                 
                 if (result.success) {
                     alert(`✅ Risultato aggiornato! Profit: €${result.profit.toFixed(2)}`);
+                    
+                    // Ricarica stats immediatamente
                     loadStats();
-                    loadPendingBets();
-                    completedLoaded = false;  // Reset per ricaricare tab completate
+                    
+                    // Delay anti-race-condition + auto-switch a tab "Completate"
+                    setTimeout(() => {
+                        // Reload pending (bet WIN ora rimossa)
+                        loadPendingBets();
+                        
+                        // Reset flag + switch automatico a tab "Completate"
+                        completedLoaded = false;
+                        const completedTab = document.getElementById('completed-tab');
+                        const bsTab = new bootstrap.Tab(completedTab);
+                        bsTab.show();
+                        
+                        // Force reload tab completate dopo switch
+                        setTimeout(() => loadCompletedBets(), 100);
+                    }, 300);
+                    
                 } else {
                     alert('❌ Errore: ' + result.error);
                 }
