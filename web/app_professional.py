@@ -235,7 +235,7 @@ logger.info("Cache Manager initialized",
 if DATABASE_ENABLED:
     import time
     db_initialized = False
-    max_retries = 3
+    max_retries = 5  # Aumentato a 5
     
     for attempt in range(max_retries):
         try:
@@ -248,15 +248,17 @@ if DATABASE_ENABLED:
             else:
                 # DATABASE_URL non ancora disponibile, retry
                 if attempt < max_retries - 1:
-                    logger.warning(f"⏳ DATABASE_URL not ready, retrying in 3s... (attempt {attempt+1}/{max_retries})")
-                    time.sleep(3)
+                    wait_time = 5  # Aumentato a 5s
+                    logger.warning(f"⏳ DATABASE_URL not ready, retrying in {wait_time}s... (attempt {attempt+1}/{max_retries})")
+                    time.sleep(wait_time)
                 else:
-                    logger.warning("Database init failed after retries - fallback to CSV")
+                    logger.warning("⚠️ Database init failed after retries - fallback to CSV")
         except Exception as e:
-            logger.error("Database init error", error=str(e), attempt=attempt+1)
+            logger.error("Database init error", error=str(e), attempt=attempt+1, exc_info=True)
             if attempt < max_retries - 1:
-                time.sleep(3)
+                time.sleep(5)
             else:
+                logger.error("❌ Database DEFINITIVAMENTE non disponibile - usando CSV")
                 DATABASE_ENABLED = False
 else:
     logger.warning("Database module not available - using CSV fallback")
