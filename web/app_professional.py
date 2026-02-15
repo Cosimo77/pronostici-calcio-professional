@@ -3618,6 +3618,74 @@ def api_health():
     
     return jsonify(health_status)
 
+@app.route('/api/database/diagnostic')
+@limiter.limit("10 per minute")  # Limitato - solo per debug
+def api_database_diagnostic():
+    """Endpoint diagnostico per tracciare configurazione database tra deploys"""
+    try:
+        from database import is_db_available, get_db_connection
+        import hashlib
+        
+        db_url = os.getenv('DATABASE_URL', 'not_set')
+        
+        # Hash delle porzioni chiave di DATABASE_URL (per privacy)
+        # postgres://user:pass@host:port/dbname
+        # Mostra solo hash di host+dbname per tracciare se cambiano
+        db_fingerprint = 'not_available'
+        db_host = 'unknown'
+        db_name = 'unknown'
+        
+        if db_url != 'not_set':
+            try:
+                # Parse URL senza esporre credenziali
+                parts = db_url.split('@')
+                if len(parts) > 1:
+                    host_and_db = parts[1]  # host:port/dbname
+                    db_host = host_and_db.split(':')[0] if ':' in host_and_db else host_and_db.split('/')[0]
+                    db_name = host_and_db.split('/')[-1].split('?')[0] if '/' in host_and_db else 'unknown'
+                    
+                    # Fingerprint unico per tracciare se database cambia
+                    db_fingerprint = hashlib.md5(f"{db_host}:{db_name}".encode()).hexdigest()[:12]
+            except:
+                pass
+        
+        # Query database per contare bets
+        total_bets = 0
+        pending_bets = 0
+        completed_bets = 0
+        
+        if is_db_available():
+            try:
+                with get_db_connection() as conn:
+                    with conn.cursor() as cur:
+                        cur.execute("SELECT COUNT(*) FROM bets;")
+                        total_bets = cur.fetchone()[0]
+                        
+                        cur.execute("SELECT COUNT(*) FROM bets WHERE risultato = 'PENDING';")
+                        pending_bets = cur.fetchone()[0]
+                        
+                        cur.execute("SELECT COUNT(*) FROM bets WHERE risultato IN ('WIN', 'LOSS');")
+                        completed_bets = cur.fetchone()[0]
+            except Exception as e:
+                logger.error("Diagnostic query failed", error=str(e))
+        
+        return jsonify({
+            'database_url_set': db_url != 'not_set',
+            'database_fingerprint': db_fingerprint,  # Traccia se database cambia tra deploys
+            'database_host_masked': db_host[:8] + '***' if len(db_host) > 8 else db_host,
+            'database_name': db_name,
+            'database_connected': is_db_available(),
+            'total_bets': total_bets,
+            'pending_bets': pending_bets,
+            'completed_bets': completed_bets,
+            'timestamp': datetime.now().isoformat(),
+            'deployment_id': os.getenv('RENDER_SERVICE_ID', 'local')[:12]
+        })
+        
+    except Exception as e:
+        logger.error("Diagnostic endpoint failed", error=str(e))
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/automation/status')
 @limiter.limit("60 per minute")
 def api_automation_status():
