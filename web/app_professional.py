@@ -4496,51 +4496,52 @@ def api_calculate_kelly():
 @app.route('/api/equity_curve', methods=['GET'])
 @limiter.limit("60 per minute")
 def api_equity_curve():
-    """Dati equity curve per grafici"""
+    """Dati equity curve per grafici - PostgreSQL backed"""
     try:
-        csv_file = 'tracking_giocate.csv'
+        # Carica tutte le bet completate dal database/CSV
+        all_bets = DiarioStorage.get_all_bets()
         
-        if not os.path.exists(csv_file):
+        # Filtra solo WIN/LOSS completate
+        completed_bets = [
+            bet for bet in all_bets 
+            if bet.get('risultato') in ['WIN', 'LOSS']
+        ]
+        
+        if len(completed_bets) == 0:
             return jsonify({
                 'labels': [],
                 'cumulative_profit': [],
-                'bankroll_curve': []
+                'bankroll_curve': [],
+                'bet_details': [],
+                'bankroll_iniziale': 100.0
             })
         
-        df = pd.read_csv(csv_file)
-        
-        # Solo WIN/LOSS completate (ordinate per data)
-        df_completed = df[df['Risultato'].isin(['WIN', 'LOSS'])].copy()
-        df_completed = df_completed.sort_values('Data')
-        
-        if len(df_completed) == 0:
-            return jsonify({
-                'labels': [],
-                'cumulative_profit': [],
-                'bankroll_curve': []
-            })
-        
-        # Converti profit a numerico
-        df_completed['Profit'] = pd.to_numeric(df_completed['Profit'], errors='coerce')
+        # Ordina per data
+        completed_bets.sort(key=lambda x: x.get('data', ''))
         
         # Calcola equity curve
         config = load_bankroll_config()
         bankroll_iniziale = config['bankroll_iniziale']
         
-        cumulative_profit = df_completed['Profit'].cumsum().tolist()
-        bankroll_curve = [bankroll_iniziale + p for p in cumulative_profit]
-        
-        # Labels (numero bet o data)
-        labels = [f"Bet {i+1}" for i in range(len(df_completed))]
-        
-        # Aggiungi dati individuali bet per analisi
+        cumulative = 0.0
+        cumulative_profit = []
+        bankroll_curve = []
+        labels = []
         bet_details = []
-        for idx, row in df_completed.iterrows():
+        
+        for i, bet in enumerate(completed_bets):
+            profit = float(bet.get('profit', 0.0))
+            cumulative += profit
+            
+            cumulative_profit.append(round(cumulative, 2))
+            bankroll_curve.append(round(bankroll_iniziale + cumulative, 2))
+            labels.append(f"Bet {i+1}")
+            
             bet_details.append({
-                'data': str(row['Data']),
-                'partita': str(row['Partita']),
-                'risultato': str(row['Risultato']),
-                'profit': float(row['Profit'])
+                'data': bet.get('data', ''),
+                'partita': bet.get('partita', ''),
+                'risultato': bet.get('risultato', ''),
+                'profit': round(profit, 2)
             })
         
         return jsonify({
