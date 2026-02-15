@@ -231,16 +231,33 @@ logger.info("Cache Manager initialized",
             redis_status="connected" if cache.enabled else "disabled")
 
 # ==================== DATABASE INITIALIZATION ====================
-# Inizializza PostgreSQL connection pool
+# Inizializza PostgreSQL connection pool (con retry per Render env vars)
 if DATABASE_ENABLED:
-    try:
-        db_initialized = init_db()
-        logger.info("Database initialization", 
-                    enabled=db_initialized,
-                    db_status="connected" if db_initialized else "fallback to CSV")
-    except Exception as e:
-        logger.error("Database init failed", error=str(e))
-        DATABASE_ENABLED = False
+    import time
+    db_initialized = False
+    max_retries = 3
+    
+    for attempt in range(max_retries):
+        try:
+            db_initialized = init_db()
+            if db_initialized:
+                logger.info("✅ Database initialization SUCCESS", 
+                            attempt=attempt+1,
+                            db_status="PostgreSQL connected")
+                break
+            else:
+                # DATABASE_URL non ancora disponibile, retry
+                if attempt < max_retries - 1:
+                    logger.warning(f"⏳ DATABASE_URL not ready, retrying in 3s... (attempt {attempt+1}/{max_retries})")
+                    time.sleep(3)
+                else:
+                    logger.warning("Database init failed after retries - fallback to CSV")
+        except Exception as e:
+            logger.error("Database init error", error=str(e), attempt=attempt+1)
+            if attempt < max_retries - 1:
+                time.sleep(3)
+            else:
+                DATABASE_ENABLED = False
 else:
     logger.warning("Database module not available - using CSV fallback")
 
