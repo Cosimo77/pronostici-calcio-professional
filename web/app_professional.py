@@ -40,12 +40,18 @@ sys.path.insert(0, os.path.dirname(__file__))
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 # Import database module (PostgreSQL)
+import logging
+_import_logger = logging.getLogger(__name__)
 try:
     from database import init_db, BetModel, is_db_available, close_db_pool
     DATABASE_ENABLED = True
-except ImportError:
+    _import_logger.info("✅ DATABASE MODULE IMPORTED SUCCESSFULLY - DATABASE_ENABLED = True")
+except ImportError as e:
     DATABASE_ENABLED = False
-    print("⚠️ Database module non disponibile - using CSV fallback")
+    _import_logger.error(f"❌ IMPORT ERROR: Database module import failed: {e}", exc_info=True)
+except Exception as e:
+    DATABASE_ENABLED = False
+    _import_logger.error(f"❌ UNEXPECTED ERROR during database import: {e}", exc_info=True)
 
 # Import diario storage adapter (auto-fallback DB → CSV)
 from diario_storage import DiarioStorage
@@ -232,6 +238,7 @@ logger.info("Cache Manager initialized",
 
 # ==================== DATABASE INITIALIZATION ====================
 # Inizializza PostgreSQL connection pool (con retry per Render env vars)
+logger.info(f"🔍 PRE-INIT CHECK: DATABASE_ENABLED = {DATABASE_ENABLED}")
 if DATABASE_ENABLED:
     import time
     db_initialized = False
@@ -239,6 +246,7 @@ if DATABASE_ENABLED:
     
     for attempt in range(max_retries):
         try:
+            logger.info(f"🔧 Tentativo {attempt+1}/{max_retries}: Calling init_db()...")
             db_initialized = init_db()
             if db_initialized:
                 logger.info("✅ Database initialization SUCCESS", 
@@ -261,7 +269,7 @@ if DATABASE_ENABLED:
                 logger.error("❌ Database DEFINITIVAMENTE non disponibile - usando CSV")
                 DATABASE_ENABLED = False
 else:
-    logger.warning("Database module not available - using CSV fallback")
+    logger.warning("❌ DATABASE_ENABLED = False - Database module not imported - using CSV fallback")
 
 @app.before_request 
 def log_request_info():
