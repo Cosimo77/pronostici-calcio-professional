@@ -4852,15 +4852,9 @@ if __name__ == '__main__':
         if __name__ == '__main__':
             sys.exit(1)
 
-# Cleanup handler per chiusura pulita risorse
-@app.teardown_appcontext
-def shutdown_database(exception=None):
-    """Chiude connection pool database al shutdown"""
-    if DATABASE_ENABLED:
-        try:
-            close_db_pool()
-        except Exception as e:
-            logger.error("Errore chiusura database", error=str(e))
+# NOTA: Connection pool rimane aperto per tutta la vita dell'app
+# Non usiamo teardown_appcontext perché chiuderebbe il pool dopo OGNI richiesta
+# Il pool si chiude automaticamente quando il processo gunicorn termina
 
 # Configurazione per deployment produzione (Gunicorn)
 if __name__ != '__main__':
