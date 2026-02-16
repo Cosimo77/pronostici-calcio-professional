@@ -31,6 +31,8 @@ class DiarioStorage:
     def _use_database():
         """Check se usare database o CSV"""
         use_db = DB_AVAILABLE and is_db_available()
+        # DEBUG: Print esplicito per essere sicuri che appaia nei log
+        print(f"🔍 _use_database() check - DB_AVAILABLE={DB_AVAILABLE}, is_db_available()={is_db_available() if DB_AVAILABLE else 'N/A'}, result={use_db}")
         logger.info(f"🔍 _use_database() check",
                     DB_AVAILABLE=DB_AVAILABLE,
                     is_db_available=is_db_available() if DB_AVAILABLE else "N/A",
