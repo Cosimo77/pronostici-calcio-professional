@@ -130,6 +130,17 @@ def get_db_connection():
     conn = None
     try:
         conn = _connection_pool.getconn()
+        
+        # Test connessione viva (fix "connection already closed")
+        try:
+            with conn.cursor() as cur:
+                cur.execute("SELECT 1")
+        except Exception:
+            # Connessione morta, chiudila e prendine una nuova
+            logger.warning("⚠️ Connessione stale rilevata, riconnetto...")
+            conn.close()
+            conn = _connection_pool.getconn()
+        
         yield conn
         conn.commit()  # Auto-commit se nessuna exception
     except Exception as e:

@@ -4315,62 +4315,45 @@ def api_diario_add():
             if field not in data:
                 return jsonify({'success': False, 'error': f'Campo obbligatorio: {field}'}), 400
         
-        csv_file = 'tracking_giocate.csv'
+        # Check duplicati (verifica su tutte le bet pending)
+        pending_bets = DiarioStorage.get_all_bets(risultato='PENDING')
         
-        # Crea/carica CSV
-        if os.path.exists(csv_file):
-            df = pd.read_csv(csv_file)
-        else:
-            df = pd.DataFrame(columns=['Data', 'Partita', 'Mercato', 'Quota_Sistema', 'Quota_Sisal', 
-                                      'EV_Modello', 'EV_Realistico', 'Stake', 'Risultato', 'Profit', 'Note'])
-        
-        # ⚠️ CONTROLLO DUPLICATI: Verifica se partita+mercato già in pending
-        if len(df) > 0:
-            duplicati = df[
-                (df['Partita'] == data['partita']) &
-                (df['Mercato'] == data['mercato']) &
-                (df['Risultato'] == 'PENDING')
-            ]
-            
-            if len(duplicati) > 0:
-                existing_quota = float(duplicati.iloc[0]['Quota_Sisal'])  # type: ignore[index]
-                existing_stake = duplicati.iloc[0]['Stake']  # type: ignore[index]
-                
+        for bet in pending_bets:
+            if bet['partita'] == data['partita'] and bet['mercato'] == data['mercato']:
                 logger.warning(f"⚠️ Duplicato rilevato: {data['partita']} {data['mercato']} già in pending")
                 
                 return jsonify({
                     'success': False,
                     'error': 'duplicate',
-                    'message': f"⚠️ DUPLICATO!\n\n{data['partita']}\n{data['mercato']} è già nel tuo diario.\n\nPuntata esistente:\n• Quota: {existing_quota}\n• Stake: {existing_stake}\n\nVai al diario per modificarla.",
+                    'message': f"⚠️ DUPLICATO!\n\n{data['partita']}\n{data['mercato']} è già nel tuo diario.\n\nPuntata esistente:\n• Quota: {bet['quota_sisal']}\n• Stake: {bet['stake']}\n\nVai al diario per modificarla.",
                     'existing_bet': {
-                        'partita': duplicati.iloc[0]['Partita'],  # type: ignore[index]
-                        'mercato': duplicati.iloc[0]['Mercato'],  # type: ignore[index]
-                        'quota': existing_quota,
-                        'stake': str(existing_stake)
+                        'partita': bet['partita'],
+                        'mercato': bet['mercato'],
+                        'quota': bet['quota_sisal'],
+                        'stake': str(bet['stake'])
                     }
                 }), 409  # HTTP 409 Conflict
         
-        # Nuova riga (arrotonda quote a 2 decimali)
+        # Crea bet tramite DiarioStorage (PostgreSQL o CSV fallback)
         quota_arrotondata = round(float(data['quota']), 2)
         
-        nuova_bet = {
-            'Data': data.get('data', datetime.now().strftime('%d/%m/%Y')),
-            'Partita': data['partita'],
-            'Mercato': data['mercato'],
-            'Quota_Sistema': quota_arrotondata,
-            'Quota_Sisal': quota_arrotondata,
-            'EV_Modello': data.get('ev_modello', 'N/A'),
-            'EV_Realistico': data.get('ev_reale', 'N/A'),
-            'Stake': data['stake'],
-            'Risultato': 'PENDING',
-            'Profit': 0.0,
-            'Note': data.get('note', '')
+        bet_data = {
+            'data': data.get('data', datetime.now().strftime('%d/%m/%Y')),
+            'partita': data['partita'],
+            'mercato': data['mercato'],
+            'quota_sistema': quota_arrotondata,
+            'quota_sisal': quota_arrotondata,
+            'ev_modello': data.get('ev_modello', 'N/A'),
+            'ev_realistico': data.get('ev_reale', 'N/A'),
+            'stake': data['stake'],
+            'risultato': 'PENDING',
+            'profit': 0.0,
+            'note': data.get('note', '')
         }
         
-        df = pd.concat([df, pd.DataFrame([nuova_bet])], ignore_index=True)
-        df.to_csv(csv_file, index=False)
+        bet_id = DiarioStorage.create_bet(bet_data)
         
-        logger.info(f"✅ Puntata aggiunta: {data['partita']} {data['mercato']}")
+        logger.info(f"✅ Puntata aggiunta (ID {bet_id}): {data['partita']} {data['mercato']}")
         
         return jsonify({'success': True, 'message': 'Puntata salvata'})
     
