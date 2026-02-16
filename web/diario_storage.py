@@ -30,7 +30,12 @@ class DiarioStorage:
     @staticmethod
     def _use_database():
         """Check se usare database o CSV"""
-        return DB_AVAILABLE and is_db_available()
+        use_db = DB_AVAILABLE and is_db_available()
+        logger.info(f"🔍 _use_database() check",
+                    DB_AVAILABLE=DB_AVAILABLE,
+                    is_db_available=is_db_available() if DB_AVAILABLE else "N/A",
+                    result=use_db)
+        return use_db
     
     @staticmethod
     def get_all_bets(risultato: Optional[str] = None) -> List[Dict]:
