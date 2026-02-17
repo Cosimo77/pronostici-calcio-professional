@@ -80,15 +80,21 @@ class DiarioStorage:
         """Crea nuova bet"""
         if DiarioStorage._use_database():
             try:
-                # Converti data da formato italiano DD/MM/YYYY a oggetto date Python
+                # Converti data da stringa a oggetto date Python (supporta ISO e italiano)
                 if 'data' in data and isinstance(data['data'], str):
                     try:
-                        # Parsing da formato italiano
-                        data_obj = datetime.strptime(data['data'], '%d/%m/%Y').date()
+                        # Prova prima formato ISO (da HTML input type="date"): YYYY-MM-DD
+                        data_obj = datetime.strptime(data['data'], '%Y-%m-%d').date()
                         data['data'] = data_obj
                     except ValueError:
-                        # Se parsing fallisce, usa data corrente
-                        data['data'] = datetime.now().date()
+                        try:
+                            # Fallback: formato italiano DD/MM/YYYY
+                            data_obj = datetime.strptime(data['data'], '%d/%m/%Y').date()
+                            data['data'] = data_obj
+                        except ValueError:
+                            # Ultimo fallback: usa data corrente
+                            data['data'] = datetime.now().date()
+                            logger.warning(f"⚠️ Formato data non riconosciuto: {data['data']}, uso data odierna")
                 
                 return BetModel.create(data)
             except Exception as e:
