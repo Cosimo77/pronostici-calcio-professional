@@ -152,6 +152,21 @@ def get_db_connection():
         if conn:
             _connection_pool.putconn(conn)
 
+def release_db_connection(conn):
+    """
+    Rilascia connessione al pool (da usare in finally quando non usi context manager)
+    
+    Args:
+        conn: Oggetto connessione ottenuto con _connection_pool.getconn()
+    """
+    global _connection_pool
+    
+    if _connection_pool and conn:
+        try:
+            _connection_pool.putconn(conn)
+        except Exception as e:
+            logger.warning("⚠️ Errore rilascio connessione al pool", error=str(e))
+
 def close_db_pool():
     """Chiudi tutte le connessioni pool (chiamare a shutdown app)"""
     global _connection_pool
