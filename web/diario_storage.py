@@ -82,6 +82,16 @@ class DiarioStorage:
         """Crea nuova bet"""
         if DiarioStorage._use_database():
             try:
+                # Converti data da formato italiano DD/MM/YYYY a oggetto date Python
+                if 'data' in data and isinstance(data['data'], str):
+                    try:
+                        # Parsing da formato italiano
+                        data_obj = datetime.strptime(data['data'], '%d/%m/%Y').date()
+                        data['data'] = data_obj
+                    except ValueError:
+                        # Se parsing fallisce, usa data corrente
+                        data['data'] = datetime.now().date()
+                
                 return BetModel.create(data)
             except Exception as e:
                 logger.error("Database insert failed, falling back to CSV", error=str(e))
