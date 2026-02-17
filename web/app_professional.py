@@ -3770,6 +3770,9 @@ def api_migrate_csv_to_postgres():
         # Migra ogni riga
         for idx, row in df.iterrows():
             try:
+                # Cast idx a int per evitare warning Pylance su Hashable
+                row_num: int = int(idx) + 1
+                
                 # Parse data (supporta dd/mm/yyyy e yyyy-mm-dd)
                 data_str = str(row['Data'])
                 try:
@@ -3805,12 +3808,12 @@ def api_migrate_csv_to_postgres():
                 # Usa DiarioStorage per creare (va automaticamente in PostgreSQL)
                 bet_id = DiarioStorage.create_bet(bet_data)
                 
-                logger.info(f"✅ Migrata riga {idx+1}: {bet_data['partita']}", bet_id=bet_id)
+                logger.info(f"✅ Migrata riga {row_num}: {bet_data['partita']}", bet_id=bet_id)
                 stats['migrated'] += 1
                 
             except Exception as e:
-                logger.error(f"❌ Errore riga {idx+1}", error=str(e))
-                stats['errors'].append({'row': idx+1, 'error': str(e), 'partita': str(row.get('Partita', 'unknown'))})
+                logger.error(f"❌ Errore riga {row_num}", error=str(e))
+                stats['errors'].append({'row': row_num, 'error': str(e), 'partita': str(row.get('Partita', 'unknown'))})
                 stats['skipped'] += 1
         
         # Report finale
