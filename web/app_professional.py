@@ -3829,6 +3829,98 @@ def api_migrate_csv_to_postgres():
         logger.error("Migration endpoint failed", error=str(e))
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@app.route('/api/database/run_migration_002', methods=['POST'])
+@limiter.limit("5 per hour")  # Operation critica, limit molto aggressivo
+def api_run_migration_002():
+    """
+    Applica migrazione 002: Aggiunge tabella bet_groups per scommesse multiple
+    ATTENZIONE: Eseguire solo UNA volta!
+    """
+    try:
+        from database.connection import get_db_connection, release_db_connection
+        
+        migration_sql = """
+            -- Tabella per scommesse multiple
+            CREATE TABLE IF NOT EXISTS bet_groups (
+                id SERIAL PRIMARY KEY,
+                data DATE NOT NULL,
+                nome VARCHAR(255),
+                tipo_multipla VARCHAR(50) NOT NULL,
+                num_eventi INT NOT NULL CHECK (num_eventi >= 2),
+                quota_totale DECIMAL(10, 2) NOT NULL CHECK (quota_totale >= 1.01),
+                stake DECIMAL(10, 2) NOT NULL CHECK (stake > 0),
+                risultato VARCHAR(10) NOT NULL DEFAULT 'PENDING',
+                profit DECIMAL(10, 2) DEFAULT 0.0,
+                note TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+            
+            -- Aggiungi campo group_id a bets
+            ALTER TABLE bets ADD COLUMN IF NOT EXISTS group_id INT REFERENCES bet_groups(id) ON DELETE CASCADE;
+            
+            -- Indici per performance
+            CREATE INDEX IF NOT EXISTS idx_bet_groups_risultato ON bet_groups(risultato);
+            CREATE INDEX IF NOT EXISTS idx_bet_groups_data ON bet_groups(data DESC);
+            CREATE INDEX IF NOT EXISTS idx_bets_group_id ON bets(group_id);
+        """
+        
+        conn = None
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            
+            logger.info("🚀 Inizio migrazione 002 (scommesse multiple)...")
+            
+            # Esegui migration SQL
+            cursor.execute(migration_sql)
+            conn.commit()
+            
+            # Verifica tabella creata
+            cursor.execute("""
+                SELECT table_name 
+                FROM information_schema.tables 
+                WHERE table_schema = 'public' AND table_name = 'bet_groups'
+            """)
+            
+            bet_groups_exists = cursor.fetchone() is not None
+            
+            # Verifica campo group_id
+            cursor.execute("""
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 'bets' AND column_name = 'group_id'
+            """)
+            
+            group_id_exists = cursor.fetchone() is not None
+            
+            logger.info("✅ Migrazione 002 completata", 
+                       bet_groups_table=bet_groups_exists, 
+                       group_id_field=group_id_exists)
+            
+            return jsonify({
+                'success': True,
+                'message': 'Migrazione 002 completata con successo',
+                'verification': {
+                    'bet_groups_table_created': bet_groups_exists,
+                    'group_id_field_added': group_id_exists
+                }
+            })
+            
+        except Exception as e:
+            if conn:
+                conn.rollback()
+            logger.error("❌ Errore migrazione 002", error=str(e))
+            raise
+            
+        finally:
+            if conn:
+                release_db_connection(conn)
+    
+    except Exception as e:
+        logger.error("Migration 002 endpoint failed", error=str(e))
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @app.route('/api/automation/status')
 @limiter.limit("60 per minute")
 def api_automation_status():
