@@ -702,15 +702,11 @@
             }
         }
 
-        // Carica puntate completate (lazy loading ottimizzato con skeleton)
-        document.getElementById('completed-tab').addEventListener('click', function() {
-            // Skip se già caricato
-            if (completedLoaded) return;
-            completedLoaded = true;
-            
+        // Funzione per caricare puntate completate
+        async function loadCompletedBets() {
             const container = document.getElementById('completed-bets');
             
-            // Mostra skeleton IMMEDIATAMENTE (evita blocking handler warning)
+            // Mostra skeleton
             container.innerHTML = `
                 <div class="text-center text-muted py-4">
                     <div class="spinner-border spinner-border-sm me-2" role="status"></div>
@@ -718,26 +714,22 @@
                 </div>
             `;
             
-            // Fetch async non bloccante
-            setTimeout(async () => {
-                try {
-                    const response = await fetch('/api/diario/completed');
-                    const data = await response.json();
-                    
-                    // Gestione errori API
-                    if (data.error) {
-                        container.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> Errore: ${data.error}</div>`;
-                        return;
-                    }
+            try {
+                const response = await fetch('/api/diario/completed');
+                const data = await response.json();
                 
+                if (data.error) {
+                    container.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> Errore: ${data.error}</div>`;
+                    return;
+                }
+            
                 if (!data.bets || data.bets.length === 0) {
                     container.innerHTML = '<p class="text-muted text-center">Nessuna puntata completata ancora</p>';
                     return;
                 }
-                
+            
                 let html = '';
                 data.bets.forEach(bet => {
-                    // Gestione stili per risultato
                     let cardClass, icon, profitClass;
                     
                     if (bet.risultato === 'WIN') {
@@ -745,15 +737,14 @@
                         icon = 'trophy-fill';
                         profitClass = 'text-success';
                     } else if (bet.risultato === 'SKIP') {
-                        cardClass = 'bet-skip';  // Grigio neutro
+                        cardClass = 'bet-skip';
                         icon = 'dash-circle';
                         profitClass = 'text-muted';
                     } else if (bet.risultato === 'VOID') {
-                        cardClass = 'bet-skip';  // Grigio anche per VOID
+                        cardClass = 'bet-skip';
                         icon = 'arrow-clockwise';
                         profitClass = 'text-muted';
                     } else {
-                        // LOSS
                         cardClass = 'bet-loss';
                         icon = 'x-circle-fill';
                         profitClass = 'text-danger';
@@ -789,11 +780,17 @@
                 });
                 
                 container.innerHTML = html;
-                } catch (error) {
-                    container.innerHTML = '<p class="text-danger">Errore caricamento dati</p>';
-                    console.error('Errore caricamento completed:', error);
-                }
-            }, 0);  // setTimeout 0ms = async non bloccante
+            } catch (error) {
+                container.innerHTML = '<p class="text-danger">Errore caricamento dati</p>';
+                console.error('Errore caricamento completed:', error);
+            }
+        }
+
+        // Carica puntate completate (lazy loading ottimizzato)
+        document.getElementById('completed-tab').addEventListener('click', function() {
+            if (completedLoaded) return;
+            completedLoaded = true;
+            loadCompletedBets();
         });
 
         // Form submit nuova puntata
