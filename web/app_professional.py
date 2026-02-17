@@ -4162,21 +4162,22 @@ def calculate_kelly_stake(prob_win: float, quota: float, bankroll: float, kelly_
 def update_bankroll_from_bets():
     """
     Aggiorna bankroll corrente da profitti/perdite bets completate
+    PostgreSQL-backed via DiarioStorage
     """
     config = load_bankroll_config()
-    csv_file = 'tracking_giocate.csv'
     
-    if not os.path.exists(csv_file):
-        return config
+    # Carica bets da PostgreSQL/CSV fallback
+    all_bets = DiarioStorage.get_all_bets()
     
-    df = pd.read_csv(csv_file)
+    # Filtra solo WIN/LOSS (esclude VOID e SKIP)
+    completed_bets = [
+        bet for bet in all_bets 
+        if bet.get('risultato') in ['WIN', 'LOSS']
+    ]
     
-    # Solo WIN/LOSS (esclude VOID e SKIP)
-    df_completed = df[df['Risultato'].isin(['WIN', 'LOSS'])].copy()
-    
-    if len(df_completed) > 0:
-        df_completed['Profit'] = pd.to_numeric(df_completed['Profit'], errors='coerce')
-        total_profit = df_completed['Profit'].sum()
+    if len(completed_bets) > 0:
+        # Somma profitti
+        total_profit = sum(float(bet.get('profit', 0.0)) for bet in completed_bets)
         
         # Bankroll corrente = iniziale + profit/loss
         config['bankroll_corrente'] = config['bankroll_iniziale'] + total_profit
@@ -4259,11 +4260,12 @@ def diario_betting():
 @app.route('/api/diario/stats', methods=['GET'])
 @limiter.limit("60 per minute")
 def api_diario_stats():
-    """Statistiche globali diario betting"""
+    """Statistiche globali diario betting - PostgreSQL backed"""
     try:
-        csv_file = 'tracking_giocate.csv'
+        # Carica bets da PostgreSQL/CSV fallback via DiarioStorage
+        all_bets = DiarioStorage.get_all_bets()
         
-        if not os.path.exists(csv_file):
+        if len(all_bets) == 0:
             return jsonify({
                 'total': 0,
                 'pending': 0,
@@ -4273,27 +4275,25 @@ def api_diario_stats():
                 'profit': 0.0
             })
         
-        df = pd.read_csv(csv_file)
-        
         # Statistiche base
-        total = len(df)
-        pending = len(df[df['Risultato'] == 'PENDING'])
-        skipped = len(df[df['Risultato'] == 'SKIP'])  # MONITOR non giocate
-        completed = len(df[df['Risultato'].isin(['WIN', 'LOSS', 'VOID', 'SKIP'])])  # Tutte chiuse
+        total = len(all_bets)
+        pending = len([b for b in all_bets if b.get('risultato') == 'PENDING'])
+        skipped = len([b for b in all_bets if b.get('risultato') == 'SKIP'])
+        completed = len([b for b in all_bets if b.get('risultato') in ['WIN', 'LOSS', 'VOID', 'SKIP']])
         
         # ROI e Win Rate solo su completate GIOCATE (escludi SKIP)
-        df_completed = df[df['Risultato'].isin(['WIN', 'LOSS'])].copy()
+        completed_bets = [
+            bet for bet in all_bets 
+            if bet.get('risultato') in ['WIN', 'LOSS']
+        ]
         
-        if len(df_completed) > 0:
-            df_completed['Stake'] = pd.to_numeric(df_completed['Stake'], errors='coerce')
-            df_completed['Profit'] = pd.to_numeric(df_completed['Profit'], errors='coerce')
-            
-            total_stake = df_completed['Stake'].sum()
-            total_profit = df_completed['Profit'].sum()
+        if len(completed_bets) > 0:
+            total_stake = sum(float(bet.get('stake', 0.0)) for bet in completed_bets)
+            total_profit = sum(float(bet.get('profit', 0.0)) for bet in completed_bets)
             roi = (total_profit / total_stake * 100) if total_stake > 0 else 0
             
-            wins = len(df_completed[df_completed['Risultato'] == 'WIN'])
-            win_rate = (wins / len(df_completed) * 100) if len(df_completed) > 0 else 0
+            wins = len([b for b in completed_bets if b.get('risultato') == 'WIN'])
+            win_rate = (wins / len(completed_bets) * 100) if len(completed_bets) > 0 else 0
         else:
             roi = 0.0
             win_rate = 0.0
@@ -4301,6 +4301,12 @@ def api_diario_stats():
         
         # Aggiorna bankroll da bets
         bankroll_config = update_bankroll_from_bets()
+        
+        # Crea DataFrame per calculate_risk_metrics (richiede formato DataFrame)
+        df_completed = pd.DataFrame(completed_bets) if len(completed_bets) > 0 else pd.DataFrame()
+        if not df_completed.empty:
+            # Normalizza nomi colonne (risultato → Risultato per compatibilità)
+            df_completed = df_completed.rename(columns={'risultato': 'Risultato', 'profit': 'Profit'})
         
         # Calcola risk metrics
         risk_metrics = calculate_risk_metrics(df_completed)
