@@ -43,9 +43,9 @@ class BetModel:
                 cur.execute("""
                     INSERT INTO bets (
                         data, partita, mercato, quota_sistema, quota_sisal,
-                        ev_modello, ev_realistico, stake, risultato, profit, note
+                        ev_modello, ev_realistico, stake, risultato, profit, note, group_id
                     ) VALUES (
-                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
                     ) RETURNING id;
                 """, (
                     data.get('data', datetime.now().date()),
@@ -58,11 +58,13 @@ class BetModel:
                     str(data['stake']),  # Può essere 'MONITOR' o numero
                     data.get('risultato', 'PENDING'),
                     data.get('profit', 0.0),
-                    data.get('note', '')
+                    data.get('note', ''),
+                    data.get('group_id', None)  # NULL per singole, ID per multiple
                 ))
                 
                 bet_id = cur.fetchone()[0]
-                logger.info("✅ Bet creata", bet_id=bet_id, partita=data['partita'])
+                logger.info("✅ Bet creata", bet_id=bet_id, partita=data['partita'], 
+                           group_id=data.get('group_id'))
                 return bet_id
     
     @staticmethod
@@ -85,7 +87,7 @@ class BetModel:
                     cur.execute("""
                         SELECT id, data, partita, mercato, quota_sistema, quota_sisal,
                                ev_modello, ev_realistico, stake, risultato, profit, note,
-                               created_at, updated_at
+                               created_at, updated_at, group_id
                         FROM bets
                         WHERE risultato = %s
                         ORDER BY data DESC, id DESC;
@@ -94,7 +96,7 @@ class BetModel:
                     cur.execute("""
                         SELECT id, data, partita, mercato, quota_sistema, quota_sisal,
                                ev_modello, ev_realistico, stake, risultato, profit, note,
-                               created_at, updated_at
+                               created_at, updated_at, group_id
                         FROM bets
                         ORDER BY data DESC, id DESC;
                     """)
@@ -118,7 +120,8 @@ class BetModel:
                         'profit': float(row[10]),
                         'note': row[11] or '',
                         'created_at': row[12].isoformat() if row[12] else None,
-                        'updated_at': row[13].isoformat() if row[13] else None
+                        'updated_at': row[13].isoformat() if row[13] else None,
+                        'group_id': row[14]  # NULL per singole, ID per multiple
                     })
                 
                 return bets

@@ -4543,6 +4543,202 @@ def api_diario_delete():
         logger.error(f"❌ Errore eliminazione puntata: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
+# ==================== SCOMMESSE MULTIPLE ====================
+
+@app.route('/api/diario/add_multipla', methods=['POST'])
+@limiter.limit("30 per minute")
+def api_diario_add_multipla():
+    """
+    Crea nuova scommessa multipla (doppia, tripla, ecc.)
+    
+    Request body:
+    {
+        "data": "2026-02-20",  // Opzionale, default oggi
+        "nome": "Tripla Serie A Weekend",  // Opzionale
+        "stake": 5.0,
+        "note": "Combo value",  // Opzionale
+        "eventi": [
+            {"partita": "Inter vs Milan", "mercato": "1", "quota": 2.10},
+            {"partita": "Roma vs Lazio", "mercato": "OVER_25", "quota": 1.85},
+            {"partita": "Napoli vs Juve", "mercato": "GG", "quota": 1.95}
+        ]
+    }
+    """
+    try:
+        data = request.json
+        if not data or 'eventi' not in data or 'stake' not in data:
+            return jsonify({'success': False, 'error': 'Parametri mancanti'}), 400
+        
+        eventi = data['eventi']
+        
+        if len(eventi) < 2:
+            return jsonify({'success': False, 'error': 'Multipla richiede almeno 2 eventi'}), 400
+        
+        # Validazione eventi
+        for idx, evento in enumerate(eventi, 1):
+            if not all(k in evento for k in ['partita', 'mercato', 'quota']):
+                return jsonify({'success': False, 'error': f'Evento {idx} incompleto'}), 400
+        
+        # Calcola quota totale (prodotto)
+        quota_totale = 1.0
+        for evento in eventi:
+            quota_totale *= float(evento['quota'])
+        
+        # Prepara dati multipla
+        multipla_data = {
+            'data': data.get('data', datetime.now().strftime('%Y-%m-%d')),
+            'nome': data.get('nome', ''),
+            'quota_totale': round(quota_totale, 2),
+            'stake': float(data['stake']),
+            'note': data.get('note', '')
+        }
+        
+        # Prepara eventi (aggiungi stake 0 per singoli eventi, profit calcolato sul group)
+        eventi_data = []
+        for evento in eventi:
+            eventi_data.append({
+                'partita': evento['partita'],
+                'mercato': evento['mercato'],
+                'quota_sisal': float(evento['quota']),
+                'quota_sistema': float(evento['quota']),
+                'stake': '0',  # Stake virtuale, quello reale è sul group
+                'ev_modello': evento.get('ev_modello', 'N/A'),
+                'ev_realistico': evento.get('ev_reale', 'N/A'),
+                'note': evento.get('note', '')
+            })
+        
+        # Crea multipla con eventi
+        group_id = DiarioStorage.create_multipla(multipla_data, eventi_data)
+        
+        logger.info(f"✅ Multipla creata (ID {group_id}): {len(eventi)} eventi, quota {quota_totale:.2f}")
+        
+        return jsonify({
+            'success': True, 
+            'message': 'Multipla salvata',
+            'group_id': group_id,
+            'quota_totale': quota_totale
+        })
+    
+    except NotImplementedError:
+        return jsonify({'success': False, 'error': 'Multiple supportate solo con database PostgreSQL'}), 501
+    except Exception as e:
+        logger.error(f"❌ Errore add multipla: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/diario/multiple', methods=['GET'])
+@limiter.limit("60 per minute")
+def api_diario_get_multiple():
+    """
+    Recupera tutte le multiple (pending + completate)
+    
+    Query param:
+        ?risultato=PENDING  // Opzionale: filtra per risultato
+    """
+    try:
+        risultato = request.args.get('risultato')
+        multiple = DiarioStorage.get_all_multiple(risultato=risultato)
+        
+        return jsonify({'multiple': multiple})
+    
+    except Exception as e:
+        logger.error(f"❌ Errore get multiple: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/diario/multiple_pending', methods=['GET'])
+@limiter.limit("60 per minute")
+def api_diario_get_multiple_pending():
+    """Recupera solo multiple PENDING"""
+    try:
+        multiple = DiarioStorage.get_all_multiple(risultato='PENDING')
+        return jsonify({'multiple': multiple})
+    except Exception as e:
+        logger.error(f"❌ Errore get multiple pending: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/diario/multiple_completed', methods=['GET'])
+@limiter.limit("60 per minute")
+def api_diario_get_multiple_completed():
+    """Recupera solo multiple completate (WIN/LOSS/VOID)"""
+    try:
+        all_multiple = DiarioStorage.get_all_multiple()
+        completed = [m for m in all_multiple if m['risultato'] in ['WIN', 'LOSS', 'VOID']]
+        return jsonify({'multiple': completed})
+    except Exception as e:
+        logger.error(f"❌ Errore get multiple completed: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/diario/update_evento_multipla', methods=['POST'])
+@limiter.limit("30 per minute")
+def api_diario_update_evento_multipla():
+    """
+    Aggiorna risultato di un singolo evento in una multipla
+    Ricalcola automaticamente risultato finale multipla
+    
+    Request body:
+    {
+        "bet_id": 123,  // ID evento (non group_id!)
+        "risultato": "WIN"  // WIN, LOSS, VOID, SKIP
+    }
+    """
+    try:
+        data = request.json
+        if not data or 'bet_id' not in data or 'risultato' not in data:
+            return jsonify({'success': False, 'error': 'Parametri mancanti'}), 400
+        
+        bet_id = int(data['bet_id'])
+        risultato = data['risultato']
+        
+        if risultato not in ['WIN', 'LOSS', 'VOID', 'SKIP']:
+            return jsonify({'success': False, 'error': 'Risultato non valido'}), 400
+        
+        # Aggiorna evento + ricalcola multipla
+        profit_multipla = DiarioStorage.update_evento_multipla(bet_id, risultato)
+        
+        logger.info(f"✅ Evento multipla aggiornato: bet_id={bet_id} → {risultato}, profit_multipla=€{profit_multipla:.2f}")
+        
+        return jsonify({
+            'success': True,
+            'profit_multipla': round(profit_multipla, 2),
+            'message': f'Evento aggiornato → {risultato}'
+        })
+    
+    except ValueError as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
+    except NotImplementedError:
+        return jsonify({'success': False, 'error': 'Multiple supportate solo con database PostgreSQL'}), 501
+    except Exception as e:
+        logger.error(f"❌ Errore update evento multipla: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/diario/delete_multipla', methods=['POST'])
+@limiter.limit("30 per minute")
+def api_diario_delete_multipla():
+    """
+    Elimina multipla (CASCADE elimina anche tutti eventi associati)
+    
+    Request body:
+    {
+        "group_id": 5
+    }
+    """
+    try:
+        data = request.json
+        if not data or 'group_id' not in data:
+            return jsonify({'success': False, 'error': 'group_id richiesto'}), 400
+        
+        group_id = int(data['group_id'])
+        success = DiarioStorage.delete_multipla(group_id)
+        
+        if success:
+            logger.info(f"🗑️ Multipla eliminata: group_id={group_id}")
+            return jsonify({'success': True})
+        else:
+            return jsonify({'success': False, 'error': 'Eliminazione fallita'}), 500
+    
+    except Exception as e:
+        logger.error(f"❌ Errore delete multipla: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @app.route('/api/diario/reset', methods=['POST'])
 @limiter.limit("5 per hour")  # Limit aggressivo per operazione critica
 def api_diario_reset():

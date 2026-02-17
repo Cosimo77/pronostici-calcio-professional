@@ -226,3 +226,177 @@ class DiarioStorage:
             }
         
         return None
+    
+    # ==================== SCOMMESSE MULTIPLE ====================
+    
+    @staticmethod
+    def create_multipla(multipla_data: Dict, eventi: List[Dict]) -> int:
+        """
+        Crea scommessa multipla con eventi associati
+        
+        Args:
+            multipla_data: {
+                'data': date | str,
+                'nome': str,
+                'tipo_multipla': str,
+                'quota_totale': float,
+                'stake': float,
+                'note': str
+            }
+            eventi: List di dict (come in create_bet) senza risultato
+        
+        Returns:
+            group_id: ID della multipla creata
+        """
+        if not DiarioStorage._use_database():
+            raise NotImplementedError("Multiple supportate solo con database PostgreSQL")
+        
+        try:
+            from database.bet_group_model import BetGroupModel
+            
+            # Converti data se stringa
+            if 'data' in multipla_data and isinstance(multipla_data['data'], str):
+                try:
+                    multipla_data['data'] = datetime.strptime(multipla_data['data'], '%Y-%m-%d').date()
+                except ValueError:
+                    try:
+                        multipla_data['data'] = datetime.strptime(multipla_data['data'], '%d/%m/%Y').date()
+                    except ValueError:
+                        multipla_data['data'] = datetime.now().date()
+            
+            # Valida numero eventi
+            if len(eventi) < 2:
+                raise ValueError("Multipla richiede almeno 2 eventi")
+            
+            # Calcola tipo multipla automaticamente
+            num_eventi = len(eventi)
+            tipi = {2: 'doppia', 3: 'tripla', 4: 'quadrupla', 5: 'quintupla', 
+                   6: 'sestina', 7: 'settina', 8: 'ottina'}
+            tipo_multipla = tipi.get(num_eventi, f'{num_eventi}-pla')
+            
+            multipla_data['tipo_multipla'] = tipo_multipla
+            multipla_data['num_eventi'] = num_eventi
+            
+            # Crea group
+            group_id = BetGroupModel.create(multipla_data)
+            
+            # Crea eventi associati
+            for evento in eventi:
+                evento_data = evento.copy()
+                evento_data['risultato'] = 'PENDING'
+                evento_data['profit'] = 0.0
+                evento_data['group_id'] = group_id  # Link a multipla
+                
+                # Converti data evento
+                if 'data' not in evento_data:
+                    evento_data['data'] = multipla_data['data']
+                elif isinstance(evento_data['data'], str):
+                    try:
+                        evento_data['data'] = datetime.strptime(evento_data['data'], '%Y-%m-%d').date()
+                    except ValueError:
+                        try:
+                            evento_data['data'] = datetime.strptime(evento_data['data'], '%d/%m/%Y').date()
+                        except ValueError:
+                            evento_data['data'] = multipla_data['data']
+                
+                BetModel.create(evento_data)
+            
+            logger.info("Multipla creata con successo", group_id=group_id, num_eventi=num_eventi)
+            return group_id
+            
+        except ImportError:
+            raise NotImplementedError("BetGroupModel non disponibile")
+        except Exception as e:
+            logger.error("Errore creazione multipla", error=str(e))
+            raise
+    
+    @staticmethod
+    def get_all_multiple(risultato: Optional[str] = None) -> List[Dict]:
+        """
+        Ottieni tutte le multiple (con eventi nested)
+        
+        Args:
+            risultato: 'PENDING', 'WIN', 'LOSS', 'VOID' (None = tutte)
+        
+        Returns:
+            List di dict con chiave 'eventi' contenente lista eventi
+        """
+        if not DiarioStorage._use_database():
+            return []
+        
+        try:
+            from database.bet_group_model import BetGroupModel
+            
+            groups = BetGroupModel.get_all(risultato=risultato)
+            
+            # Arricchisci ogni multipla con eventi nested
+            for group in groups:
+                group_id = group['id']
+                # Get eventi associati a questa multipla
+                eventi = [bet for bet in DiarioStorage.get_all_bets() if bet.get('group_id') == group_id]
+                group['eventi'] = eventi
+            
+            return groups
+            
+        except ImportError:
+            logger.warning("BetGroupModel non disponibile")
+            return []
+        except Exception as e:
+            logger.error("Errore get multiple", error=str(e))
+            return []
+    
+    @staticmethod
+    def update_evento_multipla(bet_id: int, risultato: str) -> float:
+        """
+        Aggiorna risultato di un singolo evento in una multipla
+        Poi ricalcola risultato finale della multipla
+        
+        Args:
+            bet_id: ID evento da aggiornare
+            risultato: 'WIN', 'LOSS', 'VOID', 'SKIP'
+        
+        Returns:
+            profit: Profit finale della multipla (0.0 se ancora pending)
+        """
+        if not DiarioStorage._use_database():
+            raise NotImplementedError("Multiple supportate solo con database PostgreSQL")
+        
+        try:
+            from database.bet_group_model import BetGroupModel
+            
+            # Aggiorna singolo evento (no profit, è calcolato sul group)
+            BetModel.update_result(bet_id, risultato, 0.0)
+            
+            # Recupera group_id dell'evento
+            bet = BetModel.get_by_id(bet_id)
+            if not bet or not bet.get('group_id'):
+                raise ValueError(f"Evento {bet_id} non appartiene a una multipla")
+            
+            group_id = bet['group_id']
+            
+            # Ricalcola risultato multipla
+            profit = BetGroupModel.update_risultato(group_id)
+            
+            logger.info("Evento multipla aggiornato", bet_id=bet_id, group_id=group_id, 
+                       risultato=risultato, profit_finale=profit)
+            
+            return profit
+            
+        except ImportError:
+            raise NotImplementedError("BetGroupModel non disponibile")
+        except Exception as e:
+            logger.error("Errore update evento multipla", bet_id=bet_id, error=str(e))
+            raise
+    
+    @staticmethod
+    def delete_multipla(group_id: int) -> bool:
+        """Elimina multipla (CASCADE elimina anche eventi)"""
+        if not DiarioStorage._use_database():
+            return False
+        
+        try:
+            from database.bet_group_model import BetGroupModel
+            return BetGroupModel.delete(group_id)
+        except Exception as e:
+            logger.error("Errore delete multipla", group_id=group_id, error=str(e))
+            return False
