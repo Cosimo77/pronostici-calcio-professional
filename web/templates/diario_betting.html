@@ -418,14 +418,76 @@
                                     <label for="bet-mercato" class="form-label">Mercato *</label>
                                     <select class="form-select" id="bet-mercato" required>
                                         <option value="">Seleziona mercato</option>
-                                        <option value="1X">1X (Casa o Pareggio)</option>
-                                        <option value="X2">X2 (Pareggio o Ospite)</option>
-                                        <option value="12">12 (Casa o Ospite)</option>
-                                        <option value="X">X (Pareggio)</option>
-                                        <option value="UNDER_25">Under 2.5</option>
-                                        <option value="OVER_25">Over 2.5</option>
-                                        <option value="GG">GG (Goal)</option>
-                                        <option value="NG">NG (No Goal)</option>
+                                        
+                                        <!-- 1X2 -->
+                                        <optgroup label="🎯 1X2">
+                                            <option value="1">1 (Casa)</option>
+                                            <option value="X">X (Pareggio)</option>
+                                            <option value="2">2 (Ospite)</option>
+                                        </optgroup>
+                                        
+                                        <!-- Doppia Chance -->
+                                        <optgroup label="🔀 Doppia Chance">
+                                            <option value="1X">1X (Casa o Pareggio)</option>
+                                            <option value="X2">X2 (Pareggio o Ospite)</option>
+                                            <option value="12">12 (Casa o Ospite)</option>
+                                        </optgroup>
+                                        
+                                        <!-- Over/Under -->
+                                        <optgroup label="⚽ Over/Under">
+                                            <option value="UNDER_15">Under 1.5</option>
+                                            <option value="OVER_15">Over 1.5</option>
+                                            <option value="UNDER_25">Under 2.5</option>
+                                            <option value="OVER_25">Over 2.5</option>
+                                            <option value="UNDER_35">Under 3.5</option>
+                                            <option value="OVER_35">Over 3.5</option>
+                                        </optgroup>
+                                        
+                                        <!-- Goal/No Goal -->
+                                        <optgroup label="🥅 Goal/No Goal">
+                                            <option value="GG">GG (Goal)</option>
+                                            <option value="NG">NG (No Goal)</option>
+                                        </optgroup>
+                                        
+                                        <!-- BTTS + Risultato -->
+                                        <optgroup label="🎲 BTTS + Risultato">
+                                            <option value="1_GG">1 + GG</option>
+                                            <option value="X_GG">X + GG</option>
+                                            <option value="2_GG">2 + GG</option>
+                                            <option value="1_NG">1 + NG</option>
+                                            <option value="X_NG">X + NG</option>
+                                            <option value="2_NG">2 + NG</option>
+                                        </optgroup>
+                                        
+                                        <!-- Primo Tempo -->
+                                        <optgroup label="⏱️ Primo Tempo">
+                                            <option value="1T_1">1T 1 (Casa)</option>
+                                            <option value="1T_X">1T X (Pareggio)</option>
+                                            <option value="1T_2">1T 2 (Ospite)</option>
+                                        </optgroup>
+                                        
+                                        <!-- Asian Handicap -->
+                                        <optgroup label="📊 Asian Handicap">
+                                            <option value="AH_-1">AH -1.0 (Casa)</option>
+                                            <option value="AH_-0.5">AH -0.5 (Casa)</option>
+                                            <option value="AH_+0.5">AH +0.5 (Ospite)</option>
+                                            <option value="AH_+1">AH +1.0 (Ospite)</option>
+                                        </optgroup>
+                                        
+                                        <!-- Multigol -->
+                                        <optgroup label="🎯 Multigol">
+                                            <option value="MG_1_2">Multigol 1-2</option>
+                                            <option value="MG_2_3">Multigol 2-3</option>
+                                            <option value="MG_3_4">Multigol 3-4</option>
+                                        </optgroup>
+                                        
+                                        <!-- Corner & Cartellini -->
+                                        <optgroup label="📋 Statistiche">
+                                            <option value="CORNER_OVER_9">Corner Over 9.5</option>
+                                            <option value="CORNER_UNDER_9">Corner Under 9.5</option>
+                                            <option value="CARD_OVER_4">Cartellini Over 4.5</option>
+                                            <option value="CARD_UNDER_4">Cartellini Under 4.5</option>
+                                        </optgroup>
                                     </select>
                                 </div>
                             </div>
