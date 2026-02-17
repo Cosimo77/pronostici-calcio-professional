@@ -3728,6 +3728,104 @@ def api_database_diagnostic():
         logger.error("Diagnostic endpoint failed", error=str(e))
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/database/migrate_csv', methods=['POST'])
+@limiter.limit("5 per hour")  # Limitato - operazione delicata
+def api_migrate_csv_to_postgres():
+    """
+    Migra dati da tracking_giocate.csv a PostgreSQL
+    Endpoint protetto per migrazione one-time
+    """
+    try:
+        from database import is_db_available
+        import pandas as pd
+        from datetime import datetime
+        
+        if not is_db_available():
+            return jsonify({
+                'success': False,
+                'error': 'Database PostgreSQL non disponibile'
+            }), 503
+        
+        # Path al CSV (nel repository)
+        csv_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'tracking_giocate.csv')
+        
+        if not os.path.exists(csv_path):
+            return jsonify({
+                'success': False,
+                'error': f'File CSV non trovato: {csv_path}'
+            }), 404
+        
+        # Leggi CSV
+        df = pd.read_csv(csv_path)
+        
+        stats = {
+            'total_rows': len(df),
+            'migrated': 0,
+            'skipped': 0,
+            'errors': []
+        }
+        
+        logger.info("🚀 Avvio migrazione CSV → PostgreSQL", total_rows=stats['total_rows'])
+        
+        # Migra ogni riga
+        for idx, row in df.iterrows():
+            try:
+                # Parse data (supporta dd/mm/yyyy e yyyy-mm-dd)
+                data_str = str(row['Data'])
+                try:
+                    data_obj = datetime.strptime(data_str, '%Y-%m-%d').date()
+                except ValueError:
+                    try:
+                        data_obj = datetime.strptime(data_str, '%d/%m/%Y').date()
+                    except ValueError:
+                        data_obj = datetime.now().date()
+                
+                # Converti stake (potrebbe essere "MONITOR" o numero)
+                stake_str = str(row.get('Stake', '0')).strip()
+                if stake_str.upper() == 'MONITOR' or not stake_str:
+                    stake = 0.0
+                else:
+                    stake = float(stake_str)
+                
+                # Prepara dati bet
+                bet_data = {
+                    'data': data_obj,  # Già come date object
+                    'partita': str(row['Partita']),
+                    'mercato': str(row['Mercato']),
+                    'quota_sistema': float(row.get('Quota_Sistema', 0)),
+                    'quota_sisal': float(row.get('Quota_Sisal', 0)),
+                    'ev_modello': str(row.get('EV_Modello', '')),
+                    'ev_realistico': str(row.get('EV_Realistico', '')),
+                    'stake': stake,
+                    'risultato': str(row.get('Risultato', 'PENDING')),
+                    'profit': float(row.get('Profit', 0)),
+                    'note': str(row.get('Note', ''))
+                }
+                
+                # Usa DiarioStorage per creare (va automaticamente in PostgreSQL)
+                bet_id = DiarioStorage.create_bet(bet_data)
+                
+                logger.info(f"✅ Migrata riga {idx+1}: {bet_data['partita']}", bet_id=bet_id)
+                stats['migrated'] += 1
+                
+            except Exception as e:
+                logger.error(f"❌ Errore riga {idx+1}", error=str(e))
+                stats['errors'].append({'row': idx+1, 'error': str(e), 'partita': str(row.get('Partita', 'unknown'))})
+                stats['skipped'] += 1
+        
+        # Report finale
+        logger.info("📊 Migrazione completata", **stats)
+        
+        return jsonify({
+            'success': True,
+            'stats': stats,
+            'message': f"Migrate {stats['migrated']}/{stats['total_rows']} righe"
+        })
+        
+    except Exception as e:
+        logger.error("Migration endpoint failed", error=str(e))
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @app.route('/api/automation/status')
 @limiter.limit("60 per minute")
 def api_automation_status():
