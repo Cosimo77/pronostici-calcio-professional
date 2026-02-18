@@ -3770,8 +3770,8 @@ def api_migrate_csv_to_postgres():
         # Migra ogni riga
         for idx, row in df.iterrows():
             try:
-                # Cast idx a int per evitare warning Pylance su Hashable
-                row_num: int = int(idx) + 1
+                # Cast idx a int (iterrows ritorna Hashable ma è sempre int)
+                row_num: int = int(idx) + 1  # type: ignore[arg-type]
                 
                 # Parse data (supporta dd/mm/yyyy e yyyy-mm-dd)
                 data_str = str(row['Data'])
@@ -3837,7 +3837,7 @@ def api_run_migration_002():
     ATTENZIONE: Eseguire solo UNA volta!
     """
     try:
-        from database.connection import get_db_connection, release_db_connection
+        from database.connection import get_db_connection
         
         migration_sql = """
             -- Tabella per scommesse multiple
@@ -3865,57 +3865,44 @@ def api_run_migration_002():
             CREATE INDEX IF NOT EXISTS idx_bets_group_id ON bets(group_id);
         """
         
-        conn = None
-        try:
-            conn = get_db_connection()
-            cursor = conn.cursor()
-            
-            logger.info("🚀 Inizio migrazione 002 (scommesse multiple)...")
-            
-            # Esegui migration SQL
-            cursor.execute(migration_sql)
-            conn.commit()
-            
-            # Verifica tabella creata
-            cursor.execute("""
-                SELECT table_name 
-                FROM information_schema.tables 
-                WHERE table_schema = 'public' AND table_name = 'bet_groups'
-            """)
-            
-            bet_groups_exists = cursor.fetchone() is not None
-            
-            # Verifica campo group_id
-            cursor.execute("""
-                SELECT column_name 
-                FROM information_schema.columns 
-                WHERE table_name = 'bets' AND column_name = 'group_id'
-            """)
-            
-            group_id_exists = cursor.fetchone() is not None
-            
-            logger.info("✅ Migrazione 002 completata", 
-                       bet_groups_table=bet_groups_exists, 
-                       group_id_field=group_id_exists)
-            
-            return jsonify({
-                'success': True,
-                'message': 'Migrazione 002 completata con successo',
-                'verification': {
-                    'bet_groups_table_created': bet_groups_exists,
-                    'group_id_field_added': group_id_exists
-                }
-            })
-            
-        except Exception as e:
-            if conn:
-                conn.rollback()
-            logger.error("❌ Errore migrazione 002", error=str(e))
-            raise
-            
-        finally:
-            if conn:
-                release_db_connection(conn)
+        logger.info("🚀 Inizio migrazione 002 (scommesse multiple)...")
+        
+        # Usa context manager per gestione automatica connessione
+        with get_db_connection() as conn:
+            with conn.cursor() as cursor:
+                # Esegui migration SQL
+                cursor.execute(migration_sql)
+                
+                # Verifica tabella creata
+                cursor.execute("""
+                    SELECT table_name 
+                    FROM information_schema.tables 
+                    WHERE table_schema = 'public' AND table_name = 'bet_groups'
+                """)
+                
+                bet_groups_exists = cursor.fetchone() is not None
+                
+                # Verifica campo group_id
+                cursor.execute("""
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'bets' AND column_name = 'group_id'
+                """)
+                
+                group_id_exists = cursor.fetchone() is not None
+                
+                logger.info("✅ Migrazione 002 completata", 
+                           bet_groups_table=bet_groups_exists, 
+                           group_id_field=group_id_exists)
+                
+                return jsonify({
+                    'success': True,
+                    'message': 'Migrazione 002 completata con successo',
+                    'verification': {
+                        'bet_groups_table_created': bet_groups_exists,
+                        'group_id_field_added': group_id_exists
+                    }
+                })
     
     except Exception as e:
         logger.error("Migration 002 endpoint failed", error=str(e))

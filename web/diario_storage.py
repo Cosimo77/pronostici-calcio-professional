@@ -364,8 +364,8 @@ class DiarioStorage:
         try:
             from database.bet_group_model import BetGroupModel
             
-            # Aggiorna singolo evento (no profit, è calcolato sul group)
-            BetModel.update_result(bet_id, risultato, 0.0)
+            # Aggiorna singolo evento (profit calcolato automaticamente)
+            BetModel.update_risultato(bet_id, risultato)
             
             # Recupera group_id dell'evento
             bet = BetModel.get_by_id(bet_id)
