@@ -131,6 +131,74 @@
         .icon-large {
             font-size: 3rem;
         }
+        .multipla-card {
+            border: 2px solid #667eea;
+            border-radius: 12px;
+            padding: 15px;
+            margin: 15px 0;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+        }
+        .multipla-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            padding: 10px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.7);
+            margin-bottom: 10px;
+        }
+        .multipla-header:hover {
+            background: rgba(255, 255, 255, 0.9);
+        }
+        .multipla-eventi {
+            display: none;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+        .multipla-eventi.show {
+            display: block;
+        }
+        .evento-item {
+            padding: 8px;
+            margin: 5px 0;
+            border-left: 3px solid #667eea;
+            background: white;
+            border-radius: 4px;
+        }
+        .badge-multipla {
+            font-size: 0.85em;
+            padding: 6px 12px;
+            border-radius: 20px;
+        }
+        .evento-multipla-row {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        .btn-remove-evento {
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            padding: 0;
+            font-size: 14px;
+        }
+        .form-singola-visible {
+            display: block;
+        }
+        .form-multipla-hidden {
+            display: none;
+        }
+        .bg-light-gray {
+            background: #f8f9fa;
+        }
     </style>
 </head>
 <body>
@@ -414,7 +482,23 @@
                         <h5 class="mb-0"><i class="bi bi-plus-lg"></i> Aggiungi Nuova Puntata</h5>
                     </div>
                     <div class="card-body">
-                        <form id="form-add-bet">
+                        <!-- Toggle Singola/Multipla -->
+                        <div class="mb-4">
+                            <div class="btn-group w-100" role="group">
+                                <input type="radio" class="btn-check" name="bet-type" id="bet-type-singola" value="singola" checked autocomplete="off">
+                                <label class="btn btn-outline-primary" for="bet-type-singola">
+                                    <i class="bi bi-circle"></i> Singola
+                                </label>
+                                
+                                <input type="radio" class="btn-check" name="bet-type" id="bet-type-multipla" value="multipla" autocomplete="off">
+                                <label class="btn btn-outline-primary" for="bet-type-multipla">
+                                    <i class="bi bi-stack"></i> Multipla
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Form Singola -->
+                        <form id="form-add-bet" class="form-singola-visible">
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label for="bet-partita" class="form-label">Partita *</label>
@@ -453,6 +537,16 @@
                                         <optgroup label="🥅 Goal/No Goal">
                                             <option value="GG">GG (Goal)</option>
                                             <option value="NG">NG (No Goal)</option>
+                                        </optgroup>
+                                        
+                                        <!-- Over/Under + Goal -->
+                                        <optgroup label="⚽🥅 Over/Under + Goal">
+                                            <option value="OVER_15_GG">Over 1.5 + GG</option>
+                                            <option value="OVER_25_GG">Over 2.5 + GG</option>
+                                            <option value="OVER_35_GG">Over 3.5 + GG</option>
+                                            <option value="UNDER_15_NG">Under 1.5 + NG</option>
+                                            <option value="UNDER_25_NG">Under 2.5 + NG</option>
+                                            <option value="UNDER_35_NG">Under 3.5 + NG</option>
                                         </optgroup>
                                         
                                         <!-- BTTS + Risultato -->
@@ -541,6 +635,54 @@
                             </button>
                         </form>
 
+                        <!-- Form Multipla -->
+                        <form id="form-add-multipla" class="form-multipla-hidden">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="multipla-nome" class="form-label">Nome Multipla</label>
+                                    <input type="text" class="form-control" id="multipla-nome" placeholder="es. Tripla Serie A Weekend">
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="multipla-stake" class="form-label">Stake (€) *</label>
+                                    <input type="number" class="form-control" id="multipla-stake" step="0.01" min="0.01" placeholder="5.00" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="multipla-data" class="form-label">Data</label>
+                                    <input type="date" class="form-control" id="multipla-data">
+                                </div>
+                            </div>
+
+                            <div class="card mb-3 bg-light-gray">
+                                <div class="card-body">
+                                    <h6 class="mb-3"><i class="bi bi-list-check"></i> Eventi Multipla</h6>
+                                    <div id="eventi-multipla-container"></div>
+                                    <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="aggiungiEventoMultipla()">
+                                        <i class="bi bi-plus-circle"></i> Aggiungi Evento
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="alert alert-info">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span><i class="bi bi-calculator"></i> <strong>Quota Totale:</strong></span>
+                                    <span class="fs-4 fw-bold" id="quota-totale-display">1.00</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mt-2">
+                                    <span>Vincita Potenziale (stake × quota):</span>
+                                    <span class="fs-5 fw-bold text-success" id="vincita-potenziale-display">€0.00</span>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="multipla-note" class="form-label">Note</label>
+                                <textarea class="form-control" id="multipla-note" rows="2" placeholder="Note sulla multipla"></textarea>
+                            </div>
+
+                            <button type="submit" class="btn btn-add-bet w-100">
+                                <i class="bi bi-check-lg"></i> Salva Multipla
+                            </button>
+                        </form>
+
                         <div id="add-bet-result" class="mt-3"></div>
                     </div>
                 </div>
@@ -565,6 +707,34 @@
             // Auto-fill data odierna
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('bet-data').value = today;
+            document.getElementById('multipla-data').value = today;
+            
+            // Toggle form singola/multipla
+            document.querySelectorAll('input[name="bet-type"]').forEach(radio => {
+                radio.addEventListener('change', function() {
+                    const formSingola = document.getElementById('form-add-bet');
+                    const formMultipla = document.getElementById('form-add-multipla');
+                    
+                    if (this.value === 'singola') {
+                        formSingola.classList.add('form-singola-visible');
+                        formSingola.classList.remove('form-multipla-hidden');
+                        formMultipla.classList.add('form-multipla-hidden');
+                        formMultipla.classList.remove('form-singola-visible');
+                    } else {
+                        formSingola.classList.add('form-multipla-hidden');
+                        formSingola.classList.remove('form-singola-visible');
+                        formMultipla.classList.add('form-singola-visible');
+                        formMultipla.classList.remove('form-multipla-hidden');
+                        aggiungiEventoMultipla(); // Inizia con 1 evento
+                    }
+                });
+            });
+            
+            // Submit form multipla
+            document.getElementById('form-add-multipla').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                await salvaMultipla();
+            });
         });
 
         // Carica statistiche
@@ -638,27 +808,46 @@
             }
         }
 
-        // Carica puntate pending
+        // Carica puntate pending (singole + multiple)
         async function loadPendingBets() {
             try {
-                const response = await fetch('/api/diario/pending');
-                const data = await response.json();
+                // Fetch parallelo singole e multiple
+                const [responseSingole, responseMultiple] = await Promise.all([
+                    fetch('/api/diario/pending'),
+                    fetch('/api/diario/multiple_pending')
+                ]);
+                
+                const dataSingole = await responseSingole.json();
+                const dataMultiple = await responseMultiple.json();
                 
                 const container = document.getElementById('pending-bets');
                 
                 // Gestione errori API
-                if (data.error) {
-                    container.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> Errore: ${data.error}</div>`;
+                if (dataSingole.error && dataMultiple.error) {
+                    container.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> Errore di connessione</div>`;
                     return;
                 }
                 
-                if (!data.bets || data.bets.length === 0) {
+                const singole = dataSingole.bets || [];
+                const multiple = dataMultiple.multiple || [];
+                
+                if (singole.length === 0 && multiple.length === 0) {
                     container.innerHTML = '<p class="text-muted text-center"><i class="bi bi-inbox"></i> Nessuna puntata in attesa</p>';
                     return;
                 }
                 
                 let html = '';
-                data.bets.forEach((bet, idx) => {
+                
+                // Render Multiple
+                multiple.forEach(multipla => {
+                    html += renderMultipla(multipla, 'pending');
+                });
+                
+                // Render Singole
+                singole.forEach((bet, idx) => {
+                    // Salta eventi che fanno parte di multiple (hanno group_id)
+                    if (bet.group_id) return;
+                    
                     html += `
                         <div class="bet-card bet-pending">
                             <div class="d-flex justify-content-between align-items-start">
@@ -701,8 +890,85 @@
                 console.error('Errore caricamento pending:', error);
             }
         }
+        
+        // Render multipla card con eventi espandibili
+        function renderMultipla(multipla, source) {
+            const classRisultato = multipla.risultato === 'PENDING' ? 'bet-pending' : 
+                                  multipla.risultato === 'WIN' ? 'bet-win' : 
+                                  multipla.risultato === 'LOSS' ? 'bet-loss' : 'bet-skip';
+            
+            let html = `
+                <div class="multipla-card ${classRisultato}">
+                    <div class="multipla-header" onclick="toggleEventiMultipla(${multipla.id})">
+                        <div>
+                            <h5>
+                                <i class="bi bi-stack"></i> ${multipla.nome}
+                                <span class="badge badge-multipla bg-info text-dark ms-2">${multipla.tipo_multipla.toUpperCase()}</span>
+                                <span class="badge bg-secondary ms-1">${multipla.num_eventi} eventi</span>
+                            </h5>
+                            <p class="mb-1">
+                                <strong>Data:</strong> ${multipla.data} | 
+                                <strong>Quota:</strong> ${parseFloat(multipla.quota_totale).toFixed(2)} | 
+                                <strong>Stake:</strong> €${parseFloat(multipla.stake).toFixed(2)}
+                            </p>
+                            ${multipla.risultato !== 'PENDING' ? 
+                                `<p class="mb-0"><strong>Profit:</strong> <span class="${parseFloat(multipla.profit) >= 0 ? 'text-success' : 'text-danger'}">€${parseFloat(multipla.profit).toFixed(2)}</span></p>` 
+                                : ''}
+                            ${multipla.note ? `<p class="text-muted small mb-0"><i class="bi bi-sticky"></i> ${multipla.note}</p>` : ''}
+                        </div>
+                        <div>
+                            <i class="bi bi-chevron-down"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="multipla-eventi" id="eventi-multipla-${multipla.id}">
+                        ${multipla.eventi.map(evento => {
+                            const classEvento = evento.risultato === 'PENDING' ? '' : 
+                                              evento.risultato === 'WIN' ? 'border-success' : 
+                                              evento.risultato === 'LOSS' ? 'border-danger' : 'border-secondary';
+                            
+                            return `
+                                <div class="evento-item ${classEvento}">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong>${evento.partita}</strong> - 
+                                            <span class="badge bg-primary">${evento.mercato}</span> @ 
+                                            <strong>${parseFloat(evento.quota_sisal).toFixed(2)}</strong>
+                                            ${evento.risultato !== 'PENDING' ? 
+                                                `<span class="badge ${evento.risultato === 'WIN' ? 'bg-success' : evento.risultato === 'LOSS' ? 'bg-danger' : 'bg-secondary'} ms-2">${evento.risultato}</span>` 
+                                                : ''}
+                                        </div>
+                                        ${multipla.risultato === 'PENDING' ? `
+                                            <div>
+                                                <button class="btn btn-sm btn-success me-1" onclick="updateEventoMultipla(${evento.id}, 'WIN', ${multipla.id})" title="WIN">
+                                                    <i class="bi bi-check"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-danger me-1" onclick="updateEventoMultipla(${evento.id}, 'LOSS', ${multipla.id})" title="LOSS">
+                                                    <i class="bi bi-x"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-secondary" onclick="updateEventoMultipla(${evento.id}, 'VOID', ${multipla.id})" title="VOID">
+                                                    <i class="bi bi-dash"></i>
+                                                </button>
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                        
+                        <div class="mt-3 text-end">
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteMultipla(${multipla.id}, '${source}')" title="Elimina multipla">
+                                <i class="bi bi-trash"></i> Elimina Multipla
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            return html;
+        }
 
-        // Funzione per caricare puntate completate
+        // Funzione per caricare puntate completate (singole + multiple)
         async function loadCompletedBets() {
             const container = document.getElementById('completed-bets');
             
@@ -715,21 +981,39 @@
             `;
             
             try {
-                const response = await fetch('/api/diario/completed');
-                const data = await response.json();
+                // Fetch parallelo singole e multiple
+                const [responseSingole, responseMultiple] = await Promise.all([
+                    fetch('/api/diario/completed'),
+                    fetch('/api/diario/multiple_completed')
+                ]);
                 
-                if (data.error) {
-                    container.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> Errore: ${data.error}</div>`;
+                const dataSingole = await responseSingole.json();
+                const dataMultiple = await responseMultiple.json();
+                
+                if (dataSingole.error && dataMultiple.error) {
+                    container.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> Errore di connessione</div>`;
                     return;
                 }
             
-                if (!data.bets || data.bets.length === 0) {
+                const singole = dataSingole.bets || [];
+                const multiple = dataMultiple.multiple || [];
+                
+                if (singole.length === 0 && multiple.length === 0) {
                     container.innerHTML = '<p class="text-muted text-center">Nessuna puntata completata ancora</p>';
                     return;
                 }
             
                 let html = '';
-                data.bets.forEach(bet => {
+                
+                // Render Multiple
+                multiple.forEach(multipla => {
+                    html += renderMultipla(multipla, 'completed');
+                });
+                
+                // Render Singole (salta quelle con group_id)
+                singole.forEach(bet => {
+                    if (bet.group_id) return;  // Salta eventi di multiple
+                    
                     let cardClass, icon, profitClass;
                     
                     if (bet.risultato === 'WIN') {
@@ -1012,6 +1296,319 @@
                     }, 300);
                     
                     alert('✅ Puntata eliminata');
+                } else {
+                    alert('❌ Errore: ' + result.error);
+                }
+            } catch (error) {
+                alert('❌ Errore: ' + error.message);
+            }
+        }
+        
+        // ==================== SCOMMESSE MULTIPLE ====================
+        
+        let eventiMultiplaCounter = 0;
+        
+        // Aggiungi evento a multipla
+        function aggiungiEventoMultipla() {
+            eventiMultiplaCounter++;
+            const container = document.getElementById('eventi-multipla-container');
+            
+            const eventoHtml = `
+                <div class="evento-multipla-row" id="evento-${eventiMultiplaCounter}">
+                    <div class="row align-items-center">
+                        <div class="col-md-4 mb-2">
+                            <input type="text" class="form-control form-control-sm evento-partita" 
+                                   placeholder="Partita (es. Inter vs Milan)" required>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <select class="form-select form-select-sm evento-mercato" required>
+                                <option value="">Mercato</option>
+                                
+                                <!-- 1X2 -->
+                                <optgroup label="🎯 1X2">
+                                    <option value="1">1 (Casa)</option>
+                                    <option value="X">X (Pareggio)</option>
+                                    <option value="2">2 (Ospite)</option>
+                                </optgroup>
+                                
+                                <!-- Doppia Chance -->
+                                <optgroup label="🔀 Doppia Chance">
+                                    <option value="1X">1X (Casa/Pareggio)</option>
+                                    <option value="X2">X2 (Pareggio/Ospite)</option>
+                                    <option value="12">12 (Casa/Ospite)</option>
+                                </optgroup>
+                                
+                                <!-- Over/Under -->
+                                <optgroup label="⚽ Over/Under">
+                                    <option value="UNDER_15">Under 1.5</option>
+                                    <option value="OVER_15">Over 1.5</option>
+                                    <option value="UNDER_25">Under 2.5</option>
+                                    <option value="OVER_25">Over 2.5</option>
+                                    <option value="UNDER_35">Under 3.5</option>
+                                    <option value="OVER_35">Over 3.5</option>
+                                </optgroup>
+                                
+                                <!-- Goal/No Goal -->
+                                <optgroup label="🥅 Goal/No Goal">
+                                    <option value="GG">GG (Goal)</option>
+                                    <option value="NG">NG (No Goal)</option>
+                                </optgroup>
+                                
+                                <!-- Over/Under + Goal -->
+                                <optgroup label="⚽🥅 Over/Under + Goal">
+                                    <option value="OVER_15_GG">Over 1.5 + GG</option>
+                                    <option value="OVER_25_GG">Over 2.5 + GG</option>
+                                    <option value="OVER_35_GG">Over 3.5 + GG</option>
+                                    <option value="UNDER_15_NG">Under 1.5 + NG</option>
+                                    <option value="UNDER_25_NG">Under 2.5 + NG</option>
+                                    <option value="UNDER_35_NG">Under 3.5 + NG</option>
+                                </optgroup>
+                                
+                                <!-- BTTS + Risultato -->
+                                <optgroup label="🎲 BTTS + Risultato">
+                                    <option value="1_GG">1 + GG</option>
+                                    <option value="X_GG">X + GG</option>
+                                    <option value="2_GG">2 + GG</option>
+                                    <option value="1_NG">1 + NG</option>
+                                    <option value="X_NG">X + NG</option>
+                                    <option value="2_NG">2 + NG</option>
+                                </optgroup>
+                                
+                                <!-- Primo Tempo -->
+                                <optgroup label="⏱️ Primo Tempo">
+                                    <option value="1T_1">1T 1 (Casa)</option>
+                                    <option value="1T_X">1T X (Pareggio)</option>
+                                    <option value="1T_2">1T 2 (Ospite)</option>
+                                </optgroup>
+                                
+                                <!-- Asian Handicap -->
+                                <optgroup label="📊 Asian Handicap">
+                                    <option value="AH_-1">AH -1.0 (Casa)</option>
+                                    <option value="AH_-0.5">AH -0.5 (Casa)</option>
+                                    <option value="AH_+0.5">AH +0.5 (Ospite)</option>
+                                    <option value="AH_+1">AH +1.0 (Ospite)</option>
+                                </optgroup>
+                                
+                                <!-- Multigol -->
+                                <optgroup label="🎯 Multigol">
+                                    <option value="MG_1_2">Multigol 1-2</option>
+                                    <option value="MG_2_3">Multigol 2-3</option>
+                                    <option value="MG_3_4">Multigol 3-4</option>
+                                </optgroup>
+                                
+                                <!-- Corner & Cartellini -->
+                                <optgroup label="📋 Statistiche">
+                                    <option value="CORNER_OVER_9">Corner Over 9.5</option>
+                                    <option value="CORNER_UNDER_9">Corner Under 9.5</option>
+                                    <option value="CARD_OVER_4">Cartellini Over 4.5</option>
+                                    <option value="CARD_UNDER_4">Cartellini Under 4.5</option>
+                                </optgroup>
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <input type="number" class="form-control form-control-sm evento-quota" 
+                                   placeholder="Quota" step="0.01" min="1.01" required 
+                                   onchange="ricalcolaQuotaTotale()">
+                        </div>
+                        <div class="col-md-2 mb-2 text-end">
+                            <button type="button" class="btn-remove-evento" onclick="rimuoviEventoMultipla(${eventiMultiplaCounter})" 
+                                    title="Rimuovi evento">
+                                <i class="bi bi-x"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            container.insertAdjacentHTML('beforeend', eventoHtml);
+            ricalcolaQuotaTotale();
+        }
+        
+        // Rimuovi evento da multipla
+        function rimuoviEventoMultipla(id) {
+            const evento = document.getElementById(`evento-${id}`);
+            if (evento) {
+                evento.remove();
+                ricalcolaQuotaTotale();
+            }
+        }
+        
+        // Ricalcola quota totale (prodotto quote)
+        function ricalcolaQuotaTotale() {
+            const quoteInputs = document.querySelectorAll('.evento-quota');
+            let quotaTotale = 1.0;
+            let count = 0;
+            
+            quoteInputs.forEach(input => {
+                const quota = parseFloat(input.value);
+                if (quota && quota >= 1.01) {
+                    quotaTotale *= quota;
+                    count++;
+                }
+            });
+            
+            // Display quota totale
+            document.getElementById('quota-totale-display').textContent = quotaTotale.toFixed(2);
+            
+            // Calcola vincita potenziale
+            const stake = parseFloat(document.getElementById('multipla-stake').value) || 0;
+            const vincita = stake * quotaTotale;
+            document.getElementById('vincita-potenziale-display').textContent = '€' + vincita.toFixed(2);
+        }
+        
+        // Aggiorna stake multipla → ricalcola vincita
+        document.addEventListener('DOMContentLoaded', function() {
+            const stakeInput = document.getElementById('multipla-stake');
+            if (stakeInput) {
+                stakeInput.addEventListener('input', ricalcolaQuotaTotale);
+            }
+        });
+        
+        // Salva multipla
+        async function salvaMultipla() {
+            const nome = document.getElementById('multipla-nome').value.trim() || 'Multipla';
+            const stake = parseFloat(document.getElementById('multipla-stake').value);
+            const data = document.getElementById('multipla-data').value;
+            const note = document.getElementById('multipla-note').value.trim();
+            
+            // Valida stake
+            if (!stake || stake <= 0) {
+                alert('⚠️ Inserisci uno stake valido (> 0)');
+                return;
+            }
+            
+            // Raccogli eventi
+            const eventi = [];
+            const eventoRows = document.querySelectorAll('.evento-multipla-row');
+            
+            eventoRows.forEach(row => {
+                const partita = row.querySelector('.evento-partita').value.trim();
+                const mercato = row.querySelector('.evento-mercato').value;
+                const quota = parseFloat(row.querySelector('.evento-quota').value);
+                
+                if (partita && mercato && quota >= 1.01) {
+                    eventi.push({partita, mercato, quota});
+                }
+            });
+            
+            // Valida almeno 2 eventi
+            if (eventi.length < 2) {
+                alert('⚠️ Inserisci almeno 2 eventi per una multipla');
+                return;
+            }
+            
+            // Mostra loading
+            document.getElementById('add-bet-result').innerHTML = `
+                <div class="alert alert-info">
+                    <div class="spinner-border spinner-border-sm me-2"></div>
+                    Salvataggio multipla in corso...
+                </div>
+            `;
+            
+            try {
+                const response = await fetch('/api/diario/add_multipla', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        data,
+                        nome,
+                        stake,
+                        note,
+                        eventi
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    document.getElementById('add-bet-result').innerHTML = `
+                        <div class="alert alert-success">
+                            <i class="bi bi-check-circle"></i> <strong>Multipla salvata!</strong><br>
+                            <small>Quota totale: ${result.quota_totale.toFixed(2)} - Group ID: ${result.group_id}</small>
+                        </div>
+                    `;
+                    
+                    // Reset form
+                    document.getElementById('form-add-multipla').reset();
+                    document.getElementById('eventi-multipla-container').innerHTML = '';
+                    eventiMultiplaCounter = 0;
+                    
+                    // Reload stats e pending
+                    loadStats();
+                    setTimeout(loadPendingBets, 300);
+                } else {
+                    document.getElementById('add-bet-result').innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-triangle"></i> Errore: ${result.error || result.message}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('add-bet-result').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i> Errore: ${error.message}
+                    </div>
+                `;
+            }
+        }
+        
+        // Toggle espandi/comprimi eventi multipla
+        function toggleEventiMultipla(groupId) {
+            const eventiDiv = document.getElementById(`eventi-multipla-${groupId}`);
+            if (eventiDiv) {
+                eventiDiv.classList.toggle('show');
+            }
+        }
+        
+        // Aggiorna risultato singolo evento in multipla
+        async function updateEventoMultipla(betId, risultato, groupId) {
+            try {
+                const response = await fetch('/api/diario/update_evento_multipla', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({bet_id: betId, risultato})
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Notify
+                    alert(`✅ Evento aggiornato → ${risultato}\nProfit multipla: €${result.profit_multipla || 0}`);
+                    
+                    // Reload
+                    loadStats();
+                    setTimeout(loadPendingBets, 300);
+                } else {
+                    alert('❌ Errore: ' + (result.error || 'Sconosciuto'));
+                }
+            } catch (error) {
+                alert('❌ Errore: ' + error.message);
+            }
+        }
+        
+        // Elimina multipla completa
+        async function deleteMultipla(groupId, source) {
+            if (!confirm(`⚠️ Confermi eliminazione MULTIPLA?\n\nVerranno eliminati TUTTI gli eventi associati.\nAzione IRREVERSIBILE.`)) return;
+            
+            try {
+                const response = await fetch('/api/diario/delete_multipla', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({group_id: groupId})
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('✅ Multipla eliminata');
+                    loadStats();
+                    setTimeout(() => {
+                        if (source === 'pending') loadPendingBets();
+                        else {
+                            completedLoaded = false;
+                            loadCompletedBets();
+                        }
+                    }, 300);
                 } else {
                     alert('❌ Errore: ' + result.error);
                 }
