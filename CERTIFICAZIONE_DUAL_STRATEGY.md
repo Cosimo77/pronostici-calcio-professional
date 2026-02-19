@@ -109,6 +109,7 @@ Profitto Atteso: 664 EUR/anno
 ```
 
 ### Diversificazione Rischio
+
 | Scenario | Pareggi ROI | Under ROI | Combined ROI | Probabilità |
 |----------|-------------|-----------|--------------|-------------|
 | **Best Case** | +15% | +12% | +13.8% | 10% |

@@ -216,7 +216,7 @@ https://github.com/Cosimo77/pronostici-calcio-professional/actions
 ## 🎯 REGOLA D'ORO
 
 > **Se il sistema funziona, NON toccarlo.**
-> 
+>
 > Modifiche vanno fatte SOLO per:
 > - Bug critici (crash, errori 500)
 > - Feature richieste esplicitamente

@@ -14,6 +14,7 @@
 - **Max Drawdown:** -20%
 
 ### Breakdown Strategie
+
 | Strategia | Trade | Win Rate | ROI | Quote Medie | EV Medio |
 |-----------|-------|----------|-----|-------------|----------|
 | **DC_X2** (Pareggio/Trasferta) | 10 | 60.0% | **+38.40%** | 2.30 | +22.5% |
@@ -45,6 +46,7 @@ Sweet spot EV 20-25% seleziona automaticamente quote ottimali:
 **Hard limit rigidi tagliavano trade profittevoli.**
 
 ### 3. **OVER_25 Disabilitato**
+
 | Fascia EV | Trade | ROI | Problema |
 |-----------|-------|-----|----------|
 | 10-15% | 8 | +4.00% | Sample ridotto |

@@ -37,7 +37,7 @@ def calcola_shrinkage_adattivo():
     return shrinkage
 ```
 
-**Impatto**: 
+**Impatto**:
 - EV più accurato dopo 20+ bet
 - Sistema auto-calibrante (machine learning pratico)
 - Riduce gap modello-realtà automaticamente

@@ -4,7 +4,7 @@
 
 ### Sistema Installato e Funzionante
 
-**Dashboard Web** 
+**Dashboard Web**
 - URL: http://localhost:5008/tracking
 - Status: ✅ ATTIVA e validata con simulazione
 - Features: ROI real-time, Equity curve, Tabella trade colorata

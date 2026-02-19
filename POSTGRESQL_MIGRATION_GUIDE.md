@@ -21,7 +21,7 @@
    - `/api/diario/add` - ⏳ Partial
    - `/api/diario/update` - ⏳ Partial
    - `/api/diario/edit` - ⏳ Partial
-    - `/api/diario/delete` - ⏳ Partial
+   - `/api/diario/delete` - ⏳ Partial
 
 ---
 
@@ -232,7 +232,7 @@ ls -lh tracking_giocate.csv
 
 | Azione | Prima (CSV) | Dopo (PostgreSQL) |
 |--------|-------------|-------------------|
-| Add bet via UI | ❌ Persa al deploysì ✅ Persistente |
+| Add bet via UI | ❌ Persa al deploy | ✅ Persistente |
 | Update risultato | ❌ Perso al deploy | ✅ Persistente |
 | Deploy trigger | ❌ Reset diario | ✅ Dati intatti |
 | Concurrent access | ❌ Race conditions | ✅ ACID transactions |
