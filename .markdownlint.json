@@ -2,6 +2,7 @@
   "default": true,
   "MD005": false,
   "MD009": false,
+  "MD012": false,
   "MD013": false,
   "MD022": false,
   "MD024": false,
@@ -34,6 +35,7 @@
   "no-trailing-punctuation": false,
   "ol-prefix": false,
   "no-emphasis-as-heading": false,
+  "no-multiple-blanks": false,
   "table-column-count": false,
   "blanks-around-tables": false
 }
