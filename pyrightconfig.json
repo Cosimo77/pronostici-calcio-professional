@@ -3,10 +3,15 @@
         "**/*.py"
     ],
     "exclude": [
+        "**/.*",
         "**/node_modules",
         "**/__pycache__",
-        ".git",
-        "**/*.pyc"
+        "**/*.pyc",
+        "**/venv",
+        "**/env",
+        "**/.venv",
+        "**/dist",
+        "**/build"
     ],
     "extraPaths": [
         "./scripts",
