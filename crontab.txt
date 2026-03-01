@@ -1,0 +1,48 @@
+# ============================================================
+# PRONOSTICI CALCIO - AUTOMAZIONE COMPLETA
+# Sistema ibrido: locale (Mac) + cloud (Render)
+# Installato: 1 Marzo 2026
+# ============================================================
+
+# Path Python con moduli completi
+PYTHON=/usr/local/bin/python3
+WORKDIR=/Users/cosimomassaro/Desktop/pronostici_calcio
+
+# ============================================================
+# 1. AGGIORNAMENTO DATI GIORNALIERO (06:00)
+# Scarica nuovi risultati Serie A e rigenera dataset
+# ============================================================
+0 6 * * * cd $WORKDIR && $PYTHON scripts/aggiorna_automatico.py >> logs/automation_cron.log 2>&1
+
+# ============================================================
+# 2. HEALTH CHECK ORARIO
+# Monitora salute sistema: API Render, dati, disco, cron
+# ============================================================
+0 * * * * cd $WORKDIR && $PYTHON scripts/health_check.py >> logs/health_check.log 2>&1
+
+# ============================================================
+# 3. RITRAINING MODELLI (Domenica 02:00)
+# Riaddestra tutti i modelli ML con dati aggiornati
+# ============================================================
+0 2 * * 0 cd $WORKDIR && $PYTHON scripts/weekly_retrain.py >> logs/weekly_retrain.log 2>&1
+
+# ============================================================
+# 4. CLEANUP CACHE E BACKUP (Ogni 3 giorni alle 03:00)
+# Pulisce Redis, log vecchi, ruota backup, temp files
+# ============================================================
+0 3 */3 * * cd $WORKDIR && $PYTHON scripts/cleanup_cache.py >> logs/cleanup.log 2>&1
+
+# ============================================================
+# 5. COMPRESSIONE LOG VECCHI (1° del mese 04:00)
+# Archivia log più vecchi di 30 giorni
+# ============================================================
+0 4 1 * * find $WORKDIR/logs -name "*.log" -mtime +30 -exec gzip {} \;
+
+# ============================================================
+# NOTE:
+# - Tutti i log: logs/*.log
+# - Health status: logs/health_check.json
+# - Render dashboard: https://dashboard.render.com
+# - Per disabilitare: commenta righe con #
+# - Test manuale: $PYTHON scripts/nome_script.py
+# ============================================================
