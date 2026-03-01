@@ -36,7 +36,7 @@ joblib==1.4.2
 psutil==7.1.1
 
 # Database
-psycopg2==2.9.9  # Render compila da source (binary non supportato su alcune piattaforme)
+psycopg2-binary==2.9.9  # Precompilato per Docker/Render
 types-psycopg2==2.9.21.20  # Type stubs per Pylance
 
 # Optional: Monitoring & Logging
