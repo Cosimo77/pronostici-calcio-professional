@@ -3969,13 +3969,13 @@ def api_force_update():
         
         global calculator
         
-        # Ricarica dataset
-        df_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'dataset_pulito.csv')
+        # FIX: Ricarica DATASET_FEATURES (non dataset_pulito) per avere features per predizioni
+        df_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'dataset_features.csv')
         
         if not os.path.exists(df_path):
             return jsonify({
                 'success': False,
-                'error': 'Dataset non trovato'
+                'error': 'Dataset features non trovato'
             }), 500
         
         # Ricarica dataset in ProfessionalCalculator
@@ -3983,7 +3983,7 @@ def api_force_update():
         
         records_loaded = len(calculator.df_features)
         
-        logger.info(f"✅ Dataset ricaricato: {records_loaded} partite")
+        logger.info(f"✅ Dataset features ricaricato: {records_loaded} partite")
         
         # Salva timestamp aggiornamento (Redis + file system)
         timestamp = datetime.now(timezone.utc).isoformat()
