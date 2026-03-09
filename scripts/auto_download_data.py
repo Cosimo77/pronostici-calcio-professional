@@ -130,9 +130,9 @@ def download_and_merge():
             # Salva SOLO se ci sono aggiunte effettive
             if added > 0:
                 df_merged.to_csv('data/dataset_pulito.csv', index=False)
-                # Aggiorna anche dataset_features
-                df_merged.to_csv('data/dataset_features.csv', index=False)
-                print(f"✅ Dataset aggiornato: {records_old} → {records_new} (+{added} partite)")
+                # NON sovrascrivere dataset_features.csv - viene generato da feature_engineering.py
+                print(f"✅ Dataset pulito aggiornato: {records_old} → {records_new} (+{added} partite)")
+                print(f"⚠️  ATTENZIONE: Eseguire feature_engineering.py per aggiornare features")
             else:
                 print(f"ℹ️  Nessuna partita nuova trovata")
             
