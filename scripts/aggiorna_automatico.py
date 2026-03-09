@@ -30,31 +30,20 @@ def should_update():
     logging.info("🔍 Controllo necessità aggiornamento...")
     
     try:
-        # Controlla età delle features
+        # SEMPRE tenta download - lascia che lo script di download decida se c'è nuova partita
+        # La logica vecchia era troppo conservativa e skippava download anche con nuovi dati
+        
+        # Controlla età delle features solo per logging
         if os.path.exists('data/dataset_features.csv'):
             df = pd.read_csv('data/dataset_features.csv', parse_dates=['Date'])
             ultima_partita = df['Date'].max()
             giorni_fa = (datetime.now() - ultima_partita).days
             
-            logging.info(f"📅 Ultima partita: {ultima_partita.strftime('%d/%m/%Y')} ({giorni_fa} giorni fa)")
-            
-            # Aggiorna se:
-            # - È lunedì e l'ultima partita è più vecchia di 1 giorno (weekend appena passato)
-            # - È un altro giorno e l'ultima partita è più vecchia di 3 giorni
-            oggi = datetime.now().weekday()  # 0=lunedì, 6=domenica
-            
-            if oggi == 0 and giorni_fa >= 1:  # Lunedì
-                logging.info("🏈 È lunedì - controllo partite del weekend")
-                return True
-            elif giorni_fa >= 3:  # Altri giorni
-                logging.info("⏰ Dati troppo vecchi")
-                return True
-            else:
-                logging.info("✅ Dati abbastanza recenti")
-                return False
-        else:
-            logging.info("❓ File features mancante")
-            return True
+            logging.info(f"📅 Ultima partita nel dataset: {ultima_partita.strftime('%d/%m/%Y')} ({giorni_fa} giorni fa)")
+        
+        # SEMPRE ritorna True per forzare controllo nuovi dati
+        logging.info("✅ Eseguo controllo nuovi dati da football-data.co.uk")
+        return True
             
     except Exception as e:
         logging.error(f"❌ Errore nel controllo: {e}")
