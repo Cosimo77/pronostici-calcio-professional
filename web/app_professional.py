@@ -302,30 +302,15 @@ class ProfessionalCalculator:
         self.coefficienti_casa = 0.05  # 5% vantaggio casa standard
         
     def carica_dati(self, data_path: str = 'data/dataset_features.csv'):
-        """Carica dataset con gestione errori robusta includendo stagione corrente"""
+        """Carica dataset features (già include stagione corrente via GitHub Actions)"""
         try:
-            # Carica dataset storico
+            # Carica dataset features (include storico + stagione corrente da automation)
             self.df_features = pd.read_csv(data_path)
-            logger.info(f"✅ Dati storici caricati: {len(self.df_features)} partite")
+            logger.info(f"✅ Dataset features caricato: {len(self.df_features)} partite")
             
-            # Carica anche la stagione corrente 2025-26
-            try:
-                df_current = pd.read_csv('data/I1_2526.csv')
-                # Verifica che abbia le colonne necessarie
-                required_cols = ['HomeTeam', 'AwayTeam', 'FTR', 'FTHG', 'FTAG']
-                if all(col in df_current.columns for col in required_cols):
-                    # Filtra solo partite già giocate (con risultato)
-                    df_current_played = df_current[df_current['FTR'].notna()]
-                    if len(df_current_played) > 0:
-                        # Combina con dataset storico
-                        self.df_features = pd.concat([self.df_features, df_current_played], ignore_index=True)
-                        logger.info(f"✅ Dati stagione corrente aggiunti: {len(df_current_played)} partite")
-                    else:
-                        logger.info("ℹ️ Nessuna partita ancora giocata nella stagione corrente")
-                else:
-                    logger.warning("⚠️ File stagione corrente non ha tutte le colonne necessarie")
-            except Exception as e:
-                logger.warning(f"⚠️ Impossibile caricare stagione corrente: {e}")
+            # NOTE: dataset_features.csv è aggiornato automaticamente da GitHub Actions
+            # e include già la stagione corrente con rolling statistics complete.
+            # NON concatenare I1_2526.csv (dati RAW) perché creerebbe mismatch schema!
             
             # Aggiorna lista squadre disponibili
             self.squadre_disponibili = sorted(list(set(
