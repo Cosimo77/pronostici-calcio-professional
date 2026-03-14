@@ -293,13 +293,54 @@ def log_response_info(response):
 # ==================== SISTEMA ML DETERMINISTICO ====================
 
 class ProfessionalCalculator:
-    """Calculator ML deterministico per predizioni coerenti"""
+    """Calculator ML professionale con modelli reali deployati"""
     
     def __init__(self):
         self.df_features = None
         self.squadre_disponibili = []
         self.cache_deterministica = {}
         self.coefficienti_casa = 0.05  # 5% vantaggio casa standard
+        
+        # Caricamento modelli ML (Random Forest primary, fallback su deterministico)
+        self.ml_model = None
+        self.scaler = None
+        self.feature_cols = None
+        self.use_ml = True  # Flag per A/B test e rollback
+        
+        self._carica_modelli_ml()
+    
+    def _carica_modelli_ml(self):
+        """Carica modelli ML deployati (graceful degradation se mancanti)"""
+        try:
+            import joblib
+            models_path = os.path.join(os.path.dirname(__file__), '..', 'models', 'enterprise')
+            
+            # Carica Random Forest (primary model - 51.38% accuracy)
+            rf_path = os.path.join(models_path, 'random_forest.pkl')
+            if os.path.exists(rf_path):
+                self.ml_model = joblib.load(rf_path)
+                logger.info("✅ Random Forest caricato (51.38% accuracy test)")
+            else:
+                logger.warning(f"⚠️ Random Forest non trovato: {rf_path}")
+                self.use_ml = False
+                return
+            
+            # Carica scaler (opzionale per RF, obbligatorio per Logistic Regression)
+            scaler_path = os.path.join(models_path, 'scaler.pkl')
+            if os.path.exists(scaler_path):
+                self.scaler = joblib.load(scaler_path)
+                logger.info("✅ Scaler caricato")
+            else:
+                logger.warning("⚠️ Scaler non trovato (RF non lo richiede)")
+            
+            logger.info("🎯 Sistema ML attivo - Random Forest PRIMARY")
+            
+        except Exception as e:
+            logger.error(f"❌ Errore caricamento modelli ML: {e}")
+            self.use_ml = False
+            self.ml_model = None
+            self.scaler = None
+            logger.info("📊 Fallback automatico a sistema deterministico")
         
     def carica_dati(self, data_path: str = 'data/dataset_features.csv'):
         """Carica dataset features (già include stagione corrente via GitHub Actions)"""
@@ -317,6 +358,18 @@ class ProfessionalCalculator:
                 list(self.df_features['HomeTeam'].unique()) + 
                 list(self.df_features['AwayTeam'].unique())
             )))
+            
+            # Estrai feature columns per modelli ML (esclude info categoriche e target)
+            exclude_cols = ['FTR', 'Date', 'HomeTeam', 'AwayTeam', 'Referee', 'HTR', 'Div', 
+                            'FTHG', 'FTAG', 'HTHG', 'HTAG']
+            self.feature_cols = [c for c in self.df_features.columns 
+                                 if c not in exclude_cols and self.df_features[c].dtype in ['float64', 'int64']]
+            
+            if self.use_ml and self.ml_model is not None:
+                logger.info(f"✅ Feature columns ML estratte: {len(self.feature_cols)} features (ML attivo)")
+            else:
+                logger.info(f"✅ Feature columns estratte: {len(self.feature_cols)} features (ML fallback attivo)")
+            
             logger.info(f"✅ Dataset completo: {len(self.df_features)} partite, {len(self.squadre_disponibili)} squadre")
             return True
         except Exception as e:
@@ -502,6 +555,72 @@ class ProfessionalCalculator:
         # Ri-normalizza
         totale = prob_casa + prob_ospite + prob_pareggio
         return prob_casa / totale, prob_ospite / totale, prob_pareggio / totale
+    
+    def _predici_ml(self, squadra_casa: str, squadra_ospite: str) -> Tuple[str, Dict[str, float], float]:
+        """Predizione usando Random Forest deployato (51.38% accuracy)"""
+        try:
+            # Validazione dati disponibili
+            if self.df_features is None or self.feature_cols is None or self.ml_model is None:
+                raise ValueError("Dati o modelli non disponibili")
+            
+            # Estrai features più recenti delle squadre dal dataset
+            df_casa = self.df_features[
+                (self.df_features['HomeTeam'] == squadra_casa) | 
+                (self.df_features['AwayTeam'] == squadra_casa)
+            ].tail(10)  # Ultime 10 partite
+            
+            df_ospite = self.df_features[
+                (self.df_features['HomeTeam'] == squadra_ospite) | 
+                (self.df_features['AwayTeam'] == squadra_ospite)
+            ].tail(10)  # Ultime 10 partite
+            
+            # Calcola media features recenti (rolling average)
+            features_casa_series = df_casa[self.feature_cols].mean()
+            features_ospite_series = df_ospite[self.feature_cols].mean()
+            
+            # Converti Series a float con fillna
+            features_casa = features_casa_series.fillna(0)
+            features_ospite = features_ospite_series.fillna(0)
+            
+            # Combina features casa + ospite (media delle medie)
+            X = pd.DataFrame([(features_casa + features_ospite) / 2], columns=self.feature_cols)
+            
+            # Predizione con Random Forest (NO scaling necessario per RF)
+            y_prob = self.ml_model.predict_proba(X)[0]
+            y_pred = self.ml_model.predict(X)[0]
+            
+            # Converti da encoding numerico a lettere
+            # Training usava: H=1, D=0, A=2
+            # Classi del modello sono ordinate: [0, 1, 2] → [D, H, A]
+            class_to_label = {0: 'D', 1: 'H', 2: 'A'}
+            pred_label = class_to_label[y_pred]
+            
+            # Probabilità: ordine classi [0=D, 1=H, 2=A]
+            probabilita = {
+                'H': float(y_prob[1]),  # Classe 1 = H (Casa)
+                'D': float(y_prob[0]),  # Classe 0 = D (Pareggio)
+                'A': float(y_prob[2])   # Classe 2 = A (Trasferta)
+            }
+            
+            # Confidenza = probabilità massima
+            confidenza = float(max(y_prob))
+            
+            logger.info(f"🤖 ML Predizione: {squadra_casa} vs {squadra_ospite} → {pred_label} (conf: {confidenza:.2%})")
+            
+            return pred_label, probabilita, confidenza
+            
+        except Exception as e:
+            logger.error(f"❌ Errore predizione ML: {e}")
+            # Fallback automatico su deterministico
+            logger.info("📊 Fallback automatico a sistema deterministico")
+            return self.predici_partita_deterministica(squadra_casa, squadra_ospite)
+    
+    def predici_partita(self, squadra_casa: str, squadra_ospite: str) -> Tuple[str, Dict[str, float], float]:
+        """Predizione principale: usa ML se disponibile, altrimenti deterministico"""
+        if self.use_ml and self.ml_model is not None:
+            return self._predici_ml(squadra_casa, squadra_ospite)
+        else:
+            return self.predici_partita_deterministica(squadra_casa, squadra_ospite)
     
     def predici_partita_deterministica(self, squadra_casa: str, squadra_ospite: str) -> Tuple[str, Dict[str, float], float]:
         """Predizione deterministica basata su statistiche reali con calibrazione"""
@@ -1047,8 +1166,8 @@ def api_predici_professionale():
         if squadra_casa not in calculator.squadre_disponibili or squadra_ospite not in calculator.squadre_disponibili:
             return jsonify({'error': 'Squadra non valida'}), 400
         
-        # Predizione deterministica
-        predizione, probabilita, confidenza = calculator.predici_partita_deterministica(
+        # Predizione con ML (fallback deterministico se ML non disponibile)
+        predizione, probabilita, confidenza = calculator.predici_partita(
             squadra_casa, squadra_ospite
         )
         
@@ -1331,8 +1450,8 @@ def api_predict_enterprise():
         if squadra_ospite not in calculator.squadre_disponibili:
             return jsonify({'error': f'Squadra ospite {squadra_ospite} non disponibile per predizioni'}), 400
         
-        # Predizione deterministica base
-        predizione, probabilita, confidenza = calculator.predici_partita_deterministica(
+        # Predizione con ML (fallback deterministico se ML non disponibile)
+        predizione, probabilita, confidenza = calculator.predici_partita(
             squadra_casa, squadra_ospite
         )
         
@@ -1419,17 +1538,24 @@ def api_predict_enterprise():
         
         # Formato compatibile con template Enterprise + VALUE BETTING
         # SOLO DATI REALI: Unico modello GB trained su 1813 partite reali
+        # Determina modello usato (ML o deterministico)
+        modello_usato = 'Random Forest' if (calculator.use_ml and calculator.ml_model is not None) else 'Deterministico'
+        dataset_size = len(calculator.df_features) if calculator.df_features is not None else 2723
+        
         response = {
             'predizione_enterprise': predizione,
             'confidenza': confidenza,
-            'accordo_modelli': 1.0,  # Solo 1 modello reale (GB)
+            'accordo_modelli': 1.0,  # Singolo modello (ML o deterministico)
             'probabilita_ensemble': probabilita,
             'modelli_individuali': {
-                'gradient_boosting': {
+                'random_forest': {
                     'prediction': predizione,
                     'probabilities': probabilita,
                     'confidence': confidenza,
-                    'description': 'GradientBoosting trained su 1813 partite Serie A (2020-2025) con 50 feature'
+                    'description': f'{modello_usato} - 51.38% accuracy test (deployato 14/03/2026)',
+                    'dataset_size': dataset_size,
+                    'features': len(calculator.feature_cols) if calculator.feature_cols else 'N/A',
+                    'model_type': modello_usato
                 }
             },
             'value_betting': {
@@ -1520,7 +1646,7 @@ def api_consigli_scommessa():
             return jsonify({'error': f'Squadra ospite {squadra_ospite} non disponibile'}), 400
         
         # Calcola predizioni e mercati
-        predizione, probabilita, confidenza = calculator.predici_partita_deterministica(
+        predizione, probabilita, confidenza = calculator.predici_partita(
             squadra_casa, squadra_ospite
         )
         mercati = _calcola_mercati_deterministici(squadra_casa, squadra_ospite, probabilita)
@@ -1633,7 +1759,7 @@ def api_upcoming_matches():
                 
                 # Predizione con value betting
                 if home in calculator.squadre_disponibili and away in calculator.squadre_disponibili:
-                    predizione, probabilita, confidenza = calculator.predici_partita_deterministica(home, away)
+                    predizione, probabilita, confidenza = calculator.predici_partita(home, away)
                     
                     # Calcola mercati (include Over/Under 2.5)
                     mercati = _calcola_mercati_deterministici(home, away, probabilita)
@@ -2260,8 +2386,8 @@ def api_mercati_professionale():
         if squadra_ospite not in calculator.squadre_disponibili:
             return jsonify({'error': f'Squadra ospite {squadra_ospite} non disponibile per predizioni'}), 400
         
-        # Predizione base deterministica
-        predizione, probabilita, confidenza = calculator.predici_partita_deterministica(
+        # Predizione base con ML (fallback deterministico)
+        predizione, probabilita, confidenza = calculator.predici_partita(
             squadra_casa, squadra_ospite
         )
         
@@ -3352,7 +3478,7 @@ def api_statistiche():
     
     for casa, ospite in test_pairs:
         try:
-            pred, prob, conf = calculator.predici_partita_deterministica(casa, ospite)
+            pred, prob, conf = calculator.predici_partita(casa, ospite)
             vantaggio_casa = prob['H'] - prob['A']
             
             test_results.append({
@@ -3398,7 +3524,7 @@ def api_test_coerenza():
                 # Test 3 predizioni identiche
                 predizioni = []
                 for i in range(3):
-                    pred, prob, conf = calculator.predici_partita_deterministica(casa, ospite)
+                    pred, prob, conf = calculator.predici_partita(casa, ospite)
                     predizioni.append({'pred': pred, 'conf': conf})
                 
                 # Verifica coerenza
