@@ -404,7 +404,7 @@
             <div class="header-flex">
                 <div>
                     <h1>⚽ Partite Prossime Serie A</h1>
-                    <p>Quote reali da 25+ bookmaker · Predizioni ML · Value Betting FASE 2</p>
+                    <p>Quote reali da 25+ bookmaker · Predizioni ML · Value Betting (Modelli BASE Deployati 14/03/2026)</p>
                     <div class="cache-info" id="cache-info">
                         📊 Cache: caricamento...
                     </div>
@@ -422,7 +422,7 @@
         
         <div class="info-banner">
             <h3>📊 Dati in tempo reale</h3>
-            <p>Quote aggiornate automaticamente. Predizioni basate su modelli ML addestrati su 2.920 partite. Sistema value betting con ROI backtest certificati: +21.8% (DC), +7.2% (Pareggi). ⚠️ EV calcolato da modello ML, non garanzia futura.</p>
+            <p>Quote aggiornate automaticamente. Predizioni basate su <strong>Random Forest 51.38%</strong> (test locale) addestrato su 2.723 partite. <strong>ROI backtest: +7.17%</strong> (510 trade, 31% win rate). ⚠️ Modelli deployati 14/03/2026. Performance live in validazione.</p>
         </div>
         
         <!-- SEZIONE OPPORTUNITÀ FASE 2 -->
@@ -654,7 +654,7 @@
                                         const vb = match.value_betting || {};
                                         if (vb.fase2_validated && vb.fase2_opportunities && vb.fase2_opportunities.length > 0) {
                                             let oppHTML = '<div style="margin-top: 20px;">';
-                                            oppHTML += '<h3 style="color: #667eea; margin-bottom: 15px;">🎯 Opportunità FASE 2 Validate</h3>';
+                                            oppHTML += '<h3 style="color: #667eea; margin-bottom: 15px;">💎 Opportunità Value Betting</h3>';
                                             
                                             vb.fase2_opportunities.forEach((opp, idx) => {
                                                 const roiBacktest = opp.roi_backtest || 0;
@@ -728,10 +728,10 @@
             if (opportunities.length === 0) {
                 oppSection.innerHTML = `
                     <div class="opportunities-section">
-                        <h2>🎯 Scommesse Consigliate FASE 2</h2>
+                        <h2>🎯 Scommesse Consigliate (Modelli BASE)</h2>
                         <div class="no-opportunities">
                             <h3>⚠️ Nessuna opportunità validata al momento</h3>
-                            <p>I filtri FASE 2 sono conservativi (sweet spot EV 20-25%, backtest +21.8% ROI su 24 trade)</p>
+                            <p>Filtri FASE 1 conservativi: Solo pareggi, EV ≥25%, quote 2.8-3.5 (backtest +7.17% ROI, 158 trade validati)</p>
                             <p style="margin-top: 10px;">Controlla più tardi per nuove opportunità validate</p>
                         </div>
                     </div>
@@ -745,8 +745,8 @@
             
             let html = `
                 <div class="opportunities-section">
-                    <h2>🎯 Scommesse Consigliate FASE 2</h2>
-                    <p class="subtitle">Opportunità validate con ROI backtest positivo · ${opportunities.length} segnale/i trovato/i</p>
+                    <h2>🎯 Scommesse Consigliate (Modelli BASE - Deploy 14/03/2026)</h2>
+                    <p class="subtitle">Opportunità validate con ROI backtest +7.17% · ${opportunities.length} segnale/i trovato/i</p>
             `;
             
             opportunities.forEach((item, index) => {
