@@ -1433,10 +1433,46 @@ def api_predict_enterprise():
         squadra_casa = data.get('squadra_casa')
         squadra_ospite = data.get('squadra_ospite')
         
-        # Quote opzionali (se non fornite, usa medie storiche)
-        odds_h = data.get('odds_casa', 2.5)
-        odds_d = data.get('odds_pareggio', 3.3)
-        odds_a = data.get('odds_trasferta', 3.0)
+        # FETCH QUOTE LIVE da The Odds API (se disponibili)
+        odds_h = data.get('odds_casa')
+        odds_d = data.get('odds_pareggio')
+        odds_a = data.get('odds_trasferta')
+        odds_source = 'user_provided' if odds_h else None
+        best_bookmaker = None
+        
+        # Se quote non fornite, prova a fetchare LIVE
+        if not odds_h:
+            try:
+                from integrations.odds_api import OddsAPIClient
+                odds_client = OddsAPIClient()
+                
+                match_odds = odds_client.get_odds_for_match(squadra_casa, squadra_ospite)
+                if match_odds and 'bookmakers' in match_odds and len(match_odds['bookmakers']) > 0:
+                    # Prendi primo bookmaker disponibile (o migliore)
+                    bookmaker = match_odds['bookmakers'][0]
+                    best_bookmaker = bookmaker['title']
+                    
+                    # Estrai quote h2h (head-to-head)
+                    for market in bookmaker['markets']:
+                        if market['key'] == 'h2h':
+                            outcomes = {out['name']: out['price'] for out in market['outcomes']}
+                            odds_h = outcomes.get(match_odds['home_team'], 2.5)
+                            odds_d = outcomes.get('Draw', 3.3)
+                            odds_a = outcomes.get(match_odds['away_team'], 3.0)
+                            odds_source = 'live_api'
+                            logger.info(f"✅ Quote LIVE: {squadra_casa} {odds_h} - X {odds_d} - {squadra_ospite} {odds_a} ({best_bookmaker})")
+                            break
+                else:
+                    logger.warning(f"⚠️ Quote LIVE non disponibili per {squadra_casa} vs {squadra_ospite}, uso default")
+            except Exception as e:
+                logger.error(f"❌ Errore fetch quote LIVE: {e}")
+        
+        # Fallback su quote medie storiche se non disponibili
+        if not odds_h:
+            odds_h = 2.5
+            odds_d = 3.3
+            odds_a = 3.0
+            odds_source = 'historical_average'
         
         if not squadra_casa or not squadra_ospite:
             return jsonify({'error': 'Squadre mancanti'}), 400
@@ -1525,6 +1561,18 @@ def api_predict_enterprise():
             }
             reason = filter_reasons.get(validation_reason, f'Filtro: {validation_reason}')
         
+        # KELLY CRITERION per stake sizing  
+        # Formula: Kelly% = (prob * odds - 1) / (odds - 1) = edge / (odds - 1)
+        kelly_fraction = 0.0
+        if pred_prob > 0 and pred_odds > 1:
+            edge = pred_prob * pred_odds - 1
+            if edge > 0:  # Solo se c'è value
+                kelly_fraction = edge / (pred_odds - 1)
+                # Kelly conservativo (1/4 Kelly per ridurre variance)
+                kelly_fraction = kelly_fraction * 0.25  # 25% del Kelly pieno
+                # Cap massimo 5% bankroll (money management conservativo)
+                kelly_fraction = min(kelly_fraction, 0.05)
+        
         recommendation = {
             'bet_outcome': outcome_names[predizione],
             'bet_odds': pred_odds,
@@ -1533,7 +1581,9 @@ def api_predict_enterprise():
             'strategy': strategy,
             'reason': reason,
             'fase1_validated': is_valid_fase1,
-            'fase1_filter_reason': validation_reason
+            'fase1_filter_reason': validation_reason,
+            'kelly_fraction': round(kelly_fraction, 4),
+            'kelly_pct': round(kelly_fraction * 100, 2)
         }
         
         # Formato compatibile con template Enterprise + VALUE BETTING
@@ -1590,7 +1640,15 @@ def api_predict_enterprise():
             'squadra_ospite': squadra_ospite,
             'mercati': mercati,
             'modalita': 'professional_value_betting',
-            'timestamp': datetime.now().isoformat()
+            'timestamp': datetime.now().isoformat(),
+            'odds_info': {
+                'source': odds_source,
+                'bookmaker': best_bookmaker,
+                'odds_casa': round(odds_h, 2),
+                'odds_pareggio': round(odds_d, 2),
+                'odds_trasferta': round(odds_a, 2),
+                'is_live': odds_source == 'live_api'
+            }
         }
         
         # AGGIUNGI WARNING per squadre con dati insufficienti
