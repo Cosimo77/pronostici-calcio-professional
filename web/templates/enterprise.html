@@ -2101,6 +2101,20 @@
                 const response = await fetch('/api/monitoring/accuracy');
                 const data = await response.json();
                 
+                // Check errori API
+                if (data.error) {
+                    contentDiv.innerHTML = `
+                        <div style="grid-column: 1 / -1; text-align: center; padding: 30px; background: rgba(220,53,69,0.2); border-radius: 10px; border: 2px solid #dc3545;">
+                            <div style="font-size: 2em; margin-bottom: 10px;">❌</div>
+                            <div style="font-size: 1.1em; font-weight: 600; margin-bottom: 8px;">Errore API</div>
+                            <div style="font-size: 0.85em; color: rgba(255,255,255,0.7); margin-top: 8px;">
+                                ${data.error}
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+                
                 // Check status
                 if (data.status === 'no_data' || data.status === 'no_results') {
                     contentDiv.innerHTML = `
@@ -2118,6 +2132,20 @@
                 // Render dashboard completa
                 const statusColor = data.status === 'ok' ? '#28a745' : data.status === 'warning' ? '#ffc107' : '#dc3545';
                 const statusBg = data.status === 'ok' ? 'rgba(40,167,69,0.2)' : data.status === 'warning' ? 'rgba(255,193,7,0.2)' : 'rgba(220,53,69,0.2)';
+                
+                // Safe access per vs_backtest (può non esistere in caso di errori parziali)
+                const vsBacktest = data.vs_backtest || {
+                    baseline_pct: 39.5,
+                    difference_pct: 0,
+                    better: false
+                };
+                
+                // Safe access per model_info
+                const modelInfo = data.model_info || {
+                    primary: 'unknown',
+                    fallback: 'deterministic',
+                    deployed_date: 'N/A'
+                };
                 
                 let html = `
                     <!-- Status Box -->
@@ -2144,18 +2172,18 @@
                         </div>
                         <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
                             <span style="color: rgba(255,255,255,0.7);">Baseline:</span>
-                            <span style="font-weight: 600;">${data.vs_backtest.baseline_pct}%</span>
+                            <span style="font-weight: 600;">${vsBacktest.baseline_pct}%</span>
                         </div>
                         <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
                             <span style="color: rgba(255,255,255,0.7);">Live 7d:</span>
                             <span style="font-weight: 600;">${data.accuracy_7d_pct}%</span>
                         </div>
                         <div style="border-top: 1px solid rgba(255,255,255,0.2); padding-top: 10px; margin-top: 10px;">
-                            <div style="font-size: 1.2em; font-weight: bold; color: ${data.vs_backtest.better ? '#28a745' : '#dc3545'};">
-                                ${data.vs_backtest.difference_pct > 0 ? '+' : ''}${data.vs_backtest.difference_pct}%
+                            <div style="font-size: 1.2em; font-weight: bold; color: ${vsBacktest.better ? '#28a745' : '#dc3545'};">
+                                ${vsBacktest.difference_pct > 0 ? '+' : ''}${vsBacktest.difference_pct}%
                             </div>
                             <div style="font-size: 0.8em; color: rgba(255,255,255,0.6);">
-                                ${data.vs_backtest.better ? '✅ Migliore' : '⚠️ Sotto baseline'}
+                                ${vsBacktest.better ? '✅ Migliore' : '⚠️ Sotto baseline'}
                             </div>
                         </div>
                     </div>
@@ -2216,10 +2244,10 @@
                 html += `
                     <div style="grid-column: 1 / -1; text-align: center; padding: 15px; background: rgba(255,255,255,0.03); border-radius: 8px; margin-top: 10px;">
                         <div style="font-size: 0.85em; color: rgba(255,255,255,0.6);">
-                            🤖 Modello: <strong>${data.model_info.primary}</strong> 
-                            (Fallback: ${data.model_info.fallback}) | 
-                            Deploy: ${data.model_info.deployed_date} | 
-                            Lifetime: ${data.accuracy_lifetime_pct}% (${data.predictions_lifetime} partite)
+                            🤖 Modello: <strong>${modelInfo.primary}</strong> 
+                            (Fallback: ${modelInfo.fallback}) | 
+                            Deploy: ${modelInfo.deployed_date} | 
+                            Lifetime: ${data.accuracy_lifetime_pct || 'N/A'}% (${data.predictions_lifetime || 0} partite)
                         </div>
                     </div>
                 `;
