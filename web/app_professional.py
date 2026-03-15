@@ -11,7 +11,7 @@ import os
 import sys
 import math
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import hashlib
 from typing import Dict, Tuple, Any, Optional
 from flask_limiter import Limiter
@@ -307,6 +307,11 @@ class ProfessionalCalculator:
         self.feature_cols = None
         self.use_ml = True  # Flag per A/B test e rollback
         
+        # Auto-rollback tracking
+        self.last_rollback_check = None
+        self.rollback_check_interval = timedelta(minutes=15)  # Check ogni 15 min
+        self.rollback_threshold = 0.42  # Rollback se accuracy < 42%
+        
         self._carica_modelli_ml()
     
     def _carica_modelli_ml(self):
@@ -341,6 +346,79 @@ class ProfessionalCalculator:
             self.ml_model = None
             self.scaler = None
             logger.info("📊 Fallback automatico a sistema deterministico")
+    
+    def _check_auto_rollback(self):
+        """
+        Controlla accuracy live e fa rollback automatico a deterministico se < threshold.
+        Chiamato periodicamente con throttling (ogni 15 min).
+        """
+        # Throttling: controlla solo se è passato abbastanza tempo
+        now = datetime.now()
+        if self.last_rollback_check is not None:
+            elapsed = now - self.last_rollback_check
+            if elapsed < self.rollback_check_interval:
+                return  # Skip check, troppo presto
+        
+        self.last_rollback_check = now
+        
+        # Se già in modalità deterministico, skip check
+        if not self.use_ml:
+            return
+        
+        try:
+            tracking_file = 'tracking_accuracy_live_mar2026.csv'
+            
+            # Check se file esiste
+            if not os.path.exists(tracking_file):
+                logger.info("⚠️ File tracking non trovato, skip rollback check")
+                return
+            
+            # Leggi CSV
+            df = pd.read_csv(tracking_file)
+            
+            # Filtra solo righe con risultato reale
+            df_risultati = df[df['Risultato_Reale'].notna() & (df['Risultato_Reale'] != '')]
+            
+            if len(df_risultati) < 10:
+                logger.info(f"⚠️ Solo {len(df_risultati)} risultati, serve minimo 10 per rollback check")
+                return
+            
+            # Converti Data in datetime
+            df_risultati['Data'] = pd.to_datetime(df_risultati['Data'])
+            
+            # Filtra ultimi 7 giorni
+            seven_days_ago = now - timedelta(days=7)
+            df_7d = df_risultati[df_risultati['Data'] >= seven_days_ago]
+            
+            if len(df_7d) < 5:
+                logger.info(f"⚠️ Solo {len(df_7d)} risultati ultimi 7gg, serve minimo 5 per rollback")
+                return
+            
+            # Calcola accuracy 7 giorni
+            total = len(df_7d)
+            correct = df_7d['Corretto'].sum()
+            accuracy_7d = correct / total
+            
+            logger.info(f"🔍 Rollback check: Accuracy 7gg = {accuracy_7d:.2%} ({correct}/{total})")
+            
+            # Decision: rollback se sotto threshold
+            if accuracy_7d < self.rollback_threshold:
+                self.use_ml = False
+                logger.warning(
+                    f"⚠️ AUTO-ROLLBACK ATTIVATO: Accuracy {accuracy_7d:.2%} < {self.rollback_threshold:.0%} "
+                    f"→ Switching ML OFF (deterministico attivo)"
+                )
+                logger.warning(f"📊 Dati rollback: {correct}/{total} corrette ultimi 7 giorni")
+                
+                # TODO: Invia email/notifica admin (opzionale)
+                # send_admin_alert(f"Rollback ML attivato: accuracy {accuracy_7d:.2%}")
+                
+            else:
+                logger.info(f"✅ Accuracy OK ({accuracy_7d:.2%} ≥ {self.rollback_threshold:.0%}), ML attivo")
+        
+        except Exception as e:
+            logger.error(f"❌ Errore rollback check: {e}")
+            # In caso di errore, mantieni stato corrente (conservativo)
         
     def carica_dati(self, data_path: str = 'data/dataset_features.csv'):
         """Carica dataset features (già include stagione corrente via GitHub Actions)"""
@@ -617,6 +695,10 @@ class ProfessionalCalculator:
     
     def predici_partita(self, squadra_casa: str, squadra_ospite: str) -> Tuple[str, Dict[str, float], float]:
         """Predizione principale: usa ML se disponibile, altrimenti deterministico"""
+        
+        # Auto-rollback check (con throttling interno ogni 15 min)
+        self._check_auto_rollback()
+        
         if self.use_ml and self.ml_model is not None:
             return self._predici_ml(squadra_casa, squadra_ospite)
         else:
@@ -1486,10 +1568,59 @@ def api_predict_enterprise():
         if squadra_ospite not in calculator.squadre_disponibili:
             return jsonify({'error': f'Squadra ospite {squadra_ospite} non disponibile per predizioni'}), 400
         
+        # ============================================
+        # A/B TEST FRAMEWORK
+        # ============================================
+        # Supporto ml_mode: 'auto' (50/50 random), 'on' (forza ML), 'off' (forza deterministico)
+        ml_mode = data.get('ml_mode', None)  # None = comportamento default (auto-rollback attivo)
+        
+        # Salva stato originale
+        original_use_ml = calculator.use_ml
+        ab_test_active = False
+        forced_model = None
+        
+        if ml_mode:
+            ab_test_active = True
+            
+            if ml_mode == 'auto':
+                # Random 50/50
+                import random
+                use_ml_ab = random.choice([True, False])
+                calculator.use_ml = use_ml_ab
+                forced_model = 'random_forest' if use_ml_ab else 'deterministic'
+                logger.info(f"🎲 A/B test AUTO: Random → {'ML' if use_ml_ab else 'Deterministico'}")
+                
+            elif ml_mode == 'on':
+                # Forza ML
+                calculator.use_ml = True
+                forced_model = 'random_forest'
+                logger.info("🔬 A/B test ON: Forza ML")
+                
+            elif ml_mode == 'off':
+                # Forza deterministico
+                calculator.use_ml = False
+                forced_model = 'deterministic'
+                logger.info("📊 A/B test OFF: Forza Deterministico")
+            else:
+                logger.warning(f"⚠️ ml_mode sconosciuto: {ml_mode}, ignoro")
+                ab_test_active = False
+        
         # Predizione con ML (fallback deterministico se ML non disponibile)
         predizione, probabilita, confidenza = calculator.predici_partita(
             squadra_casa, squadra_ospite
         )
+        
+        # Determina modello effettivamente usato
+        actual_model = 'random_forest' if (calculator.use_ml and calculator.ml_model is not None) else 'deterministic'
+        
+        # Ripristina stato originale (importante per non interferire con altre richieste)
+        if ab_test_active:
+            calculator.use_ml = original_use_ml
+            logger.info(f"♻️ A/B test: Ripristinato use_ml = {original_use_ml}")
+        
+        # ============================================
+        # END A/B TEST
+        # ============================================
         
         # CALCOLA MERCATI MULTIPLI (BTTS, Over/Under, Cartellini, Corner)
         mercati = _calcola_mercati_deterministici(squadra_casa, squadra_ospite, probabilita)
@@ -1648,6 +1779,12 @@ def api_predict_enterprise():
                 'odds_pareggio': round(odds_d, 2),
                 'odds_trasferta': round(odds_a, 2),
                 'is_live': odds_source == 'live_api'
+            },
+            'ab_test_info': {
+                'active': ab_test_active,
+                'mode': ml_mode if ab_test_active else None,
+                'model_used': actual_model,
+                'forced': forced_model if ab_test_active else None
             }
         }
         
@@ -1670,7 +1807,7 @@ def api_predict_enterprise():
             }
             logger.warning(f"⚠️ Predizione con dati limitati: {squadra_limitata} ({min_partite} partite)")
         
-        logger.info(f"✅ Predizione Enterprise + Value Betting: {squadra_casa} vs {squadra_ospite} → {predizione} (ROI: {roi_expected*100:+.1f}%)")
+        logger.info(f"✅ Predizione Enterprise + Value Betting: {squadra_casa} vs {squadra_ospite} → {predizione} (ROI: {roi_expected*100:+.1f}%) [Model: {actual_model}]")
         
         return jsonify(response)
         
@@ -3612,6 +3749,125 @@ def api_test_coerenza():
         
     except Exception as e:
         logger.error(f"❌ Errore test coerenza: {e}")
+        return jsonify({'error': f'Errore interno: {str(e)}'}), 500
+
+@app.route('/api/monitoring/accuracy')
+@limiter.limit("60 per minute")
+def api_monitoring_accuracy():
+    """API per monitoring accuracy LIVE del sistema ML"""
+    
+    try:
+        tracking_file = 'tracking_accuracy_live_mar2026.csv'
+        
+        # Check se file esiste
+        if not os.path.exists(tracking_file):
+            return jsonify({
+                'status': 'no_data',
+                'message': 'Nessun dato di tracking disponibile',
+                'predictions_count': 0
+            })
+        
+        # Leggi CSV
+        df = pd.read_csv(tracking_file)
+        
+        # Filtra solo righe con risultato reale disponibile
+        df_risultati = df[df['Risultato_Reale'].notna() & (df['Risultato_Reale'] != '')]
+        
+        if len(df_risultati) == 0:
+            return jsonify({
+                'status': 'no_results',
+                'message': 'Nessuna partita completata ancora',
+                'predictions_count': len(df),
+                'pending_predictions': len(df)
+            })
+        
+        # Converti Data in datetime
+        df_risultati['Data'] = pd.to_datetime(df_risultati['Data'])
+        
+        # Filtra ultimi 7 giorni
+        today = datetime.now()
+        seven_days_ago = today - timedelta(days=7)
+        df_7d = df_risultati[df_risultati['Data'] >= seven_days_ago]
+        
+        # Calcola accuracy overall
+        total_predictions = len(df_7d)
+        correct_predictions = df_7d['Corretto'].sum() if total_predictions > 0 else 0
+        accuracy_7d = correct_predictions / total_predictions if total_predictions > 0 else 0.0
+        
+        # Breakdown per mercato
+        market_accuracy = {}
+        for market in df_7d['Mercato'].unique():
+            df_market = df_7d[df_7d['Mercato'] == market]
+            correct = df_market['Corretto'].sum()
+            total = len(df_market)
+            accuracy = correct / total if total > 0 else 0.0
+            
+            market_accuracy[market] = {
+                'accuracy': round(accuracy, 4),
+                'correct': int(correct),
+                'total': int(total),
+                'accuracy_pct': round(accuracy * 100, 2)
+            }
+        
+        # Calcola profitto totale
+        total_profit = df_7d['Profit'].sum() if 'Profit' in df_7d.columns else 0.0
+        roi_pct = (total_profit / total_predictions * 100) if total_predictions > 0 else 0.0
+        
+        # Determina status alert
+        if accuracy_7d >= 0.45:
+            status = 'ok'
+            status_icon = '🟢'
+            status_message = 'Performance ottimale'
+        elif accuracy_7d >= 0.35:
+            status = 'warning'
+            status_icon = '🟡'
+            status_message = 'Performance sotto target (45%)'
+        else:
+            status = 'critical'
+            status_icon = '🔴'
+            status_message = 'Performance critica - considera rollback deterministico'
+        
+        # Calcola accuracy lifetime (tutti i dati disponibili)
+        total_lifetime = len(df_risultati)
+        correct_lifetime = df_risultati['Corretto'].sum()
+        accuracy_lifetime = correct_lifetime / total_lifetime if total_lifetime > 0 else 0.0
+        
+        # Confronta con backtest baseline (39.5%)
+        backtest_baseline = 0.395
+        vs_backtest = accuracy_7d - backtest_baseline
+        vs_backtest_pct = vs_backtest * 100
+        
+        return jsonify({
+            'status': status,
+            'status_icon': status_icon,
+            'status_message': status_message,
+            'accuracy_7d': round(accuracy_7d, 4),
+            'accuracy_7d_pct': round(accuracy_7d * 100, 2),
+            'predictions_7d': int(total_predictions),
+            'correct_7d': int(correct_predictions),
+            'accuracy_lifetime': round(accuracy_lifetime, 4),
+            'accuracy_lifetime_pct': round(accuracy_lifetime * 100, 2),
+            'predictions_lifetime': int(total_lifetime),
+            'market_breakdown': market_accuracy,
+            'roi_7d_pct': round(roi_pct, 2),
+            'total_profit_7d': round(total_profit, 2),
+            'vs_backtest': {
+                'baseline': backtest_baseline,
+                'baseline_pct': 39.5,
+                'difference': round(vs_backtest, 4),
+                'difference_pct': round(vs_backtest_pct, 2),
+                'better': vs_backtest > 0
+            },
+            'model_info': {
+                'primary': 'random_forest' if calculator.use_ml else 'deterministic',
+                'fallback': 'deterministic',
+                'deployed_date': '2026-03-14'
+            },
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"❌ Errore monitoring accuracy: {e}")
         return jsonify({'error': f'Errore interno: {str(e)}'}), 500
 
 @app.route('/api/model_performance')

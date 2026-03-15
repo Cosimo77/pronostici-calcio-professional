@@ -474,6 +474,22 @@
             <span class="enterprise-badge">🔬 ENTERPRISE EDITION</span>
         </div>
 
+        <!-- MONITORING LIVE ACCURACY -->
+        <div id="monitoringDashboard" style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px; margin-bottom: 30px; backdrop-filter: blur(10px);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="margin: 0;">📊 Monitoring Live Accuracy</h3>
+                <button onclick="refreshMonitoring()" style="padding: 8px 15px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); border-radius: 5px; color: #fff; cursor: pointer; font-size: 14px;">
+                    🔄 Aggiorna
+                </button>
+            </div>
+            
+            <div id="monitoringContent" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+                <div style="text-align: center; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 10px;">
+                    <div style="font-size: 0.9em; color: rgba(255,255,255,0.7); margin-bottom: 5px;">Caricamento...</div>
+                </div>
+            </div>
+        </div>
+
         <div class="main-content">
             <div class="prediction-panel">
                 <h2>🎯 Predizione Ensemble</h2>
@@ -1983,6 +1999,175 @@
             console.warn('🔧 Promise rejection gestita:', reason);
             e.preventDefault();
         });
+        
+        // ========================================
+        // MONITORING LIVE ACCURACY
+        // ========================================
+        
+        async function refreshMonitoring() {
+            const contentDiv = document.getElementById('monitoringContent');
+            
+            try {
+                // Loading state
+                contentDiv.innerHTML = `
+                    <div style="grid-column: 1 / -1; text-align: center; padding: 20px;">
+                        <div style="font-size: 1.2em;">⏳ Caricamento dati live...</div>
+                    </div>
+                `;
+                
+                const response = await fetch('/api/monitoring/accuracy');
+                const data = await response.json();
+                
+                // Check status
+                if (data.status === 'no_data' || data.status === 'no_results') {
+                    contentDiv.innerHTML = `
+                        <div style="grid-column: 1 / -1; text-align: center; padding: 30px; background: rgba(255,193,7,0.2); border-radius: 10px; border: 2px solid #ffc107;">
+                            <div style="font-size: 2em; margin-bottom: 10px;">📊</div>
+                            <div style="font-size: 1.1em; font-weight: 600; margin-bottom: 8px;">${data.message}</div>
+                            <div style="font-size: 0.9em; color: rgba(255,255,255,0.7);">
+                                ${data.status === 'no_results' ? `Predizioni in attesa: ${data.predictions_count}` : 'Nessun dato di tracking'}
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Render dashboard completa
+                const statusColor = data.status === 'ok' ? '#28a745' : data.status === 'warning' ? '#ffc107' : '#dc3545';
+                const statusBg = data.status === 'ok' ? 'rgba(40,167,69,0.2)' : data.status === 'warning' ? 'rgba(255,193,7,0.2)' : 'rgba(220,53,69,0.2)';
+                
+                let html = `
+                    <!-- Status Box -->
+                    <div style="background: ${statusBg}; border: 2px solid ${statusColor}; border-radius: 10px; padding: 20px; text-align: center;">
+                        <div style="font-size: 2.5em; margin-bottom: 10px;">${data.status_icon}</div>
+                        <div style="font-size: 1.8em; font-weight: bold; color: ${statusColor}; margin-bottom: 5px;">
+                            ${data.accuracy_7d_pct}%
+                        </div>
+                        <div style="font-size: 0.9em; color: rgba(255,255,255,0.8); margin-bottom: 10px;">
+                            Accuracy ultimi 7 giorni
+                        </div>
+                        <div style="font-size: 0.85em; font-weight: 600; color: ${statusColor};">
+                            ${data.status_message}
+                        </div>
+                        <div style="font-size: 0.8em; color: rgba(255,255,255,0.6); margin-top: 8px;">
+                            ${data.correct_7d} / ${data.predictions_7d} predizioni
+                        </div>
+                    </div>
+                    
+                    <!-- Confronto Backtest -->
+                    <div style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 20px;">
+                        <div style="font-size: 1.1em; font-weight: 600; margin-bottom: 15px;">
+                            📈 vs Backtest Baseline
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                            <span style="color: rgba(255,255,255,0.7);">Baseline:</span>
+                            <span style="font-weight: 600;">${data.vs_backtest.baseline_pct}%</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                            <span style="color: rgba(255,255,255,0.7);">Live 7d:</span>
+                            <span style="font-weight: 600;">${data.accuracy_7d_pct}%</span>
+                        </div>
+                        <div style="border-top: 1px solid rgba(255,255,255,0.2); padding-top: 10px; margin-top: 10px;">
+                            <div style="font-size: 1.2em; font-weight: bold; color: ${data.vs_backtest.better ? '#28a745' : '#dc3545'};">
+                                ${data.vs_backtest.difference_pct > 0 ? '+' : ''}${data.vs_backtest.difference_pct}%
+                            </div>
+                            <div style="font-size: 0.8em; color: rgba(255,255,255,0.6);">
+                                ${data.vs_backtest.better ? '✅ Migliore' : '⚠️ Sotto baseline'}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- ROI Performance -->
+                    <div style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 20px;">
+                        <div style="font-size: 1.1em; font-weight: 600; margin-bottom: 15px;">
+                            💰 Performance ROI
+                        </div>
+                        <div style="font-size: 1.8em; font-weight: bold; color: ${data.roi_7d_pct >= 0 ? '#28a745' : '#dc3545'}; margin-bottom: 8px;">
+                            ${data.roi_7d_pct >= 0 ? '+' : ''}${data.roi_7d_pct}%
+                        </div>
+                        <div style="font-size: 0.85em; color: rgba(255,255,255,0.7); margin-bottom: 8px;">
+                            ROI ultimi 7 giorni
+                        </div>
+                        <div style="font-size: 0.9em; font-weight: 600; color: ${data.total_profit_7d >= 0 ? '#28a745' : '#dc3545'};">
+                            Profitto: ${data.total_profit_7d >= 0 ? '+' : ''}${data.total_profit_7d.toFixed(2)} unità
+                        </div>
+                    </div>
+                `;
+                
+                // Aggiungi breakdown mercati se disponibili
+                if (data.market_breakdown && Object.keys(data.market_breakdown).length > 0) {
+                    html += `
+                        <div style="grid-column: 1 / -1; background: rgba(255,255,255,0.05); border-radius: 10px; padding: 20px; margin-top: 10px;">
+                            <div style="font-size: 1.1em; font-weight: 600; margin-bottom: 15px;">
+                                🎯 Breakdown per Mercato
+                            </div>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                    `;
+                    
+                    for (const [market, stats] of Object.entries(data.market_breakdown)) {
+                        const marketIcon = market === '1X2' ? '⚽' : market === 'OU25' ? '🎲' : '⚡';
+                        const marketColor = stats.accuracy >= 0.50 ? '#28a745' : stats.accuracy >= 0.40 ? '#ffc107' : '#dc3545';
+                        
+                        html += `
+                            <div style="background: rgba(255,255,255,0.05); border-left: 3px solid ${marketColor}; padding: 15px; border-radius: 5px;">
+                                <div style="font-size: 0.9em; color: rgba(255,255,255,0.7); margin-bottom: 5px;">
+                                    ${marketIcon} ${market}
+                                </div>
+                                <div style="font-size: 1.5em; font-weight: bold; color: ${marketColor};">
+                                    ${stats.accuracy_pct}%
+                                </div>
+                                <div style="font-size: 0.8em; color: rgba(255,255,255,0.6); margin-top: 5px;">
+                                    ${stats.correct}/${stats.total} corrette
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
+                    html += `
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                // Info modello
+                html += `
+                    <div style="grid-column: 1 / -1; text-align: center; padding: 15px; background: rgba(255,255,255,0.03); border-radius: 8px; margin-top: 10px;">
+                        <div style="font-size: 0.85em; color: rgba(255,255,255,0.6);">
+                            🤖 Modello: <strong>${data.model_info.primary}</strong> 
+                            (Fallback: ${data.model_info.fallback}) | 
+                            Deploy: ${data.model_info.deployed_date} | 
+                            Lifetime: ${data.accuracy_lifetime_pct}% (${data.predictions_lifetime} partite)
+                        </div>
+                    </div>
+                `;
+                
+                contentDiv.innerHTML = html;
+                
+            } catch (error) {
+                console.error('Errore monitoring:', error);
+                contentDiv.innerHTML = `
+                    <div style="grid-column: 1 / -1; text-align: center; padding: 30px; background: rgba(220,53,69,0.2); border-radius: 10px; border: 2px solid #dc3545;">
+                        <div style="font-size: 2em; margin-bottom: 10px;">❌</div>
+                        <div style="font-size: 1.1em; font-weight: 600;">Errore caricamento dati</div>
+                        <div style="font-size: 0.85em; color: rgba(255,255,255,0.7); margin-top: 8px;">
+                            ${error.message}
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
+        // Auto-refresh al caricamento pagina
+        window.addEventListener('DOMContentLoaded', () => {
+            refreshMonitoring();
+            
+            // Auto-refresh ogni 5 minuti
+            setInterval(refreshMonitoring, 5 * 60 * 1000);
+        });
+        
+        // ========================================
+        // END MONITORING
+        // ========================================
         
         // Pulizia finale errori console
         setTimeout(() => {
