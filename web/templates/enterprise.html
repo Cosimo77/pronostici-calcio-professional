@@ -493,6 +493,29 @@
         <div class="main-content">
             <div class="prediction-panel">
                 <h2>🎯 Predizione Ensemble</h2>
+                
+                <!-- BANKROLL MANAGEMENT -->
+                <div class="form-group" style="background: rgba(40,167,69,0.1); padding: 15px; border-radius: 10px; border: 2px solid rgba(40,167,69,0.3); margin-bottom: 20px;">
+                    <label for="bankrollInput" style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                        💵 <strong>Bankroll Gestione</strong>
+                        <span style="font-size: 0.85em; color: rgba(255,255,255,0.7); font-weight: normal;">(salvato automaticamente)</span>
+                    </label>
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <div style="flex: 1;">
+                            <input 
+                                type="number" 
+                                id="bankrollInput" 
+                                placeholder="Es: 1000" 
+                                min="10" 
+                                max="1000000" 
+                                step="10"
+                                style="width: 100%; padding: 12px; border: 2px solid rgba(40,167,69,0.5); border-radius: 8px; background: rgba(255,255,255,0.95); color: #333; font-size: 18px; font-weight: 600;">
+                        </div>
+                        <div style="color: #28a745; font-size: 1.1em; font-weight: 600;">€</div>
+                    </div>
+                    <div id="bankrollStatus" style="margin-top: 8px; font-size: 0.85em; color: rgba(255,255,255,0.7);"></div>
+                </div>
+                
                 <form id="predictionForm">
                     <div class="form-group">
                         <label for="squadraCasa">Squadra Casa:</label>
@@ -1102,8 +1125,8 @@
                         ${kellyPct > 0 ? `
                             <div style="background: rgba(40, 167, 69, 0.15); padding: 12px; border-radius: 8px; border-left: 4px solid #28a745; margin-top: 15px;">
                                 <strong>💡 Stake Suggerito (Kelly):</strong> ${kellyPct.toFixed(2)}% del bankroll
-                                <div style="font-size: 0.85em; margin-top: 5px; opacity: 0.9;">
-                                    Es: €${(kellyPct * 10).toFixed(0)} su bankroll €1000
+                                <div id="kellyStakeAmount" style="font-size: 0.95em; margin-top: 8px;">
+                                    <!-- Verrà popolato da JS con bankroll reale -->
                                 </div>
                             </div>
                         ` : ''}
@@ -1146,6 +1169,32 @@
                 if (confidenceFill) {
                     const width = confidenceFill.getAttribute('data-width');
                     confidenceFill.style.width = width;
+                }
+                
+                // Aggiorna stake Kelly con bankroll reale
+                if (kellyPct > 0) {
+                    const bankroll = parseFloat(localStorage.getItem('userBankroll')) || null;
+                    const kellyStakeDiv = document.getElementById('kellyStakeAmount');
+                    
+                    if (kellyStakeDiv) {
+                        if (bankroll && bankroll > 0) {
+                            const stakeAmount = (kellyPct / 100) * bankroll;
+                            kellyStakeDiv.innerHTML = `
+                                <div style="font-size: 1.1em; font-weight: 600; color: #28a745; margin-bottom: 4px;">
+                                    💰 Punta: €${stakeAmount.toFixed(2)}
+                                </div>
+                                <div style="font-size: 0.85em; opacity: 0.8;">
+                                    (${kellyPct.toFixed(2)}% di €${bankroll.toFixed(0)} bankroll)
+                                </div>
+                            `;
+                        } else {
+                            kellyStakeDiv.innerHTML = `
+                                <div style="font-size: 0.85em; opacity: 0.8;">
+                                    💡 Imposta il bankroll sopra per vedere lo stake in €
+                                </div>
+                            `;
+                        }
+                    }
                 }
 
                 // Modelli individuali con gestione sicura e logging
@@ -1334,7 +1383,38 @@
                     }
                 });
                 
-                let mercatiHtml = '<div id="mercatiMultipli" class="mercati-multipli"><h3>📊 Mercati Multipli Completi</h3><div class="mercati-grid">';
+                let mercatiHtml = `
+                    <div id="mercatiMultipli" class="mercati-multipli">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h3 style="margin: 0;">📊 Mercati Multipli Completi</h3>
+                        </div>
+                        
+                        <!-- FILTRO EV PERSONALIZZABILE -->
+                        <div style="background: rgba(255,193,7,0.1); padding: 15px; border-radius: 10px; border: 2px solid rgba(255,193,7,0.3); margin-bottom: 20px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <label style="font-weight: 600; color: #ffc107;">
+                                    🎯 Filtro Expected Value (EV)
+                                </label>
+                                <span id="evFilterValue" style="font-size: 1.2em; font-weight: bold; color: #ffc107;">≥ 15%</span>
+                            </div>
+                            <input 
+                                type="range" 
+                                id="evFilterSlider" 
+                                min="0" 
+                                max="50" 
+                                value="15" 
+                                step="5"
+                                style="width: 100%; height: 8px; border-radius: 5px; background: linear-gradient(to right, #dc3545 0%, #ffc107 50%, #28a745 100%); outline: none; cursor: pointer;">
+                            <div style="display: flex; justify-content: space-between; font-size: 0.85em; color: rgba(255,255,255,0.7); margin-top: 5px;">
+                                <span>0% (Tutti)</span>
+                                <span>25% (Conservativo)</span>
+                                <span>50% (Aggressivo)</span>
+                            </div>
+                            <div id="evFilterStatus" style="margin-top: 10px; font-size: 0.9em; color: rgba(255,255,255,0.8);"></div>
+                        </div>
+                        
+                        <div class="mercati-grid">
+                `;
                 
                 // Usa tutti i mercati disponibili dall'API
                 const mercatiPrincipali = [
@@ -1523,8 +1603,11 @@
                             valore = mercato.consiglio || mercato.valore || 'N/A';
                         }
                         
+                        // Estrai valore numerico probabilità per filtro
+                        const probValue = parseFloat(probabilita) || 0;
+                        
                         mercatiHtml += `
-                            <div class="mercato-card">
+                            <div class="mercato-card" data-probability="${probValue}">
                                 <h4>${nome}</h4>
                                 <p><strong>Predizione:</strong> ${predizione}</p>
                                 <p><strong>Probabilità:</strong> ${probabilita}</p>
@@ -2163,6 +2246,142 @@
             
             // Auto-refresh ogni 5 minuti
             setInterval(refreshMonitoring, 5 * 60 * 1000);
+            
+            // ========================================
+            // BANKROLL MANAGEMENT
+            // ========================================
+            
+            const bankrollInput = document.getElementById('bankrollInput');
+            const bankrollStatus = document.getElementById('bankrollStatus');
+            
+            // Carica bankroll salvato
+            const savedBankroll = localStorage.getItem('userBankroll');
+            if (savedBankroll) {
+                const amount = parseFloat(savedBankroll);
+                bankrollInput.value = amount;
+                bankrollStatus.innerHTML = `✅ Bankroll caricato: <strong>€${amount.toFixed(0)}</strong>`;
+                bankrollStatus.style.color = '#28a745';
+            } else {
+                bankrollStatus.innerHTML = '💡 Imposta il tuo bankroll per calcoli stake personalizzati';
+            }
+            
+            // Salva bankroll quando cambia
+            bankrollInput.addEventListener('input', () => {
+                const value = parseFloat(bankrollInput.value);
+                
+                if (value && value >= 10) {
+                    localStorage.setItem('userBankroll', value.toString());
+                    bankrollStatus.innerHTML = `✅ Salvato: <strong>€${value.toFixed(0)}</strong>`;
+                    bankrollStatus.style.color = '#28a745';
+                    
+                    // Aggiorna stake Kelly se visibile
+                    const kellyStakeDiv = document.getElementById('kellyStakeAmount');
+                    if (kellyStakeDiv && kellyStakeDiv.closest('div[style*="rgba(40, 167, 69"]')) {
+                        // Trova kellyPct nel testo precedente (parsing rapido)
+                        const kellyText = kellyStakeDiv.parentElement.querySelector('strong').textContent;
+                        const kellyMatch = kellyText.match(/([\d.]+)%/);
+                        if (kellyMatch) {
+                            const kellyPct = parseFloat(kellyMatch[1]);
+                            const stakeAmount = (kellyPct / 100) * value;
+                            kellyStakeDiv.innerHTML = `
+                                <div style="font-size: 1.1em; font-weight: 600; color: #28a745; margin-bottom: 4px;">
+                                    💰 Punta: €${stakeAmount.toFixed(2)}
+                                </div>
+                                <div style="font-size: 0.85em; opacity: 0.8;">
+                                    (${kellyPct.toFixed(2)}% di €${value.toFixed(0)} bankroll)
+                                </div>
+                            `;
+                        }
+                    }
+                } else if (value < 10) {
+                    bankrollStatus.innerHTML = '⚠️ Bankroll minimo: €10';
+                    bankrollStatus.style.color = '#ffc107';
+                } else {
+                    bankrollStatus.innerHTML = '💡 Imposta il tuo bankroll per calcoli stake personalizzati';
+                    bankrollStatus.style.color = 'rgba(255,255,255,0.7)';
+                }
+            });
+            
+            // ========================================
+            // FILTRO EV PERSONALIZZABILE
+            // ========================================
+            
+            // Funzione per applicare filtro EV
+            function applyEvFilter() {
+                const slider = document.getElementById('evFilterSlider');
+                const valueDisplay = document.getElementById('evFilterValue');
+                const statusDisplay = document.getElementById('evFilterStatus');
+                
+                if (!slider) return; // Slider non ancora nel DOM
+                
+                const threshold = parseInt(slider.value);
+                
+                // Aggiorna display
+                valueDisplay.textContent = threshold === 0 ? 'Tutti' : `≥ ${threshold}%`;
+                
+                // Salva preferenza
+                localStorage.setItem('evFilterThreshold', threshold.toString());
+                
+                // Filtra mercati
+                const mercatiCards = document.querySelectorAll('.mercato-card');
+                let visibleCount = 0;
+                let hiddenCount = 0;
+                
+                mercatiCards.forEach(card => {
+                    const probability = parseFloat(card.getAttribute('data-probability')) || 0;
+                    
+                    if (threshold === 0 || probability >= threshold) {
+                        card.style.display = '';
+                        visibleCount++;
+                    } else {
+                        card.style.display = 'none';
+                        hiddenCount++;
+                    }
+                });
+                
+                // Aggiorna status
+                if (hiddenCount > 0) {
+                    statusDisplay.innerHTML = `✅ Mostrati <strong>${visibleCount}</strong> mercati (${hiddenCount} filtrati sotto ${threshold}%)`;
+                    statusDisplay.style.color = '#28a745';
+                } else {
+                    statusDisplay.innerHTML = `📊 Tutti i ${visibleCount} mercati visibili`;
+                    statusDisplay.style.color = 'rgba(255,255,255,0.8)';
+                }
+            }
+            
+            // Event listener per slider (con debounce)
+            let evFilterTimeout;
+            document.addEventListener('input', (e) => {
+                if (e.target.id === 'evFilterSlider') {
+                    clearTimeout(evFilterTimeout);
+                    evFilterTimeout = setTimeout(() => {
+                        applyEvFilter();
+                    }, 100); // Debounce 100ms
+                }
+            });
+            
+            // Carica soglia salvata e applica al caricamento risultati
+            const savedThreshold = localStorage.getItem('evFilterThreshold');
+            if (savedThreshold) {
+                // Aspetta che slider sia nel DOM (observer)
+                const sliderObserver = new MutationObserver(() => {
+                    const slider = document.getElementById('evFilterSlider');
+                    if (slider) {
+                        slider.value = savedThreshold;
+                        applyEvFilter();
+                        sliderObserver.disconnect();
+                    }
+                });
+                sliderObserver.observe(document.body, { childList: true, subtree: true });
+            }
+            
+            // ========================================
+            // END FILTRO EV
+            // ========================================
+            
+            // ========================================
+            // END BANKROLL MANAGEMENT
+            // ========================================
         });
         
         // ========================================
