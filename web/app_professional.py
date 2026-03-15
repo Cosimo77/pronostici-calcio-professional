@@ -1549,13 +1549,7 @@ def api_predict_enterprise():
             except Exception as e:
                 logger.error(f"❌ Errore fetch quote LIVE: {e}")
         
-        # Fallback su quote medie storiche se non disponibili
-        if not odds_h:
-            odds_h = 2.5
-            odds_d = 3.3
-            odds_a = 3.0
-            odds_source = 'historical_average'
-        
+        # Validazioni squadre PRIMA di predizione
         if not squadra_casa or not squadra_ospite:
             return jsonify({'error': 'Squadre mancanti'}), 400
         
@@ -1621,6 +1615,27 @@ def api_predict_enterprise():
         # ============================================
         # END A/B TEST
         # ============================================
+        
+        # ============================================
+        # FALLBACK QUOTE DINAMICHE
+        # Se quote LIVE non disponibili, calcola da probabilità modello
+        # ============================================
+        if not odds_h:
+            # Formula: quota_fair = 1 / probabilità
+            # Aggiungi margine bookmaker realistico (7%)
+            BOOKMAKER_MARGIN = 1.07
+            
+            odds_h_fair = 1.0 / probabilita['H'] if probabilita['H'] > 0 else 10.0
+            odds_d_fair = 1.0 / probabilita['D'] if probabilita['D'] > 0 else 10.0
+            odds_a_fair = 1.0 / probabilita['A'] if probabilita['A'] > 0 else 10.0
+            
+            # Applica margine bookmaker (quote più basse del fair)
+            odds_h = round(odds_h_fair * BOOKMAKER_MARGIN, 2)
+            odds_d = round(odds_d_fair * BOOKMAKER_MARGIN, 2)
+            odds_a = round(odds_a_fair * BOOKMAKER_MARGIN, 2)
+            
+            odds_source = 'model_implied'
+            logger.info(f"📊 Quote calcolate da probabilità modello: {odds_h} / {odds_d} / {odds_a}")
         
         # CALCOLA MERCATI MULTIPLI (BTTS, Over/Under, Cartellini, Corner)
         mercati = _calcola_mercati_deterministici(squadra_casa, squadra_ospite, probabilita)
@@ -1774,7 +1789,7 @@ def api_predict_enterprise():
             'timestamp': datetime.now().isoformat(),
             'odds_info': {
                 'source': odds_source,
-                'bookmaker': best_bookmaker,
+                'bookmaker': best_bookmaker if best_bookmaker else ('Quote Calcolate da Modello' if odds_source == 'model_implied' else 'Media Storica'),
                 'odds_casa': round(odds_h, 2),
                 'odds_pareggio': round(odds_d, 2),
                 'odds_trasferta': round(odds_a, 2),
