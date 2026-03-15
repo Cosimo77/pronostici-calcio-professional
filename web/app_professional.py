@@ -3791,8 +3791,8 @@ def api_monitoring_accuracy():
         
         # Calcola accuracy overall
         total_predictions = len(df_7d)
-        correct_predictions = df_7d['Corretto'].sum() if total_predictions > 0 else 0
-        accuracy_7d = correct_predictions / total_predictions if total_predictions > 0 else 0.0
+        correct_predictions = int(df_7d['Corretto'].sum()) if total_predictions > 0 else 0  # Convert numpy to Python int
+        accuracy_7d = float(correct_predictions / total_predictions) if total_predictions > 0 else 0.0
         
         # Breakdown per mercato
         market_accuracy = {}
@@ -3810,8 +3810,8 @@ def api_monitoring_accuracy():
             }
         
         # Calcola profitto totale
-        total_profit = df_7d['Profit'].sum() if 'Profit' in df_7d.columns else 0.0
-        roi_pct = (total_profit / total_predictions * 100) if total_predictions > 0 else 0.0
+        total_profit = float(df_7d['Profit'].sum()) if 'Profit' in df_7d.columns else 0.0  # Convert numpy to Python float
+        roi_pct = float(total_profit / total_predictions * 100) if total_predictions > 0 else 0.0
         
         # Determina status alert
         if accuracy_7d >= 0.45:
@@ -3829,13 +3829,13 @@ def api_monitoring_accuracy():
         
         # Calcola accuracy lifetime (tutti i dati disponibili)
         total_lifetime = len(df_risultati)
-        correct_lifetime = df_risultati['Corretto'].sum()
-        accuracy_lifetime = correct_lifetime / total_lifetime if total_lifetime > 0 else 0.0
+        correct_lifetime = int(df_risultati['Corretto'].sum())  # Convert numpy to Python int
+        accuracy_lifetime = float(correct_lifetime / total_lifetime) if total_lifetime > 0 else 0.0
         
         # Confronta con backtest baseline (39.5%)
         backtest_baseline = 0.395
-        vs_backtest = accuracy_7d - backtest_baseline
-        vs_backtest_pct = vs_backtest * 100
+        vs_backtest = float(accuracy_7d - backtest_baseline)  # Ensure Python float
+        vs_backtest_pct = float(vs_backtest * 100)
         
         return jsonify({
             'status': status,
@@ -3856,7 +3856,7 @@ def api_monitoring_accuracy():
                 'baseline_pct': 39.5,
                 'difference': round(vs_backtest, 4),
                 'difference_pct': round(vs_backtest_pct, 2),
-                'better': vs_backtest > 0
+                'better': bool(vs_backtest > 0)  # Convert numpy.bool_ to Python bool
             },
             'model_info': {
                 'primary': 'random_forest' if calculator.use_ml else 'deterministic',
