@@ -249,13 +249,31 @@ class DiarioStorage:
         if not os.path.exists(DiarioStorage.CSV_FILE):
             raise FileNotFoundError("File diario non trovato")
         
-        # Backup con timestamp
+        # Backup con timestamp (microsecondi per evitare collisioni)
         import shutil
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_%f')
         backup_file = DiarioStorage.CSV_FILE.replace('.csv', f'_backup_{timestamp}.csv')
         
-        shutil.copy2(DiarioStorage.CSV_FILE, backup_file)
-        logger.warning(f"⚠️ Backup diario creato: {backup_file}")
+        # Se file esiste già (race condition), aggiungi suffisso
+        counter = 1
+        while os.path.exists(backup_file):
+            backup_file = DiarioStorage.CSV_FILE.replace('.csv', f'_backup_{timestamp}_{counter}.csv')
+            counter += 1
+            if counter > 100:  # Safety limit
+                raise RuntimeError("Impossibile creare file backup univoco")
+        
+        try:
+            shutil.copy2(DiarioStorage.CSV_FILE, backup_file)
+            logger.warning(f"⚠️ Backup diario creato: {backup_file}")
+        except PermissionError as e:
+            # Se fallisce per permessi, prova con nome alternativo
+            logger.error(f"Permission error su {backup_file}, provo nome alternativo")
+            import time
+            time.sleep(0.1)  # Small delay
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_%f')
+            backup_file = DiarioStorage.CSV_FILE.replace('.csv', f'_backup_{timestamp}_alt.csv')
+            shutil.copy2(DiarioStorage.CSV_FILE, backup_file)
+            logger.warning(f"⚠️ Backup diario creato (alternativo): {backup_file}")
         
         # Reset CSV (solo header)
         header_row = pd.DataFrame(columns=[
