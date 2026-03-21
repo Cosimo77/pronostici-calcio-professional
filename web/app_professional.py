@@ -2144,43 +2144,46 @@ def api_upcoming_matches():
                     # Quote Double Chance NON disponibili = NON mostrare opportunità DC
                     # Calcolare quote DC approssimate porta a EV FALSI pericolosi
                     
-                    # Trova maggiore discrepanza (SOLO mercati con quote REALI)
-                    all_diffs = {
-                        '1X2 Casa': abs(diff_h),
-                        '1X2 Pareggio': abs(diff_d),
-                        '1X2 Trasferta': abs(diff_a)
-                    }
-                    if diff_over is not None:
-                        all_diffs['Over 2.5'] = abs(diff_over)
-                    if diff_under is not None:
-                        all_diffs['Under 2.5'] = abs(diff_under)
+                    # ✅ FIX: Trova migliore EV POSITIVO (non discrepanza assoluta)
+                    # Raccoglie tutti i candidati con outcome, odds, EV, discrepanza
+                    all_candidates = [
+                        {'key': '1X2 Casa', 'market': '1X2', 'outcome': 'Casa', 'odds': odds_home, 'ev': ev_h, 'diff': diff_h},
+                        {'key': '1X2 Pareggio', 'market': '1X2', 'outcome': 'Pareggio', 'odds': odds_draw, 'ev': ev_d, 'diff': diff_d},
+                        {'key': '1X2 Trasferta', 'market': '1X2', 'outcome': 'Trasferta', 'odds': odds_away, 'ev': ev_a, 'diff': diff_a}
+                    ]
                     
-                    best_market_key = max(all_diffs.keys(), key=lambda k: all_diffs[k])
-                    best_diff = all_diffs[best_market_key]
+                    if diff_over is not None and ev_over is not None:
+                        all_candidates.append({
+                            'key': 'Over 2.5', 'market': 'Over/Under 2.5', 'outcome': 'Over 2.5',
+                            'odds': odds_over_25, 'ev': ev_over, 'diff': diff_over
+                        })
+                    if diff_under is not None and ev_under is not None:
+                        all_candidates.append({
+                            'key': 'Under 2.5', 'market': 'Over/Under 2.5', 'outcome': 'Under 2.5',
+                            'odds': odds_under_25, 'ev': ev_under, 'diff': diff_under
+                        })
                     
-                    # Determina mercato e outcome per maggiore discrepanza (SOLO quote REALI)
-                    best_odds: float
-                    best_ev: float
-                    if 'Over' in best_market_key:
-                        best_market = 'Over/Under 2.5'
-                        best_outcome = 'Over 2.5'
-                        best_odds = odds_over_25 if odds_over_25 else 1.0
-                        best_ev = ev_over if ev_over else 0
-                    elif 'Under' in best_market_key:
-                        best_market = 'Over/Under 2.5'
-                        best_outcome = 'Under 2.5'
-                        best_odds = odds_under_25 if odds_under_25 else 1.0
-                        best_ev = ev_under if ev_under else 0
-                    else:  # 1X2
-                        best_market = '1X2'
-                        best_outcome = best_market_key.split(' ')[1]
-                        best_odds = odds_home if best_outcome == 'Casa' else (odds_draw if best_outcome == 'Pareggio' else odds_away)
-                        if best_outcome == 'Casa':
-                            best_ev = ev_h
-                        elif best_outcome == 'Pareggio':
-                            best_ev = ev_d
-                        else:
-                            best_ev = ev_a
+                    # Filtra solo candidati con EV POSITIVO
+                    positive_ev_candidates = [c for c in all_candidates if c['ev'] > 0]
+                    
+                    # Scegli candidato con EV positivo più alto (se esistono)
+                    if positive_ev_candidates:
+                        best_candidate = max(positive_ev_candidates, key=lambda x: x['ev'])
+                        best_market = best_candidate['market']
+                        best_outcome = best_candidate['outcome']
+                        best_odds = best_candidate['odds']
+                        best_ev = best_candidate['ev']
+                        best_diff = abs(best_candidate['diff'])
+                        logger.info(f"✅ {home} vs {away}: Migliore opportunità {best_outcome} @ {best_odds:.2f} (EV {best_ev*100:+.1f}%)")
+                    else:
+                        # Nessun EV positivo → Fallback a maggiore discrepanza assoluta (per analysis)
+                        best_candidate = max(all_candidates, key=lambda x: abs(x['diff']))
+                        best_market = best_candidate['market']
+                        best_outcome = best_candidate['outcome']
+                        best_odds = best_candidate['odds']
+                        best_ev = best_candidate['ev']
+                        best_diff = abs(best_candidate['diff'])
+                        logger.warning(f"⚠️ {home} vs {away}: Nessun EV positivo, discrepanza max {best_outcome} (EV {best_ev*100:+.1f}%)")
                     
                     # 🎯 VALIDAZIONE FASE 2 (Multi-mercato)
                     fase2_opportunities = []
