@@ -305,7 +305,7 @@ class ProfessionalCalculator:
         self.ml_model = None
         self.scaler = None
         self.feature_cols = None
-        self.use_ml = True  # Flag per A/B test e rollback
+        self.use_ml = False  # ⚠️ DISABILITATO: Bug features averaging (linea 673) - Riattivare dopo fix
         
         # Auto-rollback tracking
         self.last_rollback_check = None
