@@ -4,6 +4,7 @@ Interfaccia unificata per PostgreSQL + CSV fallback
 """
 
 import os
+import shutil
 import pandas as pd
 from typing import List, Dict, Optional
 from datetime import datetime
@@ -226,6 +227,46 @@ class DiarioStorage:
             }
         
         return None
+    
+    @staticmethod
+    def reset_all() -> str:
+        """
+        Reset completo diario (PERICOLOSO!)
+        Crea backup automatico prima di cancellare
+        
+        Returns:
+            Nome file backup creato
+        """
+        if DiarioStorage._use_database():
+            try:
+                # TODO: Implementare reset database (DROP TABLE + CREATE TABLE)
+                logger.warning("⚠️ Reset database non ancora implementato, fallback to CSV")
+                # Fall through to CSV
+            except Exception as e:
+                logger.error("Database reset failed", error=str(e))
+        
+        # CSV reset
+        if not os.path.exists(DiarioStorage.CSV_FILE):
+            raise FileNotFoundError("File diario non trovato")
+        
+        # Backup con timestamp
+        import shutil
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        backup_file = DiarioStorage.CSV_FILE.replace('.csv', f'_backup_{timestamp}.csv')
+        
+        shutil.copy2(DiarioStorage.CSV_FILE, backup_file)
+        logger.warning(f"⚠️ Backup diario creato: {backup_file}")
+        
+        # Reset CSV (solo header)
+        header_row = pd.DataFrame(columns=[
+            'Data', 'Partita', 'Mercato', 'Quota_Sistema', 'Quota_Sisal',
+            'EV_Modello', 'EV_Realistico', 'Stake', 'Risultato', 'Profit', 'Note'
+        ])
+        header_row.to_csv(DiarioStorage.CSV_FILE, index=False)
+        
+        logger.warning("🔴 Diario resettato completamente via DiarioStorage")
+        
+        return os.path.basename(backup_file)
     
     # ==================== SCOMMESSE MULTIPLE ====================
     

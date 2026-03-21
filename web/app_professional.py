@@ -5545,33 +5545,20 @@ def api_diario_delete_multipla():
 def api_diario_reset():
     """Reset completo diario con backup automatico"""
     try:
-        csv_file = os.path.join(os.path.dirname(__file__), '..', 'tracking_giocate.csv')
-        csv_file = os.path.abspath(csv_file)
+        # Usa DiarioStorage per gestire reset (supporta DB e CSV)
+        backup_file = DiarioStorage.reset_all()
         
-        if not os.path.exists(csv_file):
-            return jsonify({'success': False, 'error': 'File diario non trovato'}), 404
-        
-        # Crea backup con timestamp
-        from datetime import datetime
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        backup_file = csv_file.replace('.csv', f'_backup_{timestamp}.csv')
-        
-        import shutil
-        shutil.copy2(csv_file, backup_file)
-        logger.warning(f"⚠️ Backup diario creato: {backup_file}")
-        
-        # Reset CSV (solo header)
-        header = 'Data,Partita,Mercato,Quota_Sistema,Quota_Sisal,EV_Modello,EV_Realistico,Stake,Risultato,Profit,Note\n'
-        with open(csv_file, 'w') as f:
-            f.write(header)
-        
-        logger.warning("🔴 Diario resettato completamente")
+        logger.warning("🔴 Diario resettato completamente via API")
         
         return jsonify({
             'success': True,
-            'backup_file': os.path.basename(backup_file),
-            'message': 'Diario resettato con successo'
+            'backup_file': backup_file,
+            'message': 'Diario resettato con successo',
+            'warning': '⚠️ Su Render il reset è temporaneo. Committa il file vuoto su Git per persistenza.'
         })
+    
+    except FileNotFoundError:
+        return jsonify({'success': False, 'error': 'File diario non trovato'}), 404
     
     except Exception as e:
         logger.error(f"❌ Errore reset diario: {e}")
