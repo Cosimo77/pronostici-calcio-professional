@@ -1471,6 +1471,116 @@ def _valida_opportunita_fase2(mercato, pred, odds, ev_pct, mercati_data=None):
     
     return False, 'mercato_non_validato', mercato
 
+def calcola_shrinkage_adattivo():
+    """
+    Shrinkage dinamico calibrato su ROI reale vs EV modello.
+    
+    Sistema learning continuo che adatta la confidenza del modello 
+    in base alla performance effettiva su bet chiuse.
+    
+    Returns:
+        float: Shrinkage factor (0.15-0.50)
+               - 0.15 = minimo (modello molto accurato)
+               - 0.35 = default conservativo (<10 bet)
+               - 0.50 = massimo (modello overconfident)
+    """
+    logger = get_logger()
+    
+    try:
+        # Carica tracking giocate (multi-source)
+        tracking_files = [
+            'tracking_giocate.csv',
+            'tracking_fase2_febbraio2026.csv'
+        ]
+        
+        df_list = []
+        for file in tracking_files:
+            if os.path.exists(file):
+                df = pd.read_csv(file)
+                df_list.append(df)
+        
+        if not df_list:
+            logger.warning("⚠️ Nessun file tracking trovato, uso shrinkage default")
+            return 0.35
+        
+        df = pd.concat(df_list, ignore_index=True)
+        
+        # Filtra solo bet CHIUSE (WIN/LOSS, escludi PENDING)
+        df_closed = df[df['Risultato'].isin(['WIN', 'LOSS', 'Win', 'Loss', 'VOID'])]
+        
+        if len(df_closed) < 10:
+            logger.info(f"📊 Shrinkage: Solo {len(df_closed)} bet chiuse, uso default conservativo 35%")
+            return 0.35
+        
+        # Estrai EV modello (formato: "+17.7%" o "17.7" o "17.7%")
+        def parse_ev(val):
+            """Parse EV string to float"""
+            if pd.isna(val):
+                return None
+            val_str = str(val).strip().replace('+', '').replace('%', '')
+            try:
+                return float(val_str)
+            except:
+                return None
+        
+        df_closed['EV_parsed'] = df_closed['EV_%'].apply(parse_ev) if 'EV_%' in df_closed.columns else None
+        if df_closed['EV_parsed'] is None or df_closed['EV_parsed'].isna().all():
+            # Try alternative column name
+            df_closed['EV_parsed'] = df_closed['EV_Modello'].apply(parse_ev) if 'EV_Modello' in df_closed.columns else None
+        
+        # Calcola ROI reale
+        if 'Profit_Loss' in df_closed.columns:
+            profit_col = 'Profit_Loss'
+        elif 'Profit' in df_closed.columns:
+            profit_col = 'Profit'
+        else:
+            logger.warning("⚠️ Colonna profit non trovata")
+            return 0.35
+        
+        df_closed[profit_col] = pd.to_numeric(df_closed[profit_col], errors='coerce')
+        
+        # Filtra righe con EV e profit validi
+        df_valid = df_closed[
+            df_closed['EV_parsed'].notna() & 
+            df_closed[profit_col].notna()
+        ]
+        
+        if len(df_valid) < 10:
+            logger.info(f"📊 Shrinkage: Dati validi insufficienti ({len(df_valid)}), uso default")
+            return 0.35
+        
+        # Calcola metriche
+        ev_modello_medio = df_valid['EV_parsed'].mean()
+        # ROI reale = (profit totale / numero bet) / stake medio * 100
+        # Assumiamo stake ~10 (da verificare, altrimenti ROI è profit_medio)
+        roi_reale = (df_valid[profit_col].sum() / len(df_valid))  # ROI per bet
+        
+        if ev_modello_medio <= 0:
+            logger.warning(f"⚠️ EV modello medio ≤0 ({ev_modello_medio:.1f}%), uso default")
+            return 0.35
+        
+        # Rapporto efficienza: ROI_reale / EV_modello
+        # Se ROI_reale = 5% e EV_modello = 20%, efficienza = 0.25 → serve shrinkage ~75%
+        # Shrinkage = 1 - efficienza (con bounds 15-50%)
+        efficienza = roi_reale / ev_modello_medio
+        shrinkage = 1 - efficienza
+        shrinkage = max(0.15, min(0.50, shrinkage))  # Clamp
+        
+        logger.info(
+            f"✅ Shrinkage adattivo calcolato",
+            n_bet_closed=len(df_valid),
+            ev_modello_medio=round(ev_modello_medio, 1),
+            roi_reale=round(roi_reale, 2),
+            efficienza=round(efficienza, 3),
+            shrinkage=round(shrinkage, 3)
+        )
+        
+        return shrinkage
+        
+    except Exception as e:
+        logger.error(f"❌ Errore calcolo shrinkage adattivo: {e}", exc_info=True)
+        return 0.35  # Fallback sicuro
+
 def _valida_opportunita_fase1(pred, odds, ev_pct):
     """
     Filtri FASE 1 validati su 510 trade:
@@ -1674,7 +1784,21 @@ def api_predict_enterprise():
         pred_idx = {'H': 0, 'D': 1, 'A': 2}[predizione]
         pred_odds = [odds_h, odds_d, odds_a][pred_idx]
         pred_prob = [probabilita['H'], probabilita['D'], probabilita['A']][pred_idx]
-        roi_expected = calc_ev(pred_prob, pred_odds)
+        roi_expected_raw = calc_ev(pred_prob, pred_odds)
+        
+        # ============================================
+        # 🎚️ SHRINKAGE ADATTIVO - Learning Continuo
+        # Calibra EV modello con performance reale su bet chiuse
+        # ============================================
+        shrinkage_factor = calcola_shrinkage_adattivo()
+        roi_expected = roi_expected_raw * (1 - shrinkage_factor)
+        
+        logger.info(
+            "🎚️ EV calibrato con shrinkage adattivo",
+            ev_raw=round(roi_expected_raw * 100, 1),
+            shrinkage=round(shrinkage_factor, 2),
+            ev_adjusted=round(roi_expected * 100, 1)
+        )
         
         # ============================================
         # 🎯 FASE 2 - MULTI-MERCATO (9 Feb 2026 - FIX TRADING)
@@ -2394,6 +2518,164 @@ def api_refresh_quotes():
             'type': type(e).__name__,
             'hint': 'Verifica ODDS_API_KEY configurata correttamente'
         }), 500
+
+@app.route('/api/export/predizioni', methods=['GET'])
+@limiter.limit("10 per hour")  # Limita export per evitare abuso
+def api_export_predizioni():
+    """
+    Esporta predizioni giornaliere in formato CSV scaricabile.
+    
+    Parametri query:
+        - date (opzionale): Data partite in formato YYYY-MM-DD (default: oggi)
+        
+    Returns:
+        CSV file con headers:
+        Casa, Ospite, Predizione, Prob_H%, Prob_D%, Prob_A%, Confidenza%, 
+        EV_Best%, Mercato_Best, Quota_Best, Kelly_Stake_EUR, Validato_FASE1
+    """
+    try:
+        logger.info("📥 Richiesta export CSV predizioni")
+        
+        # Parametro data (default oggi)
+        date_str = request.args.get('date', datetime.now().strftime('%Y-%m-%d'))
+        
+        # Ottieni partite upcoming (usa endpoint esistente logica)
+        from integrations.odds_api import OddsAPIClient
+        
+        api_key = os.getenv('ODDS_API_KEY')
+        if not api_key:
+            return "ERRORE: ODDS_API_KEY non configurata. Impossibile generare predizioni.", 503
+        
+        odds_client = OddsAPIClient(api_key=api_key)
+        matches_raw = odds_client.get_upcoming_odds()
+        
+        if not matches_raw:
+            return f"Nessuna partita disponibile per {date_str}", 404
+        
+        # CSV rows
+        csv_rows = []
+        csv_headers = [
+            'Data', 'Casa', 'Ospite', 'Predizione', 
+            'Prob_H%', 'Prob_D%', 'Prob_A%', 'Confidenza%',
+            'EV_Best%', 'Mercato_Best', 'Quota_Best', 
+            'Kelly_Stake_EUR', 'Validato_FASE1'
+        ]
+        
+        # Genera predizioni per ogni match
+        for match in matches_raw[:20]:  # Limita a 20 partite per performance
+            try:
+                home = match['home_team']
+                away = match['away_team']
+                
+                # Normalizza nomi squadre
+                home_normalized = normalize_team_name(home)
+                away_normalized = normalize_team_name(away)
+                
+                # Predizione ML
+                predizione, probabilita, confidenza = calculator.predici_partita(
+                    home_normalized, away_normalized
+                )
+                
+                # Quote mercato (media bookmakers)
+                bookmakers = match.get('bookmakers', [])
+                if not bookmakers:
+                    continue
+                    
+                h2h_market = None
+                for bookie in bookmakers:
+                    for market in bookie.get('markets', []):
+                        if market['key'] == 'h2h':
+                            h2h_market = market
+                            break
+                    if h2h_market:
+                        break
+                
+                if not h2h_market:
+                    continue
+                
+                outcomes = {o['name']: o['price'] for o in h2h_market['outcomes']}
+                odds_h = outcomes.get(home, 2.0)
+                odds_d = outcomes.get('Draw', 3.0)
+                odds_a = outcomes.get(away, 2.0)
+                
+                # Calcola EV per ogni esito
+                def calc_ev(prob, odds):
+                    return prob * odds - 1
+                
+                ev_h = calc_ev(probabilita['H'], odds_h)
+                ev_d = calc_ev(probabilita['D'], odds_d)
+                ev_a = calc_ev(probabilita['A'], odds_a)
+                
+                evs = {
+                    'H': (ev_h, odds_h, 'Casa'),
+                    'D': (ev_d, odds_d, 'Pareggio'),
+                    'A': (ev_a, odds_a, 'Trasferta')
+                }
+                
+                # Best EV
+                best_esito = max(evs.items(), key=lambda x: x[1][0])
+                best_ev, best_odds, best_label = best_esito[1]
+                
+                # Kelly stake (25% Kelly conservativo)
+                pred_idx = {'H': 0, 'D': 1, 'A': 2}[predizione]
+                pred_prob = [probabilita['H'], probabilita['D'], probabilita['A']][pred_idx]
+                pred_odds = [odds_h, odds_d, odds_a][pred_idx]
+                
+                kelly_fraction = 0.0
+                if pred_prob > 0 and pred_odds > 1 and best_ev > 0:
+                    edge = pred_prob * pred_odds - 1
+                    kelly_fraction = (edge / (pred_odds - 1)) * 0.25  # 25% Kelly
+                    kelly_fraction = min(kelly_fraction, 0.05)  # Max 5% bankroll
+                
+                kelly_stake = kelly_fraction * 500.0  # Bankroll default €500
+                
+                # Valida FASE1
+                is_valid_fase1, _ = _valida_opportunita_fase1(
+                    predizione, pred_odds, best_ev * 100
+                )
+                
+                # Row CSV
+                csv_rows.append([
+                    match.get('commence_time', date_str)[:10],  # Data
+                    home,
+                    away,
+                    {'H': 'Casa', 'D': 'Pareggio', 'A': 'Trasferta'}[predizione],
+                    f"{probabilita['H']*100:.1f}",
+                    f"{probabilita['D']*100:.1f}",
+                    f"{probabilita['A']*100:.1f}",
+                    f"{confidenza*100:.1f}",
+                    f"{best_ev*100:.1f}",
+                    best_label,
+                    f"{best_odds:.2f}",
+                    f"{kelly_stake:.2f}",
+                    'SI' if is_valid_fase1 else 'NO'
+                ])
+                
+            except Exception as e:
+                logger.error(f"❌ Errore export match {match.get('home_team')}: {e}")
+                continue
+        
+        # Genera CSV
+        import io
+        output = io.StringIO()
+        output.write(','.join(csv_headers) + '\n')
+        for row in csv_rows:
+            output.write(','.join(map(str, row)) + '\n')
+        
+        csv_content = output.getvalue()
+        output.close()
+        
+        # Response con download header
+        response = app.make_response(csv_content)
+        response.headers['Content-Type'] = 'text/csv; charset=utf-8'
+        response.headers['Content-Disposition'] = f'attachment; filename=predizioni_{date_str}.csv'
+        
+        logger.info(f"✅ CSV generato: {len(csv_rows)} predizioni")
+        return response
+        
+    except Exception as e:
+        logger.error(f"❌ Errore export CSV: {e}", exc_info=True)
+        return f"Errore generazione CSV: {str(e)}", 500
 
 @app.route('/consigli')
 def pagina_consigli():

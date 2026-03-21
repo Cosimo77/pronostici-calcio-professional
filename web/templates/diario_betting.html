@@ -380,6 +380,30 @@
                     </div>
                 </div>
                 
+                <!-- Win Rate & Performance Charts -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0"><i class="bi bi-percent"></i> Win Rate Evolution</h6>
+                            </div>
+                            <div class="card-body chart-container">
+                                <canvas id="winRateChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0"><i class="bi bi-pie-chart"></i> ROI per Mercato</h6>
+                            </div>
+                            <div class="card-body chart-container">
+                                <canvas id="roiPerMercatoChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="row">
                     <div class="col-md-6">
                         <div class="card">
@@ -1782,6 +1806,8 @@
         
         // Carica equity curve
         let equityChart = null;
+        let winRateChart = null;
+        let roiPerMercatoChart = null;
         
         async function loadEquityCurve() {
             try {
@@ -1874,9 +1900,206 @@
             }
         }
         
+        async function loadWinRateEvolution() {
+            try {
+                // Riusa dati equity curve o fetch specifico
+                const response = await fetch('/api/equity_curve');
+                const data = await response.json();
+                
+                if (!data.bet_details || data.bet_details.length === 0) {
+                    const canvas = document.getElementById('winRateChart');
+                    const parent = canvas.parentElement;
+                    parent.innerHTML = `
+                        <div class="text-center text-muted py-4">
+                            <i class="bi bi-percent"></i>
+                            <p class="mt-2 mb-0">Nessun dato disponibile</p>
+                            <small>Completa almeno 5 bet per visualizzare il win rate</small>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Calcola win rate rolling (finestra 10 bet)
+                const bets = data.bet_details;
+                const windowSize = 10;
+                const labels = [];
+                const winRates = [];
+                
+                for (let i = 0; i < bets.length; i++) {
+                    const startIdx = Math.max(0, i - windowSize + 1);
+                    const window = bets.slice(startIdx, i + 1);
+                    const wins = window.filter(b => b.risultato === 'WIN').length;
+                    const winRate = (wins / window.length) * 100;
+                    
+                    labels.push(`Bet ${i + 1}`);
+                    winRates.push(winRate.toFixed(1));
+                }
+                
+                const ctx = document.getElementById('winRateChart').getContext('2d');
+                
+                if (winRateChart) {
+                    winRateChart.destroy();
+                }
+                
+                winRateChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Win Rate % (Rolling 10)',
+                            data: winRates,
+                            borderColor: '#28a745',
+                            backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4
+                        }, {
+                            label: 'Target (40%)',
+                            data: Array(labels.length).fill(40),
+                            borderColor: '#ffc107',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            fill: false,
+                            pointRadius: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                            },
+                            title: {
+                                display: true,
+                                text: 'Win Rate Evolution (Finestra 10 bet)'
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 100,
+                                ticks: {
+                                    callback: function(value) {
+                                        return value + '%';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+                
+            } catch (error) {
+                console.error('Errore caricamento win rate:', error);
+            }
+        }
+        
+        async function loadRoiPerMercato() {
+            try {
+                const all_bets = await fetch('/api/get_betting_events').then(r => r.json());
+                
+                if (!all_bets || all_bets.length === 0) {
+                    const canvas = document.getElementById('roiPerMercatoChart');
+                    const parent = canvas.parentElement;
+                    parent.innerHTML = `
+                        <div class="text-center text-muted py-4">
+                            <i class="bi bi-pie-chart"></i>
+                            <p class="mt-2 mb-0">Nessun dato disponibile</p>
+                            <small>Completa bet su vari mercati</small>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Filtra solo completate
+                const completed = all_bets.filter(b => ['WIN', 'LOSS'].includes(b.risultato));
+                
+                if (completed.length === 0) {
+                    const canvas = document.getElementById('roiPerMercatoChart');
+                    const parent = canvas.parentElement;
+                    parent.innerHTML = `
+                        <div class="text-center text-muted py-4">
+                            <p class="mb-0">Nessuna bet completata</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Raggruppa per mercato
+                const mercati = {};
+                completed.forEach(bet => {
+                    const mercato = bet.mercato || '1X2';
+                    if (!mercati[mercato]) {
+                        mercati[mercato] = { profit: 0, count: 0, stake: 0 };
+                    }
+                    mercati[mercato].profit += parseFloat(bet.profit || 0);
+                    mercati[mercato].count += 1;
+                    mercati[mercato].stake += parseFloat(bet.stake || 10);  // Default stake 10
+                });
+                
+                // Calcola ROI per mercato
+                const labels = [];
+                const roiValues = [];
+                const colors = ['#667eea', '#28a745', '#ffc107', '#dc3545', '#17a2b8'];
+                
+                Object.entries(mercati).forEach(([mercato, stats], i) => {
+                    const roi = stats.stake > 0 ? (stats.profit / stats.stake) * 100 : 0;
+                    labels.push(`${mercato} (${stats.count} bet)`);
+                    roiValues.push(roi.toFixed(1));
+                });
+                
+                const ctx = document.getElementById('roiPerMercatoChart').getContext('2d');
+                
+                if (roiPerMercatoChart) {
+                    roiPerMercatoChart.destroy();
+                }
+                
+                roiPerMercatoChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'ROI %',
+                            data: roiValues,
+                            backgroundColor: colors,
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            title: {
+                                display: true,
+                                text: 'ROI per Tipo Mercato'
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return value + '%';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+                
+            } catch (error) {
+                console.error('Errore caricamento ROI mercati:', error);
+            }
+        }
+        
         // Event listener per tab Trading Dashboard
         document.getElementById('trading-tab').addEventListener('shown.bs.tab', function() {
             loadEquityCurve();
+            loadWinRateEvolution();
+            loadRoiPerMercato();
             
             // Carica config bankroll corrente nei form
             fetch('/api/bankroll')
