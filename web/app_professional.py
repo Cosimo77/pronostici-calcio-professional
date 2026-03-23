@@ -420,11 +420,27 @@ class ProfessionalCalculator:
             logger.error(f"❌ Errore rollback check: {e}")
             # In caso di errore, mantieni stato corrente (conservativo)
         
-    def carica_dati(self, data_path: str = 'data/dataset_features.csv'):
+    def carica_dati(self, data_path: str = 'data/dataset_features.csv', force_reload: bool = False):
         """Carica dataset features (già include stagione corrente via GitHub Actions)"""
         try:
+            # Check se serve reload (file più recente del caricamento precedente)
+            if not force_reload and hasattr(self, 'dataset_last_loaded'):
+                import os
+                try:
+                    file_mtime = os.path.getmtime(data_path)
+                    if file_mtime <= self.dataset_last_loaded:
+                        logger.debug(f"⏭️ Dataset già aggiornato, skip reload")
+                        return
+                except FileNotFoundError:
+                    pass  # File non esiste, procedi con load
+            
             # Carica dataset features (include storico + stagione corrente da automation)
             self.df_features = pd.read_csv(data_path)
+            
+            # Salva timestamp caricamento
+            import time, os
+            self.dataset_last_loaded = os.path.getmtime(data_path) if os.path.exists(data_path) else time.time()
+            
             logger.info(f"✅ Dataset features caricato: {len(self.df_features)} partite")
             
             # NOTE: dataset_features.csv è aggiornato automaticamente da GitHub Actions
@@ -448,11 +464,32 @@ class ProfessionalCalculator:
             else:
                 logger.info(f"✅ Feature columns estratte: {len(self.feature_cols)} features (ML fallback attivo)")
             
+            # Log ultima partita per debug
+            if 'Date' in self.df_features.columns:
+                ultima_partita = self.df_features['Date'].max()
+                logger.info(f"📅 Ultima partita nel dataset: {ultima_partita}")
+            
             logger.info(f"✅ Dataset completo: {len(self.df_features)} partite, {len(self.squadre_disponibili)} squadre")
             return True
         except Exception as e:
             logger.error(f"❌ Errore caricamento dati: {e}")
             return False
+    
+    def ricarica_dataset(self, data_path: str = 'data/dataset_features.csv'):
+        \"\"\"Forza ricaricamento dataset (utile dopo aggiornamenti dati)\"\"\"
+        logger.info(\"🔄 Ricaricamento forzato dataset...\")
+        success = self.carica_dati(data_path, force_reload=True)
+        if success:
+            logger.info(\"✅ Dataset ricaricato con successo\")
+            return {
+                'success': True,
+                'partite_totali': len(self.df_features),
+                'ultima_partita': self.df_features['Date'].max() if 'Date' in self.df_features.columns else 'N/A',
+                'squadre': len(self.squadre_disponibili)
+            }
+        else:
+            logger.error(\"❌ Errore ricaricamento dataset\")
+            return {'success': False, 'error': 'Errore caricamento dati'}
     
     def _calcola_partite_validabili(self) -> int:
         """Calcola numero partite con risultato e quote complete (valore reale dinamico)"""
@@ -1327,6 +1364,38 @@ def api_cache_clear():
             'timestamp': datetime.now().isoformat()
         })
     except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+@app.route('/api/reload_dataset', methods=['POST'])
+@limiter.limit("5 per minute")
+def api_reload_dataset():
+    """Endpoint per ricaricare dataset aggiornato (dopo update dati)"""
+    try:
+        global calculator
+        result = calculator.ricarica_dataset()
+        
+        if result.get('success'):
+            logger.info(f"✅ Dataset ricaricato via API: {result['partite_totali']} partite, ultima: {result['ultima_partita']}")
+            return jsonify({
+                'status': 'success',
+                'message': 'Dataset ricaricato con successo',
+                'data': {
+                    'partite_totali': result['partite_totali'],
+                    'ultima_partita': result['ultima_partita'],
+                    'squadre': result['squadre']
+                },
+                'timestamp': datetime.now().isoformat()
+            })
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': result.get('error', 'Errore sconosciuto')
+            }), 500
+    except Exception as e:
+        logger.error(f"❌ Errore reload dataset API: {e}")
         return jsonify({
             'status': 'error',
             'message': str(e)

@@ -61,6 +61,9 @@ class DiarioStorage:
         for idx, row in df.iterrows():
             bets.append({
                 'id': int(idx),  # type: ignore[arg-type]
+                'group_id': str(row['group_id']) if pd.notna(row['group_id']) and row['group_id'] != '' else None,
+                'bet_number': int(row['bet_number']) if 'bet_number' in row and pd.notna(row['bet_number']) else 1,
+                'tipo_bet': str(row['tipo_bet']) if 'tipo_bet' in row and pd.notna(row['tipo_bet']) else 'SINGLE',
                 'data': str(row['Data']),
                 'partita': str(row['Partita']),
                 'mercato': str(row['Mercato']),
@@ -106,12 +109,16 @@ class DiarioStorage:
         if os.path.exists(DiarioStorage.CSV_FILE):
             df = pd.read_csv(DiarioStorage.CSV_FILE)
         else:
-            df = pd.DataFrame(columns=['Data', 'Partita', 'Mercato', 'Quota_Sistema', 'Quota_Sisal',
-                                      'EV_Modello', 'EV_Realistico', 'Stake', 'Risultato', 'Profit', 'Note'])
+            df = pd.DataFrame(columns=['group_id', 'bet_number', 'tipo_bet', 'Data', 'Partita', 'Mercato', 
+                                      'Quota_Sistema', 'Quota_Sisal', 'EV_Modello', 'EV_Realistico', 
+                                      'Stake', 'Risultato', 'Profit', 'Note'])
         
         quota = round(float(data['quota_sisal']), 2)
         
         new_row = pd.DataFrame([{
+            'group_id': data.get('group_id', ''),  # Vuoto per bet singole
+            'bet_number': data.get('bet_number', 1),
+            'tipo_bet': data.get('tipo_bet', 'SINGLE'),
             'Data': data.get('data', datetime.now().strftime('%d/%m/%Y')),
             'Partita': data['partita'],
             'Mercato': data['mercato'],
@@ -120,8 +127,8 @@ class DiarioStorage:
             'EV_Modello': data.get('ev_modello', 'N/A'),
             'EV_Realistico': data.get('ev_realistico', 'N/A'),
             'Stake': str(data['stake']),
-            'Risultato': 'PENDING',
-            'Profit': 0.0,
+            'Risultato': data.get('risultato', 'PENDING'),
+            'Profit': data.get('profit', 0.0),
             'Note': data.get('note', '')
         }])
         
@@ -132,7 +139,7 @@ class DiarioStorage:
     
     @staticmethod
     def update_risultato(bet_id: int, risultato: str) -> float:
-        """Aggiorna risultato bet"""
+        """Aggiorna risultato bet (singola o evento multipla)"""
         if DiarioStorage._use_database():
             try:
                 return BetModel.update_risultato(bet_id, risultato)
@@ -146,23 +153,66 @@ class DiarioStorage:
         if bet_id >= len(df):
             raise ValueError(f"Bet {bet_id} not found")
         
-        quota = float(df.at[bet_id, 'Quota_Sisal'])  # type: ignore[arg-type]
-        stake_raw = df.at[bet_id, 'Stake']
-        
-        try:
-            stake = float(stake_raw)  # type: ignore[arg-type]
-        except ValueError:
-            stake = 0.0  # MONITOR
-        
-        if risultato == 'WIN':
-            profit = stake * (quota - 1)
-        elif risultato == 'LOSS':
-            profit = -stake
-        else:  # VOID, SKIP
-            profit = 0.0
-        
+        # Aggiorna risultato evento
         df.at[bet_id, 'Risultato'] = risultato
-        df.at[bet_id, 'Profit'] = round(profit, 2)
+        
+        # Check se parte di multipla
+        tipo_bet = str(df.at[bet_id, 'tipo_bet']) if 'tipo_bet' in df.columns else 'SINGLE'
+        
+        if tipo_bet == 'MULTIPLA':
+            group_id = str(df.at[bet_id, 'group_id'])
+            
+            # Aggiorna tutti gli eventi della multipla
+            df_multipla = df[df['group_id'] == group_id]
+            risultati = df_multipla['Risultato'].tolist()
+            
+            # Logica multipla: basta 1 LOSS → tutta LOSS
+            if risultato in ['LOSS', 'SKIP'] or 'LOSS' in risultati or 'SKIP' in risultati:
+                # Multipla persa
+                stake = float(df_multipla.iloc[0]['Stake'])
+                profit = -stake
+                
+                # Aggiorna tutti gli eventi con profit negativo
+                for idx in df_multipla.index:
+                    df.at[idx, 'Profit'] = round(profit, 2)
+            
+            elif all(r == 'WIN' for r in risultati):
+                # Multipla vinta: calcola profit totale
+                stake = float(df_multipla.iloc[0]['Stake'])
+                quota_totale = 1.0
+                for idx in df_multipla.index:
+                    quota_totale *= float(df.at[idx, 'Quota_Sisal'])
+                
+                profit = stake * (quota_totale - 1)
+                
+                # Aggiorna tutti gli eventi con profit positivo
+                for idx in df_multipla.index:
+                    df.at[idx, 'Profit'] = round(profit, 2)
+            
+            else:
+                # Ancora PENDING
+                profit = 0.0
+                df.at[bet_id, 'Profit'] = 0.0
+        
+        else:
+            # Bet singola: calcolo normale
+            quota = float(df.at[bet_id, 'Quota_Sisal'])  # type: ignore[arg-type]
+            stake_raw = df.at[bet_id, 'Stake']
+            
+            try:
+                stake = float(stake_raw)  # type: ignore[arg-type]
+            except ValueError:
+                stake = 0.0  # MONITOR
+            
+            if risultato == 'WIN':
+                profit = stake * (quota - 1)
+            elif risultato == 'LOSS':
+                profit = -stake
+            else:  # VOID, SKIP
+                profit = 0.0
+            
+            df.at[bet_id, 'Profit'] = round(profit, 2)
+        
         df.to_csv(DiarioStorage.CSV_FILE, index=False)
         
         return profit
@@ -289,7 +339,7 @@ class DiarioStorage:
     # ==================== SCOMMESSE MULTIPLE ====================
     
     @staticmethod
-    def create_multipla(multipla_data: Dict, eventi: List[Dict]) -> int:
+    def create_multipla(multipla_data: Dict, eventi: List[Dict]) -> str:
         """
         Crea scommessa multipla con eventi associati
         
@@ -305,10 +355,11 @@ class DiarioStorage:
             eventi: List di dict (come in create_bet) senza risultato
         
         Returns:
-            group_id: ID della multipla creata
+            group_id: ID della multipla creata (stringa)
         """
-        if not DiarioStorage._use_database():
-            raise NotImplementedError("Multiple supportate solo con database PostgreSQL")
+        if DiarioStorage._use_database():
+            # Versione PostgreSQL (già implementata)
+            pass  # Codice originale segue sotto
         
         try:
             from database.bet_group_model import BetGroupModel
@@ -360,14 +411,65 @@ class DiarioStorage:
                 
                 BetModel.create(evento_data)
             
-            logger.info("Multipla creata con successo", group_id=group_id, num_eventi=num_eventi)
-            return group_id
+            logger.info("Multipla creata con successo (DB)", group_id=group_id, num_eventi=num_eventi)
+            return str(group_id)
             
         except ImportError:
-            raise NotImplementedError("BetGroupModel non disponibile")
+            logger.warning("BetGroupModel non disponibile, fallback to CSV")
+            # Fall through to CSV
         except Exception as e:
-            logger.error("Errore creazione multipla", error=str(e))
-            raise
+            logger.error("Errore creazione multipla DB, fallback to CSV", error=str(e))
+            # Fall through to CSV
+        
+        # CSV fallback implementation
+        if len(eventi) < 2:
+            raise ValueError("Multipla richiede almeno 2 eventi")
+        
+        # Genera group_id univoco (timestamp + random)
+        import uuid
+        group_id = f"MULT{datetime.now().strftime('%Y%m%d%H%M%S')}_{uuid.uuid4().hex[:6].upper()}"
+        
+        # Calcola tipo multipla
+        num_eventi = len(eventi)
+        tipi = {2: 'doppia', 3: 'tripla', 4: 'quadrupla', 5: 'quintupla', 
+               6: 'sestina', 7: 'settina', 8: 'ottina'}
+        tipo_multipla = tipi.get(num_eventi, f'{num_eventi}-pla')
+        
+        # Converti data
+        data_str = multipla_data.get('data', datetime.now().strftime('%Y-%m-%d'))
+        if isinstance(data_str, str):
+            try:
+                data_obj = datetime.strptime(data_str, '%Y-%m-%d')
+            except ValueError:
+                try:
+                    data_obj = datetime.strptime(data_str, '%d/%m/%Y')
+                except ValueError:
+                    data_obj = datetime.now()
+            data_str = data_obj.strftime('%Y-%m-%d')
+        
+        # Crea eventi  multipla nel CSV
+        stake_per_evento = float(multipla_data['stake'])
+        
+        for idx, evento in enumerate(eventi, start=1):
+            evento_data = {
+                'group_id': group_id,
+                'bet_number': idx,
+                'tipo_bet': 'MULTIPLA',
+                'data': data_str,
+                'partita': evento['partita'],
+                'mercato': evento['mercato'],
+                'quota_sisal': evento['quota_sisal'],
+                'ev_modello': evento.get('ev_modello', 'N/A'),
+                'ev_realistico': evento.get('ev_realistico', 'N/A'),
+                'stake': stake_per_evento,
+                'risultato': 'PENDING',
+                'profit': 0.0,
+                'note': f"{tipo_multipla.upper()} - Quota totale: {multipla_data['quota_totale']:.2f} - {multipla_data.get('note', '')}"
+            }
+            DiarioStorage.create_bet(evento_data)
+        
+        logger.info("Multipla creata con successo (CSV)", group_id=group_id, num_eventi=num_eventi, tipo=tipo_multipla)
+        return group_id
     
     @staticmethod
     def get_all_multiple(risultato: Optional[str] = None) -> List[Dict]:
@@ -380,29 +482,112 @@ class DiarioStorage:
         Returns:
             List di dict con chiave 'eventi' contenente lista eventi
         """
-        if not DiarioStorage._use_database():
+        if DiarioStorage._use_database():
+            try:
+                from database.bet_group_model import BetGroupModel
+                
+                groups = BetGroupModel.get_all(risultato=risultato)
+                
+                # Arricchisci ogni multipla con eventi nested
+                for group in groups:
+                    group_id = group['id']
+                    # Get eventi associati a questa multipla
+                    eventi = [bet for bet in DiarioStorage.get_all_bets() if bet.get('group_id') == group_id]
+                    group['eventi'] = eventi
+                
+                logger.info("Multiple recuperate da DB", count=len(groups))
+                return groups
+                
+            except ImportError:
+                logger.warning("BetGroupModel non disponibile, fallback to CSV")
+                # Fall through to CSV
+            except Exception as e:
+                logger.error("Errore get multiple DB, fallback to CSV", error=str(e))
+                # Fall through to CSV
+        
+        # CSV fallback implementation
+        if not os.path.exists(DiarioStorage.CSV_FILE):
             return []
         
-        try:
-            from database.bet_group_model import BetGroupModel
-            
-            groups = BetGroupModel.get_all(risultato=risultato)
-            
-            # Arricchisci ogni multipla con eventi nested
-            for group in groups:
-                group_id = group['id']
-                # Get eventi associati a questa multipla
-                eventi = [bet for bet in DiarioStorage.get_all_bets() if bet.get('group_id') == group_id]
-                group['eventi'] = eventi
-            
-            return groups
-            
-        except ImportError:
-            logger.warning("BetGroupModel non disponibile")
+        df = pd.read_csv(DiarioStorage.CSV_FILE)
+        
+        # Filtra solo bet multiple
+        df_multiple = df[df['tipo_bet'] == 'MULTIPLA']
+        
+        if len(df_multiple) == 0:
             return []
-        except Exception as e:
-            logger.error("Errore get multiple", error=str(e))
-            return []
+        
+        # Raggruppa per group_id
+        multiple_dict = {}
+        for idx, row in df_multiple.iterrows():
+            group_id = str(row['group_id'])
+            
+            if group_id not in multiple_dict:
+                # Estrai info multipla dalla prima riga del gruppo
+                note_parts = str(row['Note']).split(' - ')
+                tipo_multipla = note_parts[0] if len(note_parts) > 0 else 'multipla'
+                quota_totale_str = note_parts[1] if len(note_parts) > 1 else 'Quota totale: 0.00'
+                quota_totale = float(quota_totale_str.replace('Quota totale: ', '').replace(',', '.'))
+                
+                multiple_dict[group_id] = {
+                    'id': group_id,
+                    'data': str(row['Data']),
+                    'tipo_multipla': tipo_multipla.lower(),
+                    'quota_totale': quota_totale,
+                    'stake': float(row['Stake']),
+                    'risultato': str(row['Risultato']),
+                    'profit': 0.0,  # Calcolato dopo
+                    'note': str(row['Note']),
+                    'eventi': []
+                }
+            
+            # Aggiungi evento alla multipla
+            evento = {
+                'id': int(idx),  # type: ignore[arg-type]
+                'bet_number': int(row['bet_number']),
+                'partita': str(row['Partita']),
+                'mercato': str(row['Mercato']),
+                'quota_sisal': float(row['Quota_Sisal']),
+                'risultato': str(row['Risultato']),
+                'profit': float(row['Profit']) if pd.notna(row['Profit']) else 0.0
+            }
+            multiple_dict[group_id]['eventi'].append(evento)
+        
+        # Calcola risultato e profit per ogni multipla
+        for group_id, multipla in multiple_dict.items():
+            eventi = multipla['eventi']
+            
+            # Verifica risultati
+            risultati = [e['risultato'] for e in eventi]
+            
+            if 'LOSS' in risultati or 'SKIP' in risultati:
+                multipla['risultato'] = 'LOSS'
+                multipla['profit'] = -multipla['stake']
+            elif all(r == 'WIN' for r in risultati):
+                multipla['risultato'] = 'WIN'
+                multipla['profit'] = multipla['stake'] * (multipla['quota_totale'] - 1)
+            elif 'VOID' in risultati and 'PENDING' not in risultati:
+                # Cancella evento VOID, ricalcola quota
+                events_valid = [e for e in eventi if e['risultato'] != 'VOID']
+                if all(e['risultato'] == 'WIN' for e in events_valid):
+                    quota_ridotta = 1.0
+                    for e in events_valid:
+                        quota_ridotta *= e['quota_sisal']
+                    multipla['risultato'] = 'WIN'
+                    multipla['profit'] = multipla['stake'] * (quota_ridotta - 1)
+                else:
+                    multipla['risultato'] = 'LOSS'
+                    multipla['profit'] = -multipla['stake']
+            else:
+                multipla['risultato'] = 'PENDING'
+                multipla['profit'] = 0.0
+        
+        # Filtra per risultato se richiesto
+        multiple_list = list(multiple_dict.values())
+        if risultato:
+            multiple_list = [m for m in multiple_list if m['risultato'] == risultato]
+        
+        return multiple_list
     
     @staticmethod
     def update_evento_multipla(bet_id: int, risultato: str) -> float:
@@ -417,8 +602,9 @@ class DiarioStorage:
         Returns:
             profit: Profit finale della multipla (0.0 se ancora pending)
         """
-        if not DiarioStorage._use_database():
-            raise NotImplementedError("Multiple supportate solo con database PostgreSQL")
+        if DiarioStorage._use_database():
+            # Versione PostgreSQL (già implementata)
+            pass  # Codice originale segue
         
         try:
             from database.bet_group_model import BetGroupModel
@@ -436,26 +622,55 @@ class DiarioStorage:
             # Ricalcola risultato multipla
             profit = BetGroupModel.update_risultato(group_id)
             
-            logger.info("Evento multipla aggiornato", bet_id=bet_id, group_id=group_id, 
+            logger.info("Evento multipla aggiornato (DB)", bet_id=bet_id, group_id=group_id, 
                        risultato=risultato, profit_finale=profit)
             
             return profit
             
         except ImportError:
-            raise NotImplementedError("BetGroupModel non disponibile")
+            logger.warning("BetGroupModel non disponibile, fallback to CSV")
+            # Fall through to CSV
         except Exception as e:
-            logger.error("Errore update evento multipla", bet_id=bet_id, error=str(e))
-            raise
+            logger.error("Errore update evento multipla DB, fallback to CSV", bet_id=bet_id, error=str(e))
+            # Fall through to CSV
+        
+        # CSV fallback: usa update_risultato che già gestisce multiple
+        profit = DiarioStorage.update_risultato(bet_id, risultato)
+        
+        logger.info("Evento multipla aggiornato (CSV)", bet_id=bet_id, 
+                   risultato=risultato, profit_finale=profit)
+        
+        return profit
     
     @staticmethod
-    def delete_multipla(group_id: int) -> bool:
+    def delete_multipla(group_id: str) -> bool:
         """Elimina multipla (CASCADE elimina anche eventi)"""
-        if not DiarioStorage._use_database():
-            return False
+        if DiarioStorage._use_database():
+            # Versione PostgreSQL
+            pass  # Codice originale segue
         
         try:
             from database.bet_group_model import BetGroupModel
-            return BetGroupModel.delete(group_id)
+            return BetGroupModel.delete(int(group_id))  # Convert to int for DB
         except Exception as e:
-            logger.error("Errore delete multipla", group_id=group_id, error=str(e))
+            logger.error("Errore delete multipla DB, fallback to CSV", group_id=group_id, error=str(e))
+            # Fall through to CSV
+        
+        # CSV fallback
+        if not os.path.exists(DiarioStorage.CSV_FILE):
+            return False
+        
+        df = pd.read_csv(DiarioStorage.CSV_FILE)
+        
+        # Filtra out tutte le righe con questo group_id
+        df_filtered = df[df['group_id'] != group_id]
+        
+        num_deleted = len(df) - len(df_filtered)
+        
+        if num_deleted > 0:
+            df_filtered.to_csv(DiarioStorage.CSV_FILE, index=False)
+            logger.info(f"Multipla eliminata (CSV): group_id={group_id}, {num_deleted} eventi rimossi")
+            return True
+        else:
+            logger.warning(f"Multipla non trovata per eliminazione: group_id={group_id}")
             return False
