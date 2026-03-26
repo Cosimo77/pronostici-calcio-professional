@@ -476,11 +476,11 @@ class ProfessionalCalculator:
             return False
     
     def ricarica_dataset(self, data_path: str = 'data/dataset_features.csv'):
-        \"\"\"Forza ricaricamento dataset (utile dopo aggiornamenti dati)\"\"\"
-        logger.info(\"🔄 Ricaricamento forzato dataset...\")
+        """Forza ricaricamento dataset (utile dopo aggiornamenti dati)"""
+        logger.info("🔄 Ricaricamento forzato dataset...")
         success = self.carica_dati(data_path, force_reload=True)
         if success:
-            logger.info(\"✅ Dataset ricaricato con successo\")
+            logger.info("✅ Dataset ricaricato con successo")
             return {
                 'success': True,
                 'partite_totali': len(self.df_features),
@@ -488,7 +488,7 @@ class ProfessionalCalculator:
                 'squadre': len(self.squadre_disponibili)
             }
         else:
-            logger.error(\"❌ Errore ricaricamento dataset\")
+            logger.error("❌ Errore ricaricamento dataset")
             return {'success': False, 'error': 'Errore caricamento dati'}
     
     def _calcola_partite_validabili(self) -> int:
