@@ -1458,45 +1458,15 @@ def api_roi_history():
 @app.route('/api/rigenera_cache', methods=['POST'])
 @limiter.limit("10 per hour")  # Operazione leggera, no API calls
 def api_rigenera_cache():
-    """Rigenera cache ROI dai file backtest esistenti (NO chiamate API)"""
-    try:
-        from pathlib import Path
-        import sys
-        
-        base_path = Path(__file__).parent.parent
-        
-        # Importa modulo calcolo ROI
-        sys.path.insert(0, str(base_path / 'scripts'))
-        from calcola_roi_dinamico import calcola_roi_aggiornato
-        
-        # Ricalcola metriche da backtest_trades.csv esistente
-        metriche = calcola_roi_aggiornato()
-        
-        if not metriche:
-            return jsonify({'error': 'Impossibile calcolare metriche'}), 500
-        
-        # Salva in data/backtest/ (directory trackable)
-        cache_file = base_path / 'data' / 'backtest' / 'roi_metrics.json'
-        cache_file.parent.mkdir(parents=True, exist_ok=True)
-        
-        import json
-        with open(cache_file, 'w') as f:
-            json.dump(metriche, f, indent=2)
-        
-        return jsonify({
-            'status': 'success',
-            'message': 'Cache ROI aggiornata (nessuna chiamata API)',
-            'metriche': {
-                'roi_turnover': metriche.get('roi_turnover', 0),
-                'total_bets': metriche.get('partite_totali', 0),
-                'max_drawdown': metriche.get('max_drawdown', 0),
-                'return_total': metriche.get('return_totale', 0)
-            }
-        })
-        
-    except Exception as e:
-        logger.error(f"Errore rigenerazione cache: {e}")
-        return jsonify({'error': str(e)}), 500
+    """Rigenera cache ROI dai file backtest esistenti (NO chiamate API)
+    
+    ⚠️ DEPRECATO: Script calcola_roi_dinamico.py rimosso nel cleanup 28/03/2026
+    """
+    return jsonify({
+        'status': 'deprecated',
+        'message': 'Endpoint deprecato: script calcola_roi_dinamico.py rimosso nel cleanup (Marzo 2026)',
+        'alternative': 'Usare /api/backtest/metrics per metriche ROI'
+    }), 410  # 410 Gone - risorsa permanentemente rimossa
 
 # ============================================
 # 🎯 FUNZIONI VALIDAZIONE FASE 1 & FASE 2

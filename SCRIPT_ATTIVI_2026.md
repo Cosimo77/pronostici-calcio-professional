@@ -70,7 +70,7 @@ Questi script sono **documentati** e utilizzati in **produzione**:
 
 12. **`weekly_retrain.py`**
     - Riaddestramento modelli settimanale
-   - Trigger: Domenica 02:00
+    - Trigger: Domenica 02:00
     - Backup modelli old
 
 13. **`mercati_multipli_clean.py`**
