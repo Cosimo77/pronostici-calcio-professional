@@ -366,7 +366,7 @@ class ProfessionalCalculator:
             return
         
         try:
-            tracking_file = 'tracking_accuracy_live_mar2026.csv'
+            tracking_file = 'tracking_predictions_live.csv'
             
             # Check se file esiste
             if not os.path.exists(tracking_file):
@@ -4096,7 +4096,7 @@ def api_monitoring_accuracy():
     """API per monitoring accuracy LIVE del sistema ML"""
     
     try:
-        tracking_file = 'tracking_accuracy_live_mar2026.csv'
+        tracking_file = 'tracking_predictions_live.csv'
         
         # Check se file esiste
         if not os.path.exists(tracking_file):
