@@ -34,13 +34,13 @@ def cleanup_redis_cache():
         r.ping()
         
         # Conta chiavi prima
-        keys_before = int(r.dbsize())
+        keys_before = r.dbsize()
         
         # Pulisce chiavi scadute
         r.execute_command('MEMORY', 'PURGE')
         
-        keys_after = int(r.dbsize())
-        freed = keys_before - keys_after
+        keys_after = r.dbsize()
+        freed = keys_before - keys_after  # type: ignore[operator]
         
         logging.info(f"🧹 Redis: {freed} chiavi rimosse ({keys_after} rimanenti)")
         return True

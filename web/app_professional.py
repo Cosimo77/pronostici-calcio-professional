@@ -479,7 +479,7 @@ class ProfessionalCalculator:
         """Forza ricaricamento dataset (utile dopo aggiornamenti dati)"""
         logger.info("🔄 Ricaricamento forzato dataset...")
         success = self.carica_dati(data_path, force_reload=True)
-        if success:
+        if success and self.df_features is not None:
             logger.info("✅ Dataset ricaricato con successo")
             return {
                 'success': True,
@@ -5599,7 +5599,7 @@ def api_diario_delete_multipla():
         if not data or 'group_id' not in data:
             return jsonify({'success': False, 'error': 'group_id richiesto'}), 400
         
-        group_id = int(data['group_id'])
+        group_id = str(data['group_id'])
         success = DiarioStorage.delete_multipla(group_id)
         
         if success:

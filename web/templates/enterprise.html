@@ -475,17 +475,17 @@
         </div>
 
         <!-- MONITORING LIVE ACCURACY -->
-        <div id="monitoringDashboard" style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px; margin-bottom: 30px; backdrop-filter: blur(10px);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <h3 style="margin: 0;">📊 Monitoring Live Accuracy</h3>
-                <button onclick="refreshMonitoring()" style="padding: 8px 15px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); border-radius: 5px; color: #fff; cursor: pointer; font-size: 14px;">
+        <div id="monitoringDashboard" class="monitoring-dashboard">
+            <div class="monitoring-header">
+                <h3>📊 Monitoring Live Accuracy</h3>
+                <button onclick="refreshMonitoring()" class="monitoring-refresh-btn">
                     🔄 Aggiorna
                 </button>
             </div>
             
-            <div id="monitoringContent" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
-                <div style="text-align: center; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 10px;">
-                    <div style="font-size: 0.9em; color: rgba(255,255,255,0.7); margin-bottom: 5px;">Caricamento...</div>
+            <div id="monitoringContent" class="monitoring-content">
+                <div>
+                    <div class="loading-text">Caricamento...</div>
                 </div>
             </div>
         </div>
@@ -495,25 +495,25 @@
                 <h2>🎯 Predizione Ensemble</h2>
                 
                 <!-- BANKROLL MANAGEMENT -->
-                <div class="form-group" style="background: rgba(40,167,69,0.1); padding: 15px; border-radius: 10px; border: 2px solid rgba(40,167,69,0.3); margin-bottom: 20px;">
-                    <label for="bankrollInput" style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                <div class="form-group bankroll-container">
+                    <label for="bankrollInput" class="bankroll-label">
                         💵 <strong>Bankroll Gestione</strong>
-                        <span style="font-size: 0.85em; color: rgba(255,255,255,0.7); font-weight: normal;">(salvato automaticamente)</span>
+                        <span class="bankroll-label-subtitle">(salvato automaticamente)</span>
                     </label>
-                    <div style="display: flex; align-items: center; gap: 15px;">
-                        <div style="flex: 1;">
+                    <div class="bankroll-input-wrapper">
+                        <div>
                             <input 
                                 type="number" 
                                 id="bankrollInput" 
+                                class="bankroll-input"
                                 placeholder="Es: 1000" 
                                 min="10" 
                                 max="1000000" 
-                                step="10"
-                                style="width: 100%; padding: 12px; border: 2px solid rgba(40,167,69,0.5); border-radius: 8px; background: rgba(255,255,255,0.95); color: #333; font-size: 18px; font-weight: 600;">
+                                step="10">
                         </div>
-                        <div style="color: #28a745; font-size: 1.1em; font-weight: 600;">€</div>
+                        <div class="bankroll-currency">€</div>
                     </div>
-                    <div id="bankrollStatus" style="margin-top: 8px; font-size: 0.85em; color: rgba(255,255,255,0.7);"></div>
+                    <div id="bankrollStatus" class="bankroll-status"></div>
                 </div>
                 
                 <form id="predictionForm">

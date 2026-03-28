@@ -178,10 +178,10 @@ class DiarioStorage:
             
             elif all(r == 'WIN' for r in risultati):
                 # Multipla vinta: calcola profit totale
-                stake = float(df_multipla.iloc[0]['Stake'])
+                stake = float(df_multipla.iloc[0]['Stake'])  # type: ignore[arg-type]
                 quota_totale = 1.0
                 for idx in df_multipla.index:
-                    quota_totale *= float(df.at[idx, 'Quota_Sisal'])
+                    quota_totale *= float(df.at[idx, 'Quota_Sisal'])  # type: ignore[arg-type]
                 
                 profit = stake * (quota_totale - 1)
                 
