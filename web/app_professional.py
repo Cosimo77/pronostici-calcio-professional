@@ -5250,6 +5250,21 @@ def api_diario_completed():
         logger.error(f"❌ Errore completed diario: {e}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/diario/all', methods=['GET'])
+@app.route('/api/get_betting_events', methods=['GET'])  # Alias legacy
+@limiter.limit("60 per minute")
+def api_diario_all():
+    """Tutte le puntate (pending + completed) - per analisi/grafici"""
+    try:
+        all_bets = DiarioStorage.get_all_bets()
+        
+        # Ritorna array semplice per compatibilità con JS filter
+        return jsonify(all_bets)
+        
+    except Exception as e:
+        logger.error(f"❌ Errore get all bets: {e}")
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/diario/add', methods=['POST'])
 @limiter.limit("30 per minute")
 def api_diario_add():
