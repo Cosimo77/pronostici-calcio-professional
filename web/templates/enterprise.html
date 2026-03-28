@@ -2155,7 +2155,7 @@
                             ${data.accuracy_7d_pct}%
                         </div>
                         <div style="font-size: 0.9em; color: rgba(255,255,255,0.8); margin-bottom: 10px;">
-                            Accuracy ultimi 7 giorni
+                            Accuracy ultimi ${data.days_window || '7 giorni'}
                         </div>
                         <div style="font-size: 0.85em; font-weight: 600; color: ${statusColor};">
                             ${data.status_message}
@@ -2175,7 +2175,7 @@
                             <span style="font-weight: 600;">${vsBacktest.baseline_pct}%</span>
                         </div>
                         <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                            <span style="color: rgba(255,255,255,0.7);">Live 7d:</span>
+                            <span style="color: rgba(255,255,255,0.7);">Live (${data.days_window || '7 giorni'}):</span>
                             <span style="font-weight: 600;">${data.accuracy_7d_pct}%</span>
                         </div>
                         <div style="border-top: 1px solid rgba(255,255,255,0.2); padding-top: 10px; margin-top: 10px;">
@@ -2197,7 +2197,7 @@
                             ${data.roi_7d_pct >= 0 ? '+' : ''}${data.roi_7d_pct}%
                         </div>
                         <div style="font-size: 0.85em; color: rgba(255,255,255,0.7); margin-bottom: 8px;">
-                            ROI ultimi 7 giorni
+                            ROI ultimi ${data.days_window || '7 giorni'}
                         </div>
                         <div style="font-size: 0.9em; font-weight: 600; color: ${data.total_profit_7d >= 0 ? '#28a745' : '#dc3545'};">
                             Profitto: ${data.total_profit_7d >= 0 ? '+' : ''}${data.total_profit_7d.toFixed(2)} unità

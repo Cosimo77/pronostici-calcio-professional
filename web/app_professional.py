@@ -4123,10 +4123,17 @@ def api_monitoring_accuracy():
         # Converti Data in datetime
         df_risultati['Data'] = pd.to_datetime(df_risultati['Data'])
         
-        # Filtra ultimi 7 giorni
+        # Filtra ultimi 7 giorni (con fallback a 30 se vuoto)
         today = datetime.now()
         seven_days_ago = today - timedelta(days=7)
         df_7d = df_risultati[df_risultati['Data'] >= seven_days_ago]
+        
+        # Fallback a 30 giorni se ultimi 7 sono vuoti
+        days_label = "7 giorni"
+        if len(df_7d) == 0:
+            thirty_days_ago = today - timedelta(days=30)
+            df_7d = df_risultati[df_risultati['Data'] >= thirty_days_ago]
+            days_label = "30 giorni"
         
         # Calcola accuracy overall
         total_predictions = len(df_7d)
@@ -4180,6 +4187,7 @@ def api_monitoring_accuracy():
             'status': status,
             'status_icon': status_icon,
             'status_message': status_message,
+            'days_window': days_label,  # "7 giorni" o "30 giorni"
             'accuracy_7d': round(accuracy_7d, 4),
             'accuracy_7d_pct': round(accuracy_7d * 100, 2),
             'predictions_7d': int(total_predictions),
