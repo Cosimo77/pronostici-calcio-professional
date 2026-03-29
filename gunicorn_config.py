@@ -1,11 +1,25 @@
 """
-Gunicorn configuration con post_fork hook per database connection pool
+Gunicorn configuration con pre_fork + post_fork hooks
 Risolve problema fork-safety del PostgreSQL connection pool
 """
 
 import structlog
 
 logger = structlog.get_logger()
+
+def pre_fork(server, worker):
+    """
+    Hook chiamato PRIMA del fork - chiude connessioni master
+    """
+    logger.info("🔧 Gunicorn pre_fork hook", worker_pid=worker.pid if worker else "master")
+    
+    try:
+        # Chiudi pool nel master PRIMA del fork
+        from database import close_db_pool
+        close_db_pool()
+        logger.info("✅ Database pool chiuso nel master prima del fork")
+    except Exception as e:
+        logger.warning("⚠️ Errore pre_fork close pool", error=str(e))
 
 def post_fork(server, worker):
     """

@@ -237,37 +237,15 @@ logger.info("Cache Manager initialized",
             redis_status="connected" if cache.enabled else "disabled")
 
 # ==================== DATABASE INITIALIZATION ====================
-# Inizializza PostgreSQL connection pool (con retry per Render env vars)
-logger.info(f"🔍 PRE-INIT CHECK: DATABASE_ENABLED = {DATABASE_ENABLED}")
+# NOTA: Database viene inizializzato nel post_fork hook di Gunicorn (gunicorn_config.py)
+# Questo risolve problema fork-safety del connection pool PostgreSQL
+# NON inizializzare qui per evitare connessioni nel master process
+logger.info(f"🔍 DATABASE_ENABLED = {DATABASE_ENABLED}")
 if DATABASE_ENABLED:
-    import time
-    db_initialized = False
-    max_retries = 5  # Aumentato a 5
-    
-    for attempt in range(max_retries):
-        try:
-            logger.info(f"🔧 Tentativo {attempt+1}/{max_retries}: Calling init_db()...")
-            db_initialized = init_db()
-            if db_initialized:
-                logger.info("✅ Database initialization SUCCESS", 
-                            attempt=attempt+1,
-                            db_status="PostgreSQL connected")
-                break
-            else:
-                # DATABASE_URL non ancora disponibile, retry
-                if attempt < max_retries - 1:
-                    wait_time = 5  # Aumentato a 5s
-                    logger.warning(f"⏳ DATABASE_URL not ready, retrying in {wait_time}s... (attempt {attempt+1}/{max_retries})")
-                    time.sleep(wait_time)
-                else:
-                    logger.warning("⚠️ Database init failed after retries - fallback to CSV")
-        except Exception as e:
-            logger.error("Database init error", error=str(e), attempt=attempt+1, exc_info=True)
-            if attempt < max_retries - 1:
-                time.sleep(5)
-            else:
-                logger.error("❌ Database DEFINITIVAMENTE non disponibile - usando CSV")
-                DATABASE_ENABLED = False
+    logger.info("✅ Database module disponibile - init avverrà in post_fork hook")
+    # Per debug locale (senza Gunicorn), decommentare:
+    # from database import init_db
+    # init_db()
 else:
     logger.warning("❌ DATABASE_ENABLED = False - Database module not imported - using CSV fallback")
 
