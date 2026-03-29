@@ -1274,6 +1274,104 @@ def migrate_csv_to_db_api():
     
     return jsonify(result), 200
 
+@app.route('/api/database/migrate_schema')
+@limiter.limit("2 per hour")  # Molto limitato - operazione critica
+def migrate_schema_api():
+    """Esegue migration schema: aggiunge colonne multiple a tabella bets"""
+    result = {
+        'timestamp': datetime.now().isoformat(),
+        'status': 'starting',
+        'operations': []
+    }
+    
+    # 1. Verifica database disponibile
+    try:
+        from database import is_db_available, init_db, get_db_connection
+        
+        if not is_db_available():
+            if not init_db():
+                result['status'] = 'failed'
+                result['error'] = 'PostgreSQL non disponibile'
+                return jsonify(result), 503
+        
+        result['database_available'] = True
+        
+    except Exception as e:
+        result['status'] = 'failed'
+        result['error'] = f'Database import error: {str(e)}'
+        return jsonify(result), 500
+    
+    # 2. Esegui migration
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                # Aggiungi group_id
+                try:
+                    cur.execute("""
+                        DO $$ 
+                        BEGIN
+                            IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                                         WHERE table_name='bets' AND column_name='group_id') THEN
+                                ALTER TABLE bets ADD COLUMN group_id VARCHAR(50);
+                            END IF;
+                        END $$;
+                    """)
+                    result['operations'].append({'column': 'group_id', 'status': 'added'})
+                except Exception as e:
+                    result['operations'].append({'column': 'group_id', 'status': 'error', 'message': str(e)})
+                
+                # Aggiungi bet_number
+                try:
+                    cur.execute("""
+                        DO $$ 
+                        BEGIN
+                            IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                                         WHERE table_name='bets' AND column_name='bet_number') THEN
+                                ALTER TABLE bets ADD COLUMN bet_number INTEGER DEFAULT 1;
+                            END IF;
+                        END $$;
+                    """)
+                    result['operations'].append({'column': 'bet_number', 'status': 'added'})
+                except Exception as e:
+                    result['operations'].append({'column': 'bet_number', 'status': 'error', 'message': str(e)})
+                
+                # Aggiungi tipo_bet
+                try:
+                    cur.execute("""
+                        DO $$ 
+                        BEGIN
+                            IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                                         WHERE table_name='bets' AND column_name='tipo_bet') THEN
+                                ALTER TABLE bets ADD COLUMN tipo_bet VARCHAR(20) DEFAULT 'SINGLE';
+                            END IF;
+                        END $$;
+                    """)
+                    result['operations'].append({'column': 'tipo_bet', 'status': 'added'})
+                except Exception as e:
+                    result['operations'].append({'column': 'tipo_bet', 'status': 'error', 'message': str(e)})
+                
+                # Aggiungi indici
+                try:
+                    cur.execute("CREATE INDEX IF NOT EXISTS idx_group_id ON bets(group_id) WHERE group_id IS NOT NULL;")
+                    cur.execute("CREATE INDEX IF NOT EXISTS idx_tipo_bet ON bets(tipo_bet);")
+                    result['operations'].append({'item': 'indexes', 'status': 'created'})
+                except Exception as e:
+                    result['operations'].append({'item': 'indexes', 'status': 'error', 'message': str(e)})
+                
+                conn.commit()
+        
+        result['status'] = 'completed'
+        result['message'] = '✅ Schema migration completata!'
+        logger.info("✅ Database schema migrated", operations=len(result['operations']))
+        
+    except Exception as e:
+        result['status'] = 'failed'
+        result['error'] = f'Migration error: {str(e)}'
+        logger.error("❌ Schema migration failed", error=str(e))
+        return jsonify(result), 500
+    
+    return jsonify(result), 200
+
 @app.route('/api/tracking/fase2')
 @limiter.limit("60 per minute")
 def tracking_fase2_api():

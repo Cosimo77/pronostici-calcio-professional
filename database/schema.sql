@@ -4,9 +4,16 @@
 -- Drop existing tables (solo per reset completo)
 -- DROP TABLE IF EXISTS bets CASCADE;
 
--- Tabella principale puntate
+-- Tabella principale puntate (supporta singole + multiple)
 CREATE TABLE IF NOT EXISTS bets (
     id SERIAL PRIMARY KEY,
+    
+    -- Campi per multiple (opzionali se singola)
+    group_id VARCHAR(50),  -- UUID gruppo per bet multiple
+    bet_number INTEGER DEFAULT 1,  -- Numero bet nel gruppo (1,2,3...)
+    tipo_bet VARCHAR(20) DEFAULT 'SINGLE',  -- SINGLE, DOUBLE, TRIPLE, SYSTEM
+    
+    -- Campi comuni
     data DATE NOT NULL,
     partita VARCHAR(100) NOT NULL,
     mercato VARCHAR(50) NOT NULL,
@@ -23,13 +30,16 @@ CREATE TABLE IF NOT EXISTS bets (
     
     -- Constraints
     CONSTRAINT chk_risultato CHECK (risultato IN ('PENDING', 'WIN', 'LOSS', 'VOID', 'SKIP')),
-    CONSTRAINT chk_quota_sisal CHECK (quota_sisal >= 1.01)
+    CONSTRAINT chk_quota_sisal CHECK (quota_sisal >= 1.01),
+    CONSTRAINT chk_tipo_bet CHECK (tipo_bet IN ('SINGLE', 'DOUBLE', 'TRIPLE', 'SYSTEM', 'ACCA'))
 );
 
 -- Indici (PostgreSQL richiede CREATE INDEX separato)
 CREATE INDEX IF NOT EXISTS idx_risultato ON bets(risultato);
 CREATE INDEX IF NOT EXISTS idx_data ON bets(data DESC);
 CREATE INDEX IF NOT EXISTS idx_partita ON bets(partita);
+CREATE INDEX IF NOT EXISTS idx_group_id ON bets(group_id) WHERE group_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_tipo_bet ON bets(tipo_bet);
 
 -- Trigger per auto-update updated_at
 CREATE OR REPLACE FUNCTION update_updated_at_column()
