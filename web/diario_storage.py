@@ -30,13 +30,39 @@ class DiarioStorage:
     
     @staticmethod
     def _use_database():
-        """Check se usare database o CSV"""
-        use_db = DB_AVAILABLE and is_db_available()
-        logger.info(f"🔍 _use_database() check",
-                    DB_AVAILABLE=DB_AVAILABLE,
-                    is_db_available=is_db_available() if DB_AVAILABLE else "N/A",
-                    result=use_db)
-        return use_db
+        """
+        Check se usare database o CSV
+        Lazy initialization: se DATABASE_URL presente ma pool non inizializzato, prova init
+        """
+        if not DB_AVAILABLE:
+            logger.info("🔍 _use_database() = False (DB module not available)")
+            return False
+        
+        # Check se pool già inizializzato
+        if is_db_available():
+            logger.info("🔍 _use_database() = True (pool già attivo)")
+            return True
+        
+        # Lazy init: DATABASE_URL presente ma pool non inizializzato?
+        database_url = os.getenv('DATABASE_URL')
+        if database_url:
+            logger.warning("⚠️ DATABASE_URL presente ma pool non inizializzato - tentativo lazy init...")
+            try:
+                from database import init_db
+                success = init_db()
+                if success:
+                    logger.info("✅ Lazy init SUCCESS - PostgreSQL attivo")
+                    return True
+                else:
+                    logger.warning("❌ Lazy init FAILED - fallback CSV")
+                    return False
+            except Exception as e:
+                logger.error("❌ Lazy init exception", error=str(e))
+                return False
+        
+        # Nessun DATABASE_URL configurato
+        logger.info("🔍 _use_database() = False (no DATABASE_URL)")
+        return False
     
     @staticmethod
     def get_all_bets(risultato: Optional[str] = None) -> List[Dict]:
