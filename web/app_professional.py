@@ -1109,6 +1109,71 @@ def automation_status_api():
         logger.error(f"Errore API automation status: {e}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/debug/storage_adapter')
+@limiter.limit("30 per minute")
+def debug_storage_adapter():
+    """Diagnostica completa storage adapter e database connection"""
+    import os
+    
+    diagnostic = {
+        'timestamp': datetime.now().isoformat(),
+        'worker_pid': os.getpid(),
+    }
+    
+    # 1. Check DATABASE_URL
+    database_url = os.getenv('DATABASE_URL')
+    diagnostic['database_url'] = {
+        'present': bool(database_url),
+        'length': len(database_url) if database_url else 0,
+        'provider': 'neon.tech' if database_url and 'neon.tech' in database_url else 'unknown'
+    }
+    
+    # 2. Check DB module import
+    try:
+        from database import is_db_available, init_db
+        diagnostic['database_module'] = {
+            'imported': True,
+            'is_db_available': is_db_available()
+        }
+    except ImportError as e:
+        diagnostic['database_module'] = {
+            'imported': False,
+            'error': str(e)
+        }
+        return jsonify(diagnostic), 200
+    
+    # 3. Check DiarioStorage adapter
+    try:
+        from web.diario_storage import DiarioStorage
+        use_db = DiarioStorage._use_database()
+        diagnostic['diario_adapter'] = {
+            'use_database': use_db,
+            'storage_backend': 'PostgreSQL' if use_db else 'CSV'
+        }
+    except Exception as e:
+        diagnostic['diario_adapter'] = {
+            'error': str(e)
+        }
+    
+    # 4. Try manual init_db() if not available
+    if not is_db_available() and database_url:
+        diagnostic['manual_init'] = {'attempted': True}
+        try:
+            success = init_db()
+            diagnostic['manual_init']['result'] = 'SUCCESS' if success else 'FAILED'
+            diagnostic['manual_init']['is_db_available_after'] = is_db_available()
+        except Exception as e:
+            diagnostic['manual_init']['error'] = str(e)
+    
+    # 5. Verdict
+    if is_db_available():
+        diagnostic['verdict'] = '✅ PostgreSQL ATTIVO'
+    else:
+        diagnostic['verdict'] = '❌ CSV FALLBACK - PostgreSQL non disponibile'
+        diagnostic['recommendation'] = 'Verifica post_fork hook logs o chiama /api/debug/storage_adapter per forzare init'
+    
+    return jsonify(diagnostic), 200
+
 @app.route('/api/tracking/fase2')
 @limiter.limit("60 per minute")
 def tracking_fase2_api():
