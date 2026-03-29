@@ -1174,6 +1174,106 @@ def debug_storage_adapter():
     
     return jsonify(diagnostic), 200
 
+@app.route('/api/diario/migrate_csv_to_db')
+@limiter.limit("5 per minute")  # Limitato - operazione pesante
+def migrate_csv_to_db_api():
+    """Migra bet da CSV tracking_giocate.csv a PostgreSQL"""
+    import pandas as pd
+    
+    result = {
+        'timestamp': datetime.now().isoformat(),
+        'csv_file': 'tracking_giocate.csv',
+        'status': 'starting'
+    }
+    
+    # 1. Verifica PostgreSQL disponibile
+    try:
+        from database import is_db_available, init_db, BetModel
+        from web.diario_storage import DiarioStorage
+        
+        if not is_db_available():
+            # Tenta lazy init
+            if not init_db():
+                result['status'] = 'failed'
+                result['error'] = 'PostgreSQL non disponibile e init fallito'
+                return jsonify(result), 503
+        
+        result['database_available'] = True
+        
+    except ImportError as e:
+        result['status'] = 'failed'
+        result['error'] = f'Database module import error: {str(e)}'
+        return jsonify(result), 500
+    
+    # 2. Leggi CSV
+    csv_path = 'tracking_giocate.csv'
+    if not os.path.exists(csv_path):
+        result['status'] = 'completed'
+        result['info'] = 'CSV file not found - nothing to migrate'
+        return jsonify(result), 200
+    
+    try:
+        df = pd.read_csv(csv_path)
+        result['csv_rows'] = len(df)
+        
+        if len(df) == 0:
+            result['status'] = 'completed'
+            result['info'] = 'CSV empty - nothing to migrate'
+            return jsonify(result), 200
+            
+    except Exception as e:
+        result['status'] = 'failed'
+        result['error'] = f'CSV read error: {str(e)}'
+        return jsonify(result), 500
+    
+    # 3. Migra bet
+    migrated = 0
+    skipped = 0
+    errors = []
+    
+    for idx, row in df.iterrows():
+        try:
+            bet_data = {
+                'group_id': str(row['group_id']) if pd.notna(row.get('group_id')) and row.get('group_id') != '' else None,
+                'bet_number': int(row.get('bet_number', 1)),
+                'tipo_bet': str(row.get('tipo_bet', 'SINGLE')),
+                'data': str(row['Data']),
+                'partita': str(row['Partita']),
+                'mercato': str(row['Mercato']),
+                'quota_sistema': float(row.get('Quota_Sistema')) if pd.notna(row.get('Quota_Sistema')) else None,
+                'quota_sisal': float(row['Quota_Sisal']),
+                'ev_modello': str(row.get('EV_Modello', '')),
+                'ev_realistico': str(row.get('EV_Realistico', '')) if pd.notna(row.get('EV_Realistico')) else None,
+                'stake': str(row['Stake']),
+                'risultato': str(row.get('Risultato', 'PENDING')),
+                'profit': float(row.get('Profit', 0)),
+                'note': str(row.get('Note', '')) if pd.notna(row.get('Note')) else None
+            }
+            
+            BetModel.create(bet_data)
+            migrated += 1
+            logger.info(f"✅ Migrated bet {idx+1}/{len(df)}: {bet_data['partita']}")
+            
+        except Exception as e:
+            skipped += 1
+            error_msg = f"Row {idx+1}: {str(e)}"
+            errors.append(error_msg)
+            logger.error(f"❌ Migration error: {error_msg}")
+    
+    # 4. Risultato
+    result['status'] = 'completed'
+    result['migrated'] = migrated
+    result['skipped'] = skipped
+    result['errors'] = errors[:10]  # Max 10 errori
+    result['total_errors'] = len(errors)
+    
+    if migrated > 0:
+        result['message'] = f'✅ {migrated} bet migrate con successo!'
+    if skipped > 0:
+        result['warning'] = f'⚠️ {skipped} bet skipped (vedi errors)'
+    
+    return jsonify(result), 200
+
 @app.route('/api/tracking/fase2')
 @limiter.limit("60 per minute")
 def tracking_fase2_api():
