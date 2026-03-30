@@ -1160,10 +1160,10 @@ def debug_storage_adapter():
         diagnostic['manual_init'] = {'attempted': True}
         try:
             success = init_db()
-            diagnostic['manual_init']['result'] = 'SUCCESS' if success else 'FAILED'
-            diagnostic['manual_init']['is_db_available_after'] = is_db_available()
+            diagnostic['manual_init']['result'] = 'SUCCESS' if success else 'FAILED'  # type: ignore[index]
+            diagnostic['manual_init']['is_db_available_after'] = is_db_available()  # type: ignore[index]
         except Exception as e:
-            diagnostic['manual_init']['error'] = str(e)
+            diagnostic['manual_init']['error'] = str(e)  # type: ignore[index]
     
     # 5. Verdict
     if is_db_available():
@@ -1231,7 +1231,7 @@ def migrate_csv_to_db_api():
     skipped = 0
     errors = []
     
-    for idx, row in df.iterrows():
+    for row_num, (_, row) in enumerate(df.iterrows(), start=1):
         try:
             bet_data = {
                 'group_id': str(row['group_id']) if pd.notna(row.get('group_id')) and row.get('group_id') != '' else None,
@@ -1252,11 +1252,11 @@ def migrate_csv_to_db_api():
             
             BetModel.create(bet_data)
             migrated += 1
-            logger.info(f"✅ Migrated bet {int(idx)+1}/{len(df)}: {bet_data['partita']}")
+            logger.info(f"✅ Migrated bet {row_num}/{len(df)}: {bet_data['partita']}")
             
         except Exception as e:
             skipped += 1
-            error_msg = f"Row {int(idx)+1}: {str(e)}"
+            error_msg = f"Row {row_num}: {str(e)}"
             errors.append(error_msg)
             logger.error(f"❌ Migration error: {error_msg}")
     
