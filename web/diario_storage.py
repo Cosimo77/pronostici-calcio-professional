@@ -315,11 +315,28 @@ class DiarioStorage:
         """
         if DiarioStorage._use_database():
             try:
-                # TODO: Implementare reset database (DROP TABLE + CREATE TABLE)
-                logger.warning("⚠️ Reset database non ancora implementato, fallback to CSV")
-                # Fall through to CSV
+                from database import get_db_connection
+                
+                with get_db_connection() as conn:
+                    with conn.cursor() as cur:
+                        # Count bet da cancellare per logging
+                        cur.execute("SELECT COUNT(*) FROM bets")
+                        count_result = cur.fetchone()
+                        count = count_result[0] if count_result else 0
+                        
+                        # DELETE invece di DROP TABLE (mantiene schema intatto)
+                        cur.execute("DELETE FROM bets")
+                        conn.commit()
+                        
+                        logger.warning(f"🔴 PostgreSQL reset: {count} bet cancellate")
+                        
+                        # Return backup identifier (database non ha backup file fisico)
+                        backup_name = f"backup_db_{datetime.now().strftime('%Y%m%d_%H%M%S')}.backup"
+                        return backup_name
+                        
             except Exception as e:
                 logger.error("Database reset failed", error=str(e))
+                # Fall through to CSV reset se database fallisce
         
         # CSV reset
         if not os.path.exists(DiarioStorage.CSV_FILE):
