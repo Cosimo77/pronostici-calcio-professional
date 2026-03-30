@@ -1115,7 +1115,7 @@ def debug_storage_adapter():
     """Diagnostica completa storage adapter e database connection"""
     import os
     
-    diagnostic = {
+    diagnostic: Dict[str, Any] = {
         'timestamp': datetime.now().isoformat(),
         'worker_pid': os.getpid(),
     }
@@ -1180,7 +1180,7 @@ def migrate_csv_to_db_api():
     """Migra bet da CSV tracking_giocate.csv a PostgreSQL"""
     import pandas as pd
     
-    result = {
+    result: Dict[str, Any] = {
         'timestamp': datetime.now().isoformat(),
         'csv_file': 'tracking_giocate.csv',
         'status': 'starting'
@@ -1240,7 +1240,7 @@ def migrate_csv_to_db_api():
                 'data': str(row['Data']),
                 'partita': str(row['Partita']),
                 'mercato': str(row['Mercato']),
-                'quota_sistema': float(row.get('Quota_Sistema')) if pd.notna(row.get('Quota_Sistema')) else None,
+                'quota_sistema': float(row['Quota_Sistema']) if pd.notna(row.get('Quota_Sistema')) else None,
                 'quota_sisal': float(row['Quota_Sisal']),
                 'ev_modello': str(row.get('EV_Modello', '')),
                 'ev_realistico': str(row.get('EV_Realistico', '')) if pd.notna(row.get('EV_Realistico')) else None,
@@ -1252,11 +1252,11 @@ def migrate_csv_to_db_api():
             
             BetModel.create(bet_data)
             migrated += 1
-            logger.info(f"✅ Migrated bet {idx+1}/{len(df)}: {bet_data['partita']}")
+            logger.info(f"✅ Migrated bet {int(idx)+1}/{len(df)}: {bet_data['partita']}")
             
         except Exception as e:
             skipped += 1
-            error_msg = f"Row {idx+1}: {str(e)}"
+            error_msg = f"Row {int(idx)+1}: {str(e)}"
             errors.append(error_msg)
             logger.error(f"❌ Migration error: {error_msg}")
     
@@ -1278,7 +1278,7 @@ def migrate_csv_to_db_api():
 @limiter.limit("2 per hour")  # Molto limitato - operazione critica
 def migrate_schema_api():
     """Esegue migration schema: aggiunge colonne multiple a tabella bets"""
-    result = {
+    result: Dict[str, Any] = {
         'timestamp': datetime.now().isoformat(),
         'status': 'starting',
         'operations': []
