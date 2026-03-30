@@ -78,7 +78,7 @@ def migrate_csv_to_postgres():
     migrated = 0
     errors = 0
     
-    for idx, row in df.iterrows():
+    for row_num, (_, row) in enumerate(df.iterrows(), start=1):
         try:
             # Converti row to dict compatibile con BetModel
             bet_data = {
@@ -101,11 +101,11 @@ def migrate_csv_to_postgres():
             # Insert in PostgreSQL
             BetModel.create(bet_data)
             migrated += 1
-            print(f"   ✅ {idx+1}/{len(df)} - {bet_data['partita'][:30]}")
+            print(f"   ✅ {row_num}/{len(df)} - {bet_data['partita'][:30]}")
             
         except Exception as e:
             errors += 1
-            print(f"   ❌ {idx+1}/{len(df)} - Errore: {e}")
+            print(f"   ❌ {row_num}/{len(df)} - Errore: {e}")
     
     # 7. Summary
     print("\n" + "="*60)

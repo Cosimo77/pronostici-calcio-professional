@@ -54,7 +54,8 @@ def migrate_diario_to_postgres():
     # 4. Verifica schema esiste
     try:
         cur.execute("SELECT COUNT(*) FROM bets;")
-        existing_count = cur.fetchone()[0]
+        result = cur.fetchone()
+        existing_count = result[0] if result else 0
         print(f"ℹ️  Tabella 'bets' già contiene {existing_count} record")
         
         if existing_count > 0:
@@ -129,7 +130,8 @@ def migrate_diario_to_postgres():
         
         # 7. Verifica finale
         cur.execute("SELECT COUNT(*) FROM bets;")
-        total = cur.fetchone()[0]
+        result = cur.fetchone()
+        total = result[0] if result else 0
         print(f"📊 Totale bet nel database: {total}")
         
         # 8. Statistiche
@@ -142,11 +144,12 @@ def migrate_diario_to_postgres():
             FROM bets;
         """)
         stats = cur.fetchone()
-        print(f"\n📈 Statistiche:")
-        print(f"   Pending: {stats[0]}")
-        print(f"   Win: {stats[1]}")
-        print(f"   Loss: {stats[2]}")
-        print(f"   Profit totale: {stats[3]:+.2f}€")
+        if stats:
+            print(f"\n📈 Statistiche:")
+            print(f"   Pending: {stats[0]}")
+            print(f"   Win: {stats[1]}")
+            print(f"   Loss: {stats[2]}")
+            print(f"   Profit totale: {stats[3]:+.2f}€")
         
     except Exception as e:
         print(f"❌ Errore inserimento: {e}")
