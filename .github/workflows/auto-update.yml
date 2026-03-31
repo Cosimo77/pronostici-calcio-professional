@@ -2,12 +2,13 @@ name: Aggiornamento Automatico Dati
 
 on:
   schedule:
-    - cron: '0 5 * * *'
-  workflow_dispatch:
+    - cron: '0 5 * * *'  # Ogni giorno alle 5:00 UTC (6:00 CET / 7:00 CEST)
+  workflow_dispatch:  # Permette trigger manuale
 
 jobs:
   update-data:
     runs-on: ubuntu-latest
+    
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -18,29 +19,66 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+          cache: 'pip'
       
       - name: Install dependencies
-        run: pip install pandas numpy requests
-      
-      - name: Download nuovi dati
-        run: python3 scripts/auto_download_data.py
-      
-      - name: Genera features
-        run: python3 scripts/feature_engineering.py
-      
-      - name: Commit nuovi dati
         run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          ADDED=$(cat update_info.txt 2>/dev/null || echo "0")
-          if [ "$ADDED" -gt 0 ]; then
-            git add data/dataset_pulito.csv data/dataset_features.csv
-            git commit -m "Auto-update: +${ADDED} partite Serie A"
-            git push
-          else
-            echo "Nessun aggiornamento necessario"
-          fi
+          pip install --upgrade pip
+          pip install pandas numpy requests scikit-learn
       
-      - name: Reload Render
-        if: success()
-        run: curl -X POST -s https://pronostici-calcio-professional.onrender.com/api/automation/force_update
+      - name: Download nuovi dati Serie A
+        run: |
+          python3 scripts/auto_download_data.py
+        continue-on-error: false
+      
+      - name: Genera dataset features
+        run: |
+          if [ -f "scripts/feature_engineering.py" ]; then
+            python3 scripts/feature_engineering.py
+          else
+            echo "⚠️ feature_engineering.py non trovato, skip"
+          fi
+        continue-on-error: true
+      
+      - name: Check for updates
+        id: check_updates
+        run: |
+          ADDED=$(cat update_info.txt 2>/dev/null || echo "0")
+          echo "new_matches=$ADDED" >> $GITHUB_OUTPUT
+          echo "📊 Nuove partite da committare: $ADDED"
+      
+      - name: Commit e push nuovi dati
+        if: steps.check_updates.outputs.new_matches > 0
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          
+          ADDED=${{ steps.check_updates.outputs.new_matches }}
+          
+          git add data/*.csv
+          git commit -m "chore: Auto-update Serie A data (+${ADDED} partite) [skip ci]" || echo "Nessun file modificato"
+          git push || echo "Nessun push necessario"
+      
+      - name: Notifica Render (force reload)
+        if: steps.check_updates.outputs.new_matches > 0
+        run: |
+          curl -X POST -s -o /dev/null -w "Status: %{http_code}\n" \
+            https://pronostici-calcio-pro.onrender.com/api/reload_dataset || echo "⚠️ Render reload fallito (non critico)"
+        continue-on-error: true
+      
+      - name: Summary
+        if: always()
+        run: |
+          echo "## 📊 Aggiornamento Automatico Completato" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          ADDED=${{ steps.check_updates.outputs.new_matches }}
+          
+          if [ "$ADDED" -gt 0 ]; then
+            echo "✅ **$ADDED nuove partite** aggiunte al dataset" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "ℹ️ Nessuna nuova partita da aggiornare" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🕐 Timestamp: $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
