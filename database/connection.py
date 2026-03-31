@@ -4,14 +4,14 @@ Supporta sia Render PostgreSQL che graceful degradation a CSV fallback
 """
 
 import os
-from psycopg2.pool import SimpleConnectionPool  # type: ignore[import-not-found]
+from psycopg2.pool import ThreadedConnectionPool  # type: ignore[import-not-found]
 from psycopg2 import Error  # type: ignore[import-not-found]
 from contextlib import contextmanager
 import structlog
 
 logger = structlog.get_logger()
 
-# Connection pool globale
+# Connection pool globale (ThreadedConnectionPool per compatibilità gevent)
 _connection_pool = None
 
 def get_database_url():
@@ -34,14 +34,15 @@ def init_db():
         return False
     
     try:
-        logger.info("🔧 Creando SimpleConnectionPool...")
-        # Crea connection pool (min 1, max 10 connessioni)
-        _connection_pool = SimpleConnectionPool(
-            minconn=1,
-            maxconn=10,
+        logger.info("🔧 Creando ThreadedConnectionPool (gevent-safe)...")
+        # ThreadedConnectionPool: thread-safe per gevent workers (Quick Win #4)
+        # Pool size ottimizzato per Render free tier + spike traffic
+        _connection_pool = ThreadedConnectionPool(
+            minconn=2,     # Mantieni 2 conn attive sempre
+            maxconn=20,    # Spike traffic fino a 20 connessioni
             dsn=database_url
         )
-        logger.info("🔧 Connection pool creato")
+        logger.info("🔧 ThreadedConnectionPool creato (min=2, max=20)")
         
         # Test connessione DIRETTO (no context manager per evitare ricorsione)
         logger.info("🔧 Test connessione diretto...")

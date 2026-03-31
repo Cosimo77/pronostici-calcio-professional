@@ -3,7 +3,7 @@ Sistema Pronostici Calcio Professionale
 100% DATI REALI - Zero simulazioni o randomizzazioni
 """
 
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, g
 import pandas as pd
 import numpy as np
 import logging
@@ -19,6 +19,8 @@ from flask_limiter.util import get_remote_address
 from flask_talisman import Talisman
 import structlog
 import time
+import uuid
+import psutil
 
 # === CARICA .env FILE SE PRESENTE (per sviluppo locale e Render) ===
 try:
@@ -161,6 +163,34 @@ if os.environ.get('FLASK_ENV') == 'production':
         'PREFERRED_URL_SCHEME': 'https'
     })
 
+# ==================== REQUEST ID MIDDLEWARE ====================
+# Tracciamento request con UUID unico (Quick Win #3)
+@app.before_request
+def add_request_id():
+    """Aggiungi UUID unico a ogni request per tracing distribuito"""
+    g.request_id = str(uuid.uuid4())
+    g.request_start_time = time.time()
+
+@app.after_request
+def add_request_id_header(response):
+    """Aggiungi X-Request-ID header per debugging client-side"""
+    if hasattr(g, 'request_id'):
+        response.headers['X-Request-ID'] = g.request_id
+        
+        # Log request duration per monitoring
+        if hasattr(g, 'request_start_time'):
+            duration_ms = (time.time() - g.request_start_time) * 1000
+            if duration_ms > 1000:  # Log solo richieste lente >1s
+                logger.warning(
+                    "Slow request detected",
+                    request_id=g.request_id,
+                    path=request.path,
+                    method=request.method,
+                    duration_ms=round(duration_ms, 2)
+                )
+    
+    return response
+
 # ==================== CONFIGURAZIONE SICUREZZA ====================
 
 # Rate Limiting avanzato
@@ -185,6 +215,15 @@ csp = {
 
 # Configurazione enterprise completa
 is_production = os.environ.get('FLASK_ENV') == 'production'
+
+# ==================== RESPONSE COMPRESSION ====================
+# Abilita compressione automatica risposte >1KB (Quick Win #4)
+try:
+    from flask_compress import Compress
+    Compress(app)
+    logger.info("✅ Response compression abilitata (gzip auto)")
+except ImportError:
+    logger.warning("⚠️ flask-compress non installato - pip install flask-compress")
 
 Talisman(app, 
     force_https=False,  # Disabilitato per testing locale
@@ -4628,7 +4667,7 @@ def api_accuracy_report():
 @app.route('/api/health')
 @limiter.limit("120 per minute")  # Più permissivo per monitoring
 def api_health():
-    """API controllo salute sistema"""
+    """API controllo salute sistema (BASIC - per load balancer)"""
     
     # Controlli avanzati di salute
     db_healthy = calculator.df_features is not None and len(calculator.df_features) > 0
@@ -4657,6 +4696,122 @@ def api_health():
     }
     
     return jsonify(health_status)
+
+@app.route('/api/health/detailed')
+@limiter.limit("60 per minute")  # Più restrittivo per endpoint dettagliato
+def api_health_detailed():
+    """Health check DETTAGLIATO con diagnostica completa (Quick Win #1)"""
+    
+    checks = {}
+    overall_healthy = True
+    
+    # 1. Check Database Flask interno (dataset features)
+    try:
+        db_records = len(calculator.df_features) if calculator.df_features is not None else 0
+        checks['dataset'] = {
+            'status': 'healthy' if db_records > 100 else 'degraded',
+            'records': db_records,
+            'squadre': len(calculator.squadre_disponibili)
+        }
+        if db_records < 100:
+            overall_healthy = False
+    except Exception as e:
+        checks['dataset'] = {'status': 'unhealthy', 'error': str(e)}
+        overall_healthy = False
+    
+    # 2. Check PostgreSQL Database
+    try:
+        from database import is_db_available, get_db_connection
+        if is_db_available():
+            with get_db_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute("SELECT COUNT(*) FROM bets")
+                    result = cur.fetchone()
+                    bet_count = result[0] if result else 0
+                    
+                    cur.execute("SELECT version()")
+                    version_result = cur.fetchone()
+                    pg_version = version_result[0][:50] if version_result else "Unknown"
+                    
+                    checks['postgresql'] = {
+                        'status': 'healthy',
+                        'version': pg_version,
+                        'bets_count': bet_count,
+                        'connection_pool': 'ThreadedConnectionPool (min=2, max=20)'
+                    }
+        else:
+            checks['postgresql'] = {'status': 'unavailable', 'message': 'DATABASE_URL not configured'}
+    except Exception as e:
+        checks['postgresql'] = {'status': 'unhealthy', 'error': str(e)}
+        overall_healthy = False
+    
+    # 3. Check Redis Cache
+    try:
+        cache_mgr = get_cache_manager()
+        if cache_mgr and cache_mgr.enabled:
+            # Test Redis ping usando metodi CacheManager
+            cache_mgr.set('health_check', 'ok', ttl=10)
+            test_value = cache_mgr.get('health_check')
+            
+            checks['redis'] = {
+                'status': 'healthy' if test_value == 'ok' else 'degraded',
+                'cache_entries': len(calculator.cache_deterministica),
+                'test_ping': test_value == 'ok'
+            }
+        else:
+            checks['redis'] = {'status': 'unavailable', 'message': 'Cache manager not initialized'}
+    except Exception as e:
+        checks['redis'] = {'status': 'degraded', 'error': str(e), 'message': 'Fallback to memory cache'}
+    
+    # 4. Check External APIs (The Odds API)
+    odds_api_key = os.getenv('ODDS_API_KEY')
+    checks['odds_api'] = {
+        'status': 'configured' if odds_api_key else 'not_configured',
+        'key_length': len(odds_api_key) if odds_api_key else 0,
+        'message': 'API key presente' if odds_api_key else 'Richiede ODDS_API_KEY env var'
+    }
+    
+    # 5. System Resources (disk, memory, CPU)
+    try:
+        disk = psutil.disk_usage('/')
+        memory = psutil.virtual_memory()
+        cpu_percent = psutil.cpu_percent(interval=0.1)
+        
+        checks['system'] = {
+            'status': 'healthy',
+            'disk_usage_percent': disk.percent,
+            'disk_free_gb': round(disk.free / (1024**3), 2),
+            'memory_usage_percent': memory.percent,
+            'memory_available_gb': round(memory.available / (1024**3), 2),
+            'cpu_usage_percent': cpu_percent
+        }
+        
+        # Warning se risorse scarse
+        if disk.percent > 90 or memory.percent > 90:
+            checks['system']['status'] = 'warning'
+            overall_healthy = False
+    except Exception as e:
+        checks['system'] = {'status': 'unknown', 'error': str(e)}
+    
+    # 6. Uptime e Performance
+    start_time = app.config.get('START_TIME', time.time())
+    uptime_seconds = time.time() - start_time
+    
+    checks['application'] = {
+        'status': 'healthy',
+        'uptime_seconds': round(uptime_seconds, 2),
+        'uptime_human': f"{int(uptime_seconds // 3600)}h {int((uptime_seconds % 3600) // 60)}m",
+        'version': '1.0.0-enterprise',
+        'environment': os.environ.get('FLASK_ENV', 'development'),
+        'request_id': g.request_id if hasattr(g, 'request_id') else None
+    }
+    
+    # Response finale
+    return jsonify({
+        'overall_status': 'healthy' if overall_healthy else 'degraded',
+        'timestamp': datetime.now(timezone.utc).isoformat(),
+        'checks': checks
+    }), 200 if overall_healthy else 503
 
 @app.route('/api/database/diagnostic')
 @limiter.limit("10 per minute")  # Limitato - solo per debug
