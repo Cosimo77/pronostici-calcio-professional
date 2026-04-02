@@ -23,15 +23,12 @@ lightgbm==4.6.0
 xgboost==3.1.0
 scipy==1.15.1
 
-# Web Scraping
-beautifulsoup4==4.12.2
+# HTTP Client
 requests==2.31.0
-selenium==4.15.2
 
 # Utilities
 python-dotenv==1.0.0
 structlog==25.4.0
-schedule==1.2.2
 python-dateutil==2.8.2
 joblib==1.4.2
 psutil==7.1.1
@@ -39,6 +36,3 @@ psutil==7.1.1
 # Database
 psycopg2-binary==2.9.9  # Precompilato per Docker/Render
 types-psycopg2==2.9.21.20  # Type stubs per Pylance
-
-# Optional: Monitoring & Logging
-GitPython==3.1.44

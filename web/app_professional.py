@@ -1606,6 +1606,7 @@ def api_predici_professionale():
         return jsonify({'error': f'Errore interno: {str(e)}'}), 500
 
 @app.route('/api/status')
+@limiter.limit("60 per minute")
 def api_status():
     """API stato sistema con cache stats"""
     cache_stats = cache.get_stats()
@@ -1619,6 +1620,7 @@ def api_status():
     })
 
 @app.route('/api/cache/stats')
+@limiter.limit("60 per minute")
 def api_cache_stats():
     """API dedicata per statistiche cache Redis"""
     stats = cache.get_stats()
@@ -1700,6 +1702,7 @@ def api_roi_stats():
     })
 
 @app.route('/api/roi_history')
+@limiter.limit("30 per minute")
 def api_roi_history():
     """Endpoint per equity curve storica (ultimi 100 bet)"""
     try:
@@ -4317,6 +4320,7 @@ def api_statistiche():
     })
 
 @app.route('/api/test_coerenza')
+@limiter.limit("10 per minute")
 def api_test_coerenza():
     """API per testare la coerenza delle predizioni"""
     
@@ -4609,6 +4613,7 @@ def api_model_performance():
         return jsonify({'error': f'Errore interno: {str(e)}'}), 500
 
 @app.route('/api/accuracy_report')
+@limiter.limit("30 per minute")
 def api_accuracy_report():
     """API report accuratezza dettagliato"""
     
@@ -4700,12 +4705,16 @@ def api_health():
 @app.route('/api/health/detailed')
 @limiter.limit("60 per minute")  # Più restrittivo per endpoint dettagliato
 def api_health_detailed():
-    """Health check DETTAGLIATO con diagnostica completa (Quick Win #1)"""
+    """Health check DETTAGLIATO con diagnostica completa (Quick Win #1 - FIX componenti opzionali)"""
     
     checks = {}
     overall_healthy = True
     
-    # 1. Check Database Flask interno (dataset features)
+    # REQUIRED components: se unhealthy, sistema degraded
+    # OPTIONAL components: se unavailable, solo warning (non degrada sistema)
+    OPTIONAL_COMPONENTS = ['postgresql', 'redis', 'odds_api']
+    
+    # 1. Check Database Flask interno (dataset features) - REQUIRED
     try:
         db_records = len(calculator.df_features) if calculator.df_features is not None else 0
         checks['dataset'] = {
@@ -4719,7 +4728,7 @@ def api_health_detailed():
         checks['dataset'] = {'status': 'unhealthy', 'error': str(e)}
         overall_healthy = False
     
-    # 2. Check PostgreSQL Database
+    # 2. Check PostgreSQL Database - OPTIONAL (fallback to CSV)
     try:
         from database import is_db_available, get_db_connection
         if is_db_available():
@@ -4740,12 +4749,12 @@ def api_health_detailed():
                         'connection_pool': 'ThreadedConnectionPool (min=2, max=20)'
                     }
         else:
-            checks['postgresql'] = {'status': 'unavailable', 'message': 'DATABASE_URL not configured'}
+            checks['postgresql'] = {'status': 'unavailable', 'message': 'DATABASE_URL not configured (fallback to CSV tracking)'}
     except Exception as e:
-        checks['postgresql'] = {'status': 'unhealthy', 'error': str(e)}
-        overall_healthy = False
+        checks['postgresql'] = {'status': 'error', 'error': str(e), 'message': 'PostgreSQL error (system still operational)'}
+        # NON degradare overall_healthy - PostgreSQL è opzionale
     
-    # 3. Check Redis Cache
+    # 3. Check Redis Cache - OPTIONAL (fallback to memory cache)
     try:
         cache_mgr = get_cache_manager()
         if cache_mgr and cache_mgr.enabled:
@@ -4759,11 +4768,12 @@ def api_health_detailed():
                 'test_ping': test_value == 'ok'
             }
         else:
-            checks['redis'] = {'status': 'unavailable', 'message': 'Cache manager not initialized'}
+            checks['redis'] = {'status': 'unavailable', 'message': 'Cache manager not initialized (fallback to memory cache)'}
     except Exception as e:
         checks['redis'] = {'status': 'degraded', 'error': str(e), 'message': 'Fallback to memory cache'}
+        # NON degradare overall_healthy - Redis è opzionale
     
-    # 4. Check External APIs (The Odds API)
+    # 4. Check External APIs (The Odds API) - OPTIONAL
     odds_api_key = os.getenv('ODDS_API_KEY')
     checks['odds_api'] = {
         'status': 'configured' if odds_api_key else 'not_configured',
@@ -4771,7 +4781,7 @@ def api_health_detailed():
         'message': 'API key presente' if odds_api_key else 'Richiede ODDS_API_KEY env var'
     }
     
-    # 5. System Resources (disk, memory, CPU)
+    # 5. System Resources (disk, memory, CPU) - REQUIRED
     try:
         disk = psutil.disk_usage('/')
         memory = psutil.virtual_memory()
@@ -4786,12 +4796,14 @@ def api_health_detailed():
             'cpu_usage_percent': cpu_percent
         }
         
-        # Warning se risorse scarse
+        # Warning se risorse scarse (critico per REQUIRED component)
         if disk.percent > 90 or memory.percent > 90:
             checks['system']['status'] = 'warning'
             overall_healthy = False
     except Exception as e:
         checks['system'] = {'status': 'unknown', 'error': str(e)}
+        # System monitoring fallito - considera degraded
+        overall_healthy = False
     
     # 6. Uptime e Performance
     start_time = app.config.get('START_TIME', time.time())
