@@ -107,13 +107,13 @@ except ImportError:
             pass
 
     _mock = MockMonitor()
-    get_logger = lambda: _mock  # type: ignore[misc]
-    get_performance_monitor = lambda: _mock  # type: ignore[misc]
-    get_error_tracker = lambda: _mock  # type: ignore[misc]
-    monitor_performance = lambda x: lambda f: f  # type: ignore[misc]
-    log_request = lambda x: None  # type: ignore[misc]
-    log_cache_hit = lambda x, y: None  # type: ignore[misc]
-    log_api_call = lambda x, y, z: None  # type: ignore[misc]
+    get_logger = lambda: _mock  # noqa: E731
+    get_performance_monitor = lambda: _mock  # noqa: E731
+    get_error_tracker = lambda: _mock  # noqa: E731
+    monitor_performance = lambda x: lambda f: f  # noqa: E731
+    log_request = lambda x: None  # noqa: E731
+    log_cache_hit = lambda x, y: None  # noqa: E731
+    log_api_call = lambda x, y, z: None  # noqa: E731
 
 # Configurazione structured logging professionale
 structlog.configure(
@@ -463,7 +463,7 @@ class ProfessionalCalculator:
                 try:
                     file_mtime = os.path.getmtime(data_path)
                     if file_mtime <= self.dataset_last_loaded:
-                        logger.debug(f"⏭️ Dataset già aggiornato, skip reload")
+                        logger.debug("⏭️ Dataset già aggiornato, skip reload")
                         return
                 except FileNotFoundError:
                     pass  # File non esiste, procedi con load
@@ -1921,7 +1921,7 @@ def calcola_shrinkage_adattivo():
             val_str = str(val).strip().replace("+", "").replace("%", "")
             try:
                 return float(val_str)
-            except:
+            except (ValueError, TypeError):
                 return None
 
         df_closed["EV_parsed"] = df_closed["EV_%"].apply(parse_ev) if "EV_%" in df_closed.columns else None
@@ -2218,14 +2218,14 @@ def api_predict_enterprise():
 
         if is_valid_fase1:
             strategy = "FASE1_VALIDATED"
-            reason = f"✅ FASE 1: Pareggio quota {pred_odds:.2f} (range 2.8-3.5), EV {roi_expected*100:.1f}% (≥25%). Backtest ROI +7.17%"
+            reason = f"✅ FASE 1: Pareggio quota {pred_odds:.2f} (range 2.8-3.5), EV {roi_expected * 100:.1f}% (≥25%). Backtest ROI +7.17%"
         else:
             strategy = "FILTERED_OUT"
             filter_reasons = {
                 "not_draw": f"⚠️ Non pareggio ({outcome_names[predizione]}). FASE 1 validata solo su pareggi.",
                 "odds_too_low": f"⚠️ Quota {pred_odds:.2f} < 2.8. Range validato: 2.8-3.5",
                 "odds_too_high": f"⚠️ Quota {pred_odds:.2f} > 3.5. Quote alte: WR 20.8%, ROI -24%",
-                "ev_too_low": f"⚠️ EV {roi_expected*100:.1f}% < 25%. Soglia minima validata: 25%",
+                "ev_too_low": f"⚠️ EV {roi_expected * 100:.1f}% < 25%. Soglia minima validata: 25%",
             }
             reason = filter_reasons.get(validation_reason, f"Filtro: {validation_reason}")
 
@@ -2345,7 +2345,7 @@ def api_predict_enterprise():
             logger.warning(f"⚠️ Predizione con dati limitati: {squadra_limitata} ({min_partite} partite)")
 
         logger.info(
-            f"✅ Predizione Enterprise + Value Betting: {squadra_casa} vs {squadra_ospite} → {predizione} (ROI: {roi_expected*100:+.1f}%) [Model: {actual_model}]"
+            f"✅ Predizione Enterprise + Value Betting: {squadra_casa} vs {squadra_ospite} → {predizione} (ROI: {roi_expected * 100:+.1f}%) [Model: {actual_model}]"
         )
 
         return jsonify(response)
@@ -2620,7 +2620,7 @@ def api_upcoming_matches():
                         best_ev = best_candidate["ev"]
                         best_diff = abs(best_candidate["diff"])
                         logger.info(
-                            f"✅ {home} vs {away}: Migliore opportunità {best_outcome} @ {best_odds:.2f} (EV {best_ev*100:+.1f}%)"
+                            f"✅ {home} vs {away}: Migliore opportunità {best_outcome} @ {best_odds:.2f} (EV {best_ev * 100:+.1f}%)"
                         )
                     else:
                         # Nessun EV positivo → Fallback a maggiore discrepanza assoluta (per analysis)
@@ -2631,7 +2631,7 @@ def api_upcoming_matches():
                         best_ev = best_candidate["ev"]
                         best_diff = abs(best_candidate["diff"])
                         logger.warning(
-                            f"⚠️ {home} vs {away}: Nessun EV positivo, discrepanza max {best_outcome} (EV {best_ev*100:+.1f}%)"
+                            f"⚠️ {home} vs {away}: Nessun EV positivo, discrepanza max {best_outcome} (EV {best_ev * 100:+.1f}%)"
                         )
 
                     # 🎯 VALIDAZIONE FASE 2 (Multi-mercato)
@@ -2883,7 +2883,7 @@ def api_upcoming_matches():
                             else None
                         ),
                         "has_prediction": False,
-                        "no_prediction_reason": f"Una o entrambe le squadre non hanno dati storici sufficienti nel dataset",
+                        "no_prediction_reason": "Una o entrambe le squadre non hanno dati storici sufficienti nel dataset",
                         "value_betting": {
                             "fase2_validated": False,
                             "fase2_opportunities": [],
@@ -3121,11 +3121,11 @@ def api_export_predizioni():
                         home,
                         away,
                         {"H": "Casa", "D": "Pareggio", "A": "Trasferta"}[predizione],
-                        f"{probabilita['H']*100:.1f}",
-                        f"{probabilita['D']*100:.1f}",
-                        f"{probabilita['A']*100:.1f}",
-                        f"{confidenza*100:.1f}",
-                        f"{best_ev*100:.1f}",
+                        f"{probabilita['H'] * 100:.1f}",
+                        f"{probabilita['D'] * 100:.1f}",
+                        f"{probabilita['A'] * 100:.1f}",
+                        f"{confidenza * 100:.1f}",
+                        f"{best_ev * 100:.1f}",
                         best_label,
                         f"{best_odds:.2f}",
                         f"{kelly_stake:.2f}",
@@ -4088,7 +4088,7 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
     intensita_match = (aggressivita_casa + aggressivita_ospite) / 2
 
     # Variabilità deterministica per cartellini
-    match_seed = int(hashlib.md5(f"{squadra_casa}_{squadra_ospite}_cards".encode()).hexdigest()[:8], 16)
+    _match_seed = int(hashlib.md5(f"{squadra_casa}_{squadra_ospite}_cards".encode()).hexdigest()[:8], 16)  # noqa: F841
     # Base probability realistica (5%-45%)
     prob_rosso = max(0.05, min(0.45, intensita_match * 0.4))
     prob_no_rosso = 1 - prob_rosso
@@ -4413,7 +4413,7 @@ def api_statistiche():
             "timestamp": datetime.now().isoformat(),
         }
 
-        logger.info(f"✅ Statistiche generali richieste")
+        logger.info("✅ Statistiche generali richieste")
 
         return jsonify(statistiche)
 
@@ -4708,7 +4708,7 @@ def api_model_performance():
             "timestamp": datetime.now().isoformat(),
         }
 
-        logger.info(f"✅ Metriche performance richieste")
+        logger.info("✅ Metriche performance richieste")
 
         return jsonify(response)
 
@@ -4757,7 +4757,7 @@ def api_accuracy_report():
             "timestamp": datetime.now().isoformat(),
         }
 
-        logger.info(f"✅ Report accuratezza richiesto")
+        logger.info("✅ Report accuratezza richiesto")
 
         return jsonify(report)
 
@@ -4773,7 +4773,7 @@ def api_health():
 
     # Controlli avanzati di salute
     db_healthy = calculator.df_features is not None and len(calculator.df_features) > 0
-    cache_healthy = len(calculator.cache_deterministica) >= 0  # Cache può essere vuota inizialmente
+    _cache_healthy = len(calculator.cache_deterministica) >= 0  # Cache può essere vuota inizialmente  # noqa: F841
 
     # Check ODDS_API_KEY configuration
     odds_api_key = os.getenv("ODDS_API_KEY")
@@ -4810,7 +4810,7 @@ def api_health_detailed():
 
     # REQUIRED components: se unhealthy, sistema degraded
     # OPTIONAL components: se unavailable, solo warning (non degrada sistema)
-    OPTIONAL_COMPONENTS = ["postgresql", "redis", "odds_api"]
+    _OPTIONAL_COMPONENTS = ["postgresql", "redis", "odds_api"]  # noqa: F841
 
     # 1. Check Database Flask interno (dataset features) - REQUIRED
     try:
@@ -4967,7 +4967,7 @@ def api_database_diagnostic():
 
                     # Fingerprint unico per tracciare se database cambia
                     db_fingerprint = hashlib.md5(f"{db_host}:{db_name}".encode()).hexdigest()[:12]
-            except:
+            except Exception:
                 pass
 
         # Query database per contare bets
@@ -5225,7 +5225,7 @@ def api_automation_status():
                 last_update = last_update.decode("utf-8")  # type: ignore[union-attr]
             if last_retrain:
                 last_retrain = last_retrain.decode("utf-8")  # type: ignore[union-attr]
-        except:
+        except Exception:
             # Fallback: prova file system
             timestamp_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "automation_status.json")
             if os.path.exists(timestamp_file):
@@ -5234,7 +5234,7 @@ def api_automation_status():
                         data = json.load(f)
                         last_update = data.get("last_update")
                         last_retrain = data.get("last_retrain")
-                except:
+                except Exception:
                     pass
 
         return jsonify(
@@ -5383,7 +5383,7 @@ def api_metrics():
                 metrics["automation_enabled"] = auto_status["running"]
                 metrics["automation_last_update"] = auto_status.get("last_update")
                 metrics["automation_last_retrain"] = auto_status.get("last_retrain")
-        except:
+        except Exception:
             pass
 
         logger.info("Metrics requested", metrics_count=len(metrics))
@@ -5441,7 +5441,7 @@ def api_metrics_summary():
             "timestamp": datetime.now().isoformat(),
         }
 
-        logger.info(f"✅ Riassunto metriche richiesto")
+        logger.info("✅ Riassunto metriche richiesto")
 
         return jsonify(summary)
 
@@ -6337,7 +6337,7 @@ def api_equity_curve():
 
             cumulative_profit.append(round(cumulative, 2))
             bankroll_curve.append(round(bankroll_iniziale + cumulative, 2))
-            labels.append(f"Bet {i+1}")
+            labels.append(f"Bet {i + 1}")
 
             bet_details.append(
                 {
@@ -6413,7 +6413,7 @@ def api_monitoring_health_detailed():
         cache_manager = get_cache_manager()
         cache_stats = cache_manager.get_stats() if cache_manager else {}
 
-        perf_monitor = get_performance_monitor()
+        _perf_monitor = get_performance_monitor()  # noqa: F841
         error_tracker = get_error_tracker()
 
         # Calcola uptime approssimativo
