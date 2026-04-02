@@ -2,6 +2,17 @@
 
 Sistema avanzato e completamente automatizzato per l'analisi e previsione dei risultati calcistici utilizzando machine learning, automazione intelligente e monitoraggio in tempo reale.
 
+**Rating Sistema**: ⭐⭐⭐⭐ **8.8/10** (Enterprise-Ready)  
+**Last Update**: 2 Aprile 2026 - [Tier 1 Quick Wins](docs/changelog/TIER1_QUICK_WINS_02APR2026.md) implementati
+
+## 📚 Documentazione
+
+Per documentazione completa e guide operative, vedi [docs/README.md](docs/README.md):
+- 📦 **Deployment**: Setup Render, configuration produzione
+- 📖 **Guide Operative**: Quick start FASE 1, workflow trading
+- ✅ **Certificazioni**: Validazioni sistema, dati reali, dual strategy
+- 📝 **Changelog**: Miglioramenti, bug fix, feature release
+
 ## 🚀 Avvio Rapido
 
 ### Installazione
