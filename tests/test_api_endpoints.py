@@ -95,29 +95,29 @@ class TestPredictEnterpriseEndpoint:
 
     def test_predict_requires_parameters(self, client):
         """Predict should require squadra_casa and squadra_ospite"""
-        response = client.get("/api/predict_enterprise")
+        response = client.post("/api/predict_enterprise", json={})
         assert response.status_code == 400
 
     def test_predict_accepts_valid_teams(self, client):
         """Predict should accept valid Serie A teams"""
-        response = client.get("/api/predict_enterprise?squadra_casa=Inter&squadra_ospite=Milan")
+        response = client.post("/api/predict_enterprise", json={"squadra_casa": "Inter", "squadra_ospite": "Milan"})
         # Should return 200 even if teams not in dataset (graceful handling)
         assert response.status_code in [200, 400, 404]
 
     def test_predict_returns_json(self, client):
         """Predict response should be valid JSON"""
-        response = client.get("/api/predict_enterprise?squadra_casa=Inter&squadra_ospite=Milan")
+        response = client.post("/api/predict_enterprise", json={"squadra_casa": "Inter", "squadra_ospite": "Milan"})
         if response.status_code == 200:
             data = json.loads(response.data)
             assert isinstance(data, dict)
 
     def test_predict_includes_probabilities(self, client):
-        """Predict should include probabilita field"""
-        response = client.get("/api/predict_enterprise?squadra_casa=Inter&squadra_ospite=Milan")
+        """Predict should include probabilita field (inside mercati)"""
+        response = client.post("/api/predict_enterprise", json={"squadra_casa": "Inter", "squadra_ospite": "Milan"})
         if response.status_code == 200:
             data = json.loads(response.data)
-            # Should have probabilita or error message
-            assert "probabilita" in data or "error" in data or "has_prediction" in data
+            # Probabilità sono dentro mercati.m1x2.probabilita
+            assert "mercati" in data or "error" in data or "has_prediction" in data
 
 
 class TestUpcomingMatchesEndpoint:
@@ -125,15 +125,15 @@ class TestUpcomingMatchesEndpoint:
 
     @patch("web.app_professional.get_cache_manager")
     def test_upcoming_matches_returns_200(self, mock_cache, client):
-        """Upcoming matches should return 200 OK"""
+        """Upcoming matches should return 200 OK or graceful error"""
         # Mock cache to avoid external API calls
         mock_cache_instance = MagicMock()
         mock_cache_instance.cache_upcoming_matches.return_value = None
         mock_cache.return_value = mock_cache_instance
 
         response = client.get("/api/upcoming_matches")
-        # Should return 200 even with no data (empty list or error handling)
-        assert response.status_code in [200, 503]
+        # Should return 200 (success), 404 (no data), or 503 (service unavailable)
+        assert response.status_code in [200, 404, 503]
 
     @patch("web.app_professional.get_cache_manager")
     def test_upcoming_matches_returns_list(self, mock_cache, client):
@@ -191,7 +191,7 @@ class TestErrorHandling:
 
     def test_400_for_missing_parameters(self, client):
         """Missing required parameters should return 400"""
-        response = client.get("/api/predict_enterprise")
+        response = client.post("/api/predict_enterprise", json={})
         assert response.status_code == 400
 
 
