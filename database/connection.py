@@ -4,19 +4,22 @@ Supporta sia Render PostgreSQL che graceful degradation a CSV fallback
 """
 
 import os
-from psycopg2.pool import ThreadedConnectionPool  # type: ignore[import-not-found]
-from psycopg2 import Error  # type: ignore[import-not-found]
 from contextlib import contextmanager
+
 import structlog
+from psycopg2 import Error  # type: ignore[import-not-found]
+from psycopg2.pool import ThreadedConnectionPool  # type: ignore[import-not-found]
 
 logger = structlog.get_logger()
 
 # Connection pool globale (ThreadedConnectionPool per compatibilità gevent)
 _connection_pool = None
 
+
 def get_database_url():
     """Ottieni DATABASE_URL da environment (Render lo inietta automaticamente)"""
-    return os.environ.get('DATABASE_URL')
+    return os.environ.get("DATABASE_URL")
+
 
 def init_db():
     """
@@ -24,26 +27,28 @@ def init_db():
     Render inietta automaticamente DATABASE_URL come env var
     """
     global _connection_pool
-    
+
     database_url = get_database_url()
-    
-    logger.info(f"🔧 init_db() chiamato - DATABASE_URL presente: {database_url is not None}, length: {len(database_url) if database_url else 0}")
-    
+
+    logger.info(
+        f"🔧 init_db() chiamato - DATABASE_URL presente: {database_url is not None}, length: {len(database_url) if database_url else 0}"
+    )
+
     if not database_url:
         logger.warning("⚠️ DATABASE_URL non configurata - falling back a CSV storage")
         return False
-    
+
     try:
         logger.info("🔧 Creando ThreadedConnectionPool (gevent-safe)...")
         # ThreadedConnectionPool: thread-safe per gevent workers (Quick Win #4)
         # Pool size ottimizzato per Render free tier + spike traffic
         _connection_pool = ThreadedConnectionPool(
-            minconn=2,     # Mantieni 2 conn attive sempre
-            maxconn=20,    # Spike traffic fino a 20 connessioni
-            dsn=database_url
+            minconn=2,  # Mantieni 2 conn attive sempre
+            maxconn=20,  # Spike traffic fino a 20 connessioni
+            dsn=database_url,
         )
         logger.info("🔧 ThreadedConnectionPool creato (min=2, max=20)")
-        
+
         # Test connessione DIRETTO (no context manager per evitare ricorsione)
         logger.info("🔧 Test connessione diretto...")
         test_conn = None
@@ -58,18 +63,19 @@ def init_db():
             if test_conn:
                 _connection_pool.putconn(test_conn)
                 logger.info("🔧 Connection restituita al pool")
-        
+
         # Esegui schema (idempotent - CREATE IF NOT EXISTS)
         logger.info("🔧 Chiamata _ensure_schema_exists()...")
         _ensure_schema_exists()
         logger.info("🔧 _ensure_schema_exists() completato")
-        
+
         return True
-        
+
     except Exception as e:
         logger.error("❌ Errore connessione PostgreSQL", error=str(e), exc_info=True)
         _connection_pool = None
         return False
+
 
 def _ensure_schema_exists():
     """Esegue schema.sql se tabelle non esistono"""
@@ -81,44 +87,47 @@ def _ensure_schema_exists():
             with conn.cursor() as cur:
                 logger.info("🔧 Check esistenza table bets...")
                 # Check se table bets esiste
-                cur.execute("""
+                cur.execute(
+                    """
                     SELECT EXISTS (
-                        SELECT FROM information_schema.tables 
+                        SELECT FROM information_schema.tables
                         WHERE table_name = 'bets'
                     );
-                """)
+                """
+                )
                 exists = cur.fetchone()[0]
                 logger.info(f"🔧 Table bets exists: {exists}")
-                
+
                 if not exists:
                     logger.info("📋 Creando schema database...")
-                    
+
                     # Leggi e esegui schema.sql
-                    schema_path = os.path.join(os.path.dirname(__file__), 'schema.sql')
+                    schema_path = os.path.join(os.path.dirname(__file__), "schema.sql")
                     logger.info(f"🔧 Schema path: {schema_path}")
-                    
+
                     if not os.path.exists(schema_path):
                         raise FileNotFoundError(f"schema.sql non trovato: {schema_path}")
-                    
-                    with open(schema_path, 'r') as f:
+
+                    with open(schema_path, "r") as f:
                         schema_sql = f.read()
-                    
+
                     logger.info(f"🔧 Schema SQL caricato ({len(schema_sql)} chars)")
                     cur.execute(schema_sql)
                     conn.commit()
                     logger.info("✅ Schema database creato")
                 else:
                     logger.info("✅ Schema database già esistente")
-                    
+
     except Exception as e:
         logger.error("❌ Errore creazione schema", error=str(e), exc_info=True)
         raise
+
 
 @contextmanager
 def get_db_connection():
     """
     Context manager per ottenere connessione dal pool
-    
+
     Usage:
         with get_db_connection() as conn:
             with conn.cursor() as cur:
@@ -127,11 +136,11 @@ def get_db_connection():
     """
     if _connection_pool is None:
         raise RuntimeError("Database non inizializzato. Chiama init_db() o is_db_available() prima.")
-    
+
     conn = None
     try:
         conn = _connection_pool.getconn()
-        
+
         # Test connessione viva (fix "connection already closed")
         try:
             with conn.cursor() as cur:
@@ -141,7 +150,7 @@ def get_db_connection():
             logger.warning("⚠️ Connessione stale rilevata, riconnetto...")
             conn.close()
             conn = _connection_pool.getconn()
-        
+
         yield conn
         conn.commit()  # Auto-commit se nessuna exception
     except Exception as e:
@@ -153,35 +162,38 @@ def get_db_connection():
         if conn:
             _connection_pool.putconn(conn)
 
+
 def close_db_pool():
     """Chiudi tutte le connessioni pool (chiamare a shutdown app)"""
     global _connection_pool
-    
+
     if _connection_pool:
         _connection_pool.closeall()
         logger.info("🔴 Connection pool chiuso")
         _connection_pool = None
 
+
 def is_db_available():
     """Check se database è disponibile (stato pool corrente, NO lazy init)"""
     return _connection_pool is not None
 
+
 def execute_query(query, params=None, fetch=True):
     """
     Helper per eseguire query semplici
-    
+
     Args:
         query: SQL query
         params: Parametri query (tuple)
         fetch: Se True, ritorna fetchall(), altrimenti None
-    
+
     Returns:
         List di tuple se fetch=True, None altrimenti
     """
     with get_db_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(query, params or ())
-            
+
             if fetch:
                 return cur.fetchall()
             else:

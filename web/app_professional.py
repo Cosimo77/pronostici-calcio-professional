@@ -138,7 +138,10 @@ structlog.configure(
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[logging.FileHandler("logs/professional_system.log"), logging.StreamHandler()],
+    handlers=[
+        logging.FileHandler("logs/professional_system.log"),
+        logging.StreamHandler(),
+    ],
 )
 logger = structlog.get_logger(__name__)
 
@@ -261,17 +264,29 @@ def security_checks():
     user_agent = str(request.user_agent).lower()
     suspicious_agents = ["sqlmap", "nmap", "nikto", "masscan", "w3af"]
     if any(agent in user_agent for agent in suspicious_agents):
-        logger.warning("Suspicious user agent blocked", user_agent=user_agent, remote_addr=request.remote_addr)
+        logger.warning(
+            "Suspicious user agent blocked",
+            user_agent=user_agent,
+            remote_addr=request.remote_addr,
+        )
         return jsonify({"error": "Access denied"}), 403
 
     # Controllo dimensione richiesta
     if request.content_length and request.content_length > app.config["MAX_CONTENT_LENGTH"]:
-        logger.warning("Request too large", content_length=request.content_length, remote_addr=request.remote_addr)
+        logger.warning(
+            "Request too large",
+            content_length=request.content_length,
+            remote_addr=request.remote_addr,
+        )
         return jsonify({"error": "Request too large"}), 413
 
     # Blocca tentativi di path traversal
     if ".." in request.path or request.path.startswith("//"):
-        logger.warning("Path traversal attempt blocked", path=request.path, remote_addr=request.remote_addr)
+        logger.warning(
+            "Path traversal attempt blocked",
+            path=request.path,
+            remote_addr=request.remote_addr,
+        )
         return jsonify({"error": "Invalid path"}), 400
 
 
@@ -279,7 +294,9 @@ def security_checks():
 # Inizializza cache Redis per performance optimization
 cache = get_cache_manager()
 logger.info(
-    "Cache Manager initialized", enabled=cache.enabled, redis_status="connected" if cache.enabled else "disabled"
+    "Cache Manager initialized",
+    enabled=cache.enabled,
+    redis_status="connected" if cache.enabled else "disabled",
 )
 
 # ==================== DATABASE INITIALIZATION ====================
@@ -535,7 +552,7 @@ class ProfessionalCalculator:
             return {
                 "success": True,
                 "partite_totali": len(self.df_features),
-                "ultima_partita": self.df_features["Date"].max() if "Date" in self.df_features.columns else "N/A",
+                "ultima_partita": (self.df_features["Date"].max() if "Date" in self.df_features.columns else "N/A"),
                 "squadre": len(self.squadre_disponibili),
             }
         else:
@@ -576,9 +593,9 @@ class ProfessionalCalculator:
         vittorie_ospite = len(self.df_features[self.df_features["FTR"] == "A"])
 
         return {
-            "vittorie_casa": vittorie_casa / totale_partite if totale_partite > 0 else 0.43,
+            "vittorie_casa": (vittorie_casa / totale_partite if totale_partite > 0 else 0.43),
             "pareggi": pareggi / totale_partite if totale_partite > 0 else 0.27,
-            "vittorie_ospite": vittorie_ospite / totale_partite if totale_partite > 0 else 0.30,
+            "vittorie_ospite": (vittorie_ospite / totale_partite if totale_partite > 0 else 0.30),
         }
 
     def _calcola_statistiche_squadra(self, squadra: str, in_casa: bool = True) -> Dict[str, float]:
@@ -586,7 +603,12 @@ class ProfessionalCalculator:
         try:
             # Controllo sicurezza DataFrame
             if self.df_features is None:
-                return {"vittorie": 0.33, "pareggi": 0.33, "sconfitte": 0.33, "partite_totali": 0}
+                return {
+                    "vittorie": 0.33,
+                    "pareggi": 0.33,
+                    "sconfitte": 0.33,
+                    "partite_totali": 0,
+                }
 
             # Ottieni prior bayesiani
             prior = self._calcola_prior_bayesiani()
@@ -690,7 +712,12 @@ class ProfessionalCalculator:
             return {"vittorie": 0.33, "pareggi": 0.33, "sconfitte": 0.33}
 
     def _applica_simmetria_matematica(
-        self, prob_casa: float, prob_ospite: float, prob_pareggio: float, stats_casa: Dict, stats_ospite: Dict
+        self,
+        prob_casa: float,
+        prob_ospite: float,
+        prob_pareggio: float,
+        stats_casa: Dict,
+        stats_ospite: Dict,
     ) -> Tuple[float, float, float]:
         """Applica simmetria matematica avanzata per coerenza"""
         # Normalizza per garantire somma = 1.0
@@ -871,7 +898,11 @@ class ProfessionalCalculator:
             confidenza = prob_pareggio
 
         # Formato probabilità
-        probabilita = {"H": round(prob_casa, 3), "D": round(prob_pareggio, 3), "A": round(prob_ospite, 3)}
+        probabilita = {
+            "H": round(prob_casa, 3),
+            "D": round(prob_pareggio, 3),
+            "A": round(prob_ospite, 3),
+        }
 
         # Cache risultato
         risultato = (predizione, probabilita, round(confidenza, 3))
@@ -1014,7 +1045,11 @@ def index():
     if not sistema_inizializzato:
         inizializza_sistema_professionale()
 
-    return render_template("enterprise.html", squadre=calculator.squadre_disponibili, sistema_enterprise=True)
+    return render_template(
+        "enterprise.html",
+        squadre=calculator.squadre_disponibili,
+        sistema_enterprise=True,
+    )
 
 
 @app.route("/value-betting")
@@ -1242,14 +1277,17 @@ def debug_storage_adapter():
     diagnostic["database_url"] = {
         "present": bool(database_url),
         "length": len(database_url) if database_url else 0,
-        "provider": "neon.tech" if database_url and "neon.tech" in database_url else "unknown",
+        "provider": ("neon.tech" if database_url and "neon.tech" in database_url else "unknown"),
     }
 
     # 2. Check DB module import
     try:
         from database import init_db, is_db_available
 
-        diagnostic["database_module"] = {"imported": True, "is_db_available": is_db_available()}
+        diagnostic["database_module"] = {
+            "imported": True,
+            "is_db_available": is_db_available(),
+        }
     except ImportError as e:
         diagnostic["database_module"] = {"imported": False, "error": str(e)}
         return jsonify(diagnostic), 200
@@ -1259,7 +1297,10 @@ def debug_storage_adapter():
         from web.diario_storage import DiarioStorage
 
         use_db = DiarioStorage._use_database()
-        diagnostic["diario_adapter"] = {"use_database": use_db, "storage_backend": "PostgreSQL" if use_db else "CSV"}
+        diagnostic["diario_adapter"] = {
+            "use_database": use_db,
+            "storage_backend": "PostgreSQL" if use_db else "CSV",
+        }
     except Exception as e:
         diagnostic["diario_adapter"] = {"error": str(e)}
 
@@ -1353,10 +1394,10 @@ def migrate_csv_to_db_api():
                 "data": str(row["Data"]),
                 "partita": str(row["Partita"]),
                 "mercato": str(row["Mercato"]),
-                "quota_sistema": float(row["Quota_Sistema"]) if pd.notna(row.get("Quota_Sistema")) else None,
+                "quota_sistema": (float(row["Quota_Sistema"]) if pd.notna(row.get("Quota_Sistema")) else None),
                 "quota_sisal": float(row["Quota_Sisal"]),
                 "ev_modello": str(row.get("EV_Modello", "")),
-                "ev_realistico": str(row.get("EV_Realistico", "")) if pd.notna(row.get("EV_Realistico")) else None,
+                "ev_realistico": (str(row.get("EV_Realistico", "")) if pd.notna(row.get("EV_Realistico")) else None),
                 "stake": str(row["Stake"]),
                 "risultato": str(row.get("Risultato", "PENDING")),
                 "profit": float(row.get("Profit", 0)),
@@ -1392,7 +1433,11 @@ def migrate_csv_to_db_api():
 @limiter.limit("2 per hour")  # Molto limitato - operazione critica
 def migrate_schema_api():
     """Esegue migration schema: aggiunge colonne multiple a tabella bets"""
-    result: Dict[str, Any] = {"timestamp": datetime.now().isoformat(), "status": "starting", "operations": []}
+    result: Dict[str, Any] = {
+        "timestamp": datetime.now().isoformat(),
+        "status": "starting",
+        "operations": [],
+    }
 
     # 1. Verifica database disponibile
     try:
@@ -1507,7 +1552,13 @@ def tracking_fase2_api():
                         "error": "File tracking non trovato",
                         "message": "Esegui prima: python genera_tracking_fase2.py",
                         "trades": [],
-                        "summary": {"total_trades": 0, "win_rate": 0, "roi": 0, "profit_loss": 0, "bankroll": 500},
+                        "summary": {
+                            "total_trades": 0,
+                            "win_rate": 0,
+                            "roi": 0,
+                            "profit_loss": 0,
+                            "bankroll": 500,
+                        },
                     }
                 ),
                 404,
@@ -1570,7 +1621,13 @@ def tracking_fase2_api():
             "backtest_wr_expected": 50.6,
         }
 
-        return jsonify({"trades": trades, "summary": summary, "last_update": datetime.now().isoformat()})
+        return jsonify(
+            {
+                "trades": trades,
+                "summary": summary,
+                "last_update": datetime.now().isoformat(),
+            }
+        )
 
     except Exception as e:
         logger.error(f"Errore API tracking FASE 2: {e}")
@@ -1604,7 +1661,13 @@ def dataset_info_api():
                     }
                 )
         else:
-            return jsonify({"match_count": 0, "last_match_date": "N/A", "error": "Dataset non trovato"})
+            return jsonify(
+                {
+                    "match_count": 0,
+                    "last_match_date": "N/A",
+                    "error": "Dataset non trovato",
+                }
+            )
     except Exception as e:
         logger.error(f"Errore API dataset info: {e}")
         return jsonify({"error": str(e)}), 500
@@ -1650,7 +1713,11 @@ def api_predici_professionale():
             logger.warning(f"⚠️ Somma probabilità non corretta: {somma_prob}")
 
         # Mappa risultati
-        risultato_map = {"H": f"Vittoria {squadra_casa}", "A": f"Vittoria {squadra_ospite}", "D": "Pareggio"}
+        risultato_map = {
+            "H": f"Vittoria {squadra_casa}",
+            "A": f"Vittoria {squadra_ospite}",
+            "D": "Pareggio",
+        }
 
         response = {
             "predizione": predizione,
@@ -1702,9 +1769,9 @@ def api_cache_stats():
         {
             "cache_stats": stats,
             "performance_impact": {
-                "estimated_speedup": "3-5x faster" if stats.get("enabled") else "disabled",
+                "estimated_speedup": ("3-5x faster" if stats.get("enabled") else "disabled"),
                 "api_calls_saved": "Depends on hit_rate",
-                "avg_response_time": "<500ms (cached)" if stats.get("enabled") else "~1.5s (no cache)",
+                "avg_response_time": ("<500ms (cached)" if stats.get("enabled") else "~1.5s (no cache)"),
             },
             "timestamp": datetime.now().isoformat(),
         }
@@ -1718,7 +1785,11 @@ def api_cache_clear():
     try:
         cache.invalidate_all()
         return jsonify(
-            {"status": "success", "message": "Cache completamente svuotata", "timestamp": datetime.now().isoformat()}
+            {
+                "status": "success",
+                "message": "Cache completamente svuotata",
+                "timestamp": datetime.now().isoformat(),
+            }
         )
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -1749,7 +1820,15 @@ def api_reload_dataset():
                 }
             )
         else:
-            return jsonify({"status": "error", "message": result.get("error", "Errore sconosciuto")}), 500
+            return (
+                jsonify(
+                    {
+                        "status": "error",
+                        "message": result.get("error", "Errore sconosciuto"),
+                    }
+                ),
+                500,
+            )
     except Exception as e:
         logger.error(f"❌ Errore reload dataset API: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -1770,7 +1849,10 @@ def api_roi_stats():
             "max_drawdown": -25.0,  # Conservativo
             "sharpe_ratio": 0,
             "ev_medio": 0,
-            "periodo": {"da": "2024-12-21", "a": "2026-01-15"},  # Test set backtest FASE 2
+            "periodo": {
+                "da": "2024-12-21",
+                "a": "2026-01-15",
+            },  # Test set backtest FASE 2
             "timestamp": datetime.now().isoformat(),
         }
     )
@@ -1806,7 +1888,13 @@ def api_roi_history():
                 }
             )
 
-        return jsonify({"equity_curve": equity_curve, "total_bets": len(df), "showing_last": len(equity_curve)})
+        return jsonify(
+            {
+                "equity_curve": equity_curve,
+                "total_bets": len(df),
+                "showing_last": len(equity_curve),
+            }
+        )
 
     except Exception as e:
         logger.error(f"Errore caricamento equity curve: {e}")
@@ -2072,10 +2160,16 @@ def api_predict_enterprise():
             return jsonify({"error": "Le squadre devono essere diverse"}), 400
 
         if squadra_casa not in calculator.squadre_disponibili:
-            return jsonify({"error": f"Squadra casa {squadra_casa} non disponibile per predizioni"}), 400
+            return (
+                jsonify({"error": f"Squadra casa {squadra_casa} non disponibile per predizioni"}),
+                400,
+            )
 
         if squadra_ospite not in calculator.squadre_disponibili:
-            return jsonify({"error": f"Squadra ospite {squadra_ospite} non disponibile per predizioni"}), 400
+            return (
+                jsonify({"error": f"Squadra ospite {squadra_ospite} non disponibile per predizioni"}),
+                400,
+            )
 
         # ============================================
         # A/B TEST FRAMEWORK
@@ -2163,7 +2257,11 @@ def api_predict_enterprise():
         ev_pareggio = calc_ev(probabilita["D"], odds_d)
         ev_trasferta = calc_ev(probabilita["A"], odds_a)
 
-        expected_values = {"Casa": ev_casa, "Pareggio": ev_pareggio, "Trasferta": ev_trasferta}
+        expected_values = {
+            "Casa": ev_casa,
+            "Pareggio": ev_pareggio,
+            "Trasferta": ev_trasferta,
+        }
 
         # Probabilità implicite bookmaker (normalizzate)
         prob_book_h = 1 / odds_h
@@ -2272,7 +2370,7 @@ def api_predict_enterprise():
                     "confidence": confidenza,
                     "description": f"{modello_usato} - 51.38% accuracy test (deployato 14/03/2026)",
                     "dataset_size": dataset_size,
-                    "features": len(calculator.feature_cols) if calculator.feature_cols else "N/A",
+                    "features": (len(calculator.feature_cols) if calculator.feature_cols else "N/A"),
                     "model_type": modello_usato,
                 }
             },
@@ -2375,10 +2473,16 @@ def api_consigli_scommessa():
             return jsonify({"error": "Squadre mancanti"}), 400
 
         if squadra_casa not in calculator.squadre_disponibili:
-            return jsonify({"error": f"Squadra casa {squadra_casa} non disponibile"}), 400
+            return (
+                jsonify({"error": f"Squadra casa {squadra_casa} non disponibile"}),
+                400,
+            )
 
         if squadra_ospite not in calculator.squadre_disponibili:
-            return jsonify({"error": f"Squadra ospite {squadra_ospite} non disponibile"}), 400
+            return (
+                jsonify({"error": f"Squadra ospite {squadra_ospite} non disponibile"}),
+                400,
+            )
 
         # Calcola predizioni e mercati
         predizione, probabilita, confidenza = calculator.predici_partita(squadra_casa, squadra_ospite)
@@ -2747,8 +2851,8 @@ def api_upcoming_matches():
                         },
                         "odds_totals": (
                             {
-                                "over_25": round(odds_over_25, 2) if odds_over_25 else None,
-                                "under_25": round(odds_under_25, 2) if odds_under_25 else None,
+                                "over_25": (round(odds_over_25, 2) if odds_over_25 else None),
+                                "under_25": (round(odds_under_25, 2) if odds_under_25 else None),
                                 "n_bookmakers": match.get("num_bookmakers_totals", 0),
                             }
                             if odds_over_25 and odds_under_25
@@ -2790,8 +2894,8 @@ def api_upcoming_matches():
                                 "home": round(diff_h * 100, 2),
                                 "draw": round(diff_d * 100, 2),
                                 "away": round(diff_a * 100, 2),
-                                "over": round(diff_over * 100, 2) if diff_over is not None else None,
-                                "under": round(diff_under * 100, 2) if diff_under is not None else None,
+                                "over": (round(diff_over * 100, 2) if diff_over is not None else None),
+                                "under": (round(diff_under * 100, 2) if diff_under is not None else None),
                             },
                             "market_probabilities": {
                                 "home": round(prob_market_h * 100, 2),
@@ -2803,8 +2907,8 @@ def api_upcoming_matches():
                                 "home": round(ev_h * 100, 2),
                                 "draw": round(ev_d * 100, 2),
                                 "away": round(ev_a * 100, 2),
-                                "over": round(ev_over * 100, 2) if ev_over is not None else None,
-                                "under": round(ev_under * 100, 2) if ev_under is not None else None,
+                                "over": (round(ev_over * 100, 2) if ev_over is not None else None),
+                                "under": (round(ev_under * 100, 2) if ev_under is not None else None),
                             },
                             "divergence_level": analysis_level,
                             "biggest_discrepancy": round(best_diff * 100, 2),
@@ -2820,7 +2924,7 @@ def api_upcoming_matches():
                             "best_market": best_market,
                             "best_outcome": best_outcome,
                             "best_odds": round(best_odds, 2),
-                            "recommendation": "ANALYZE" if analysis_level != "low_divergence" else "ALIGNED",
+                            "recommendation": ("ANALYZE" if analysis_level != "low_divergence" else "ALIGNED"),
                             # Performance disclaimer
                             "backtest_note": "Backtest storico: -22% ROI su value betting. Usa solo per analisi, non garanzie di profitto.",
                         },
@@ -2829,8 +2933,8 @@ def api_upcoming_matches():
                                 "home": round(ev_h * 100, 2),
                                 "draw": round(ev_d * 100, 2),
                                 "away": round(ev_a * 100, 2),
-                                "over": round(ev_over * 100, 2) if ev_over is not None else None,
-                                "under": round(ev_under * 100, 2) if ev_under is not None else None,
+                                "over": (round(ev_over * 100, 2) if ev_over is not None else None),
+                                "under": (round(ev_under * 100, 2) if ev_under is not None else None),
                                 # Double Chance EV RIMOSSI: variabili ev_1x, ev_x2, ev_12 non definite
                             },
                             # double_chance_odds RIMOSSO: variabili odds_1x, odds_x2, odds_12 non definite
@@ -2848,7 +2952,11 @@ def api_upcoming_matches():
                             "fase2_total_opportunities": len(fase2_opportunities),
                         },
                         "markets": {
-                            "predizione_enterprise": {"H": "Casa", "D": "Pareggio", "A": "Trasferta"}[predizione],
+                            "predizione_enterprise": {
+                                "H": "Casa",
+                                "D": "Pareggio",
+                                "A": "Trasferta",
+                            }[predizione],
                             "confidenza": round(confidenza, 3),
                             "mercati": mercati,
                         },
@@ -2875,8 +2983,8 @@ def api_upcoming_matches():
                         },
                         "odds_totals": (
                             {
-                                "over_25": round(odds_over_25, 2) if odds_over_25 else None,
-                                "under_25": round(odds_under_25, 2) if odds_under_25 else None,
+                                "over_25": (round(odds_over_25, 2) if odds_over_25 else None),
+                                "under_25": (round(odds_under_25, 2) if odds_under_25 else None),
                                 "n_bookmakers": match.get("num_bookmakers_totals", 0),
                             }
                             if odds_over_25 and odds_under_25
@@ -2905,7 +3013,11 @@ def api_upcoming_matches():
             # Assicurati che abbia i campi necessari
             if not api_quota or "error" in api_quota:
                 logger.warning(f"⚠️ Quota API con errore: {api_quota}")
-                api_quota = {"used": "N/A", "remaining": "N/A", "error": api_quota.get("error", "Unknown")}
+                api_quota = {
+                    "used": "N/A",
+                    "remaining": "N/A",
+                    "error": api_quota.get("error", "Unknown"),
+                }
         except Exception as e:
             logger.error(f"❌ Errore verifica quota API: {e}")
             api_quota = {"used": "N/A", "remaining": "N/A", "error": str(e)}
@@ -2961,7 +3073,10 @@ def api_refresh_quotes():
         # Forza nuova chiamata API
         api_key = os.getenv("ODDS_API_KEY")
         if not api_key:
-            return jsonify({"success": False, "error": "ODDS_API_KEY non configurata"}), 503
+            return (
+                jsonify({"success": False, "error": "ODDS_API_KEY non configurata"}),
+                503,
+            )
 
         sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
         from integrations.odds_api import OddsAPIClient
@@ -3023,7 +3138,10 @@ def api_export_predizioni():
 
         api_key = os.getenv("ODDS_API_KEY")
         if not api_key:
-            return "ERRORE: ODDS_API_KEY non configurata. Impossibile generare predizioni.", 503
+            return (
+                "ERRORE: ODDS_API_KEY non configurata. Impossibile generare predizioni.",
+                503,
+            )
 
         odds_client = OddsAPIClient(api_key=api_key)
         matches_raw = odds_client.get_upcoming_odds()
@@ -3092,7 +3210,11 @@ def api_export_predizioni():
                 ev_d = calc_ev(probabilita["D"], odds_d)
                 ev_a = calc_ev(probabilita["A"], odds_a)
 
-                evs = {"H": (ev_h, odds_h, "Casa"), "D": (ev_d, odds_d, "Pareggio"), "A": (ev_a, odds_a, "Trasferta")}
+                evs = {
+                    "H": (ev_h, odds_h, "Casa"),
+                    "D": (ev_d, odds_d, "Pareggio"),
+                    "A": (ev_a, odds_a, "Trasferta"),
+                }
 
                 # Best EV
                 best_esito = max(evs.items(), key=lambda x: x[1][0])
@@ -3358,10 +3480,16 @@ def api_mercati_professionale():
             return jsonify({"error": "Le squadre devono essere diverse"}), 400
 
         if squadra_casa not in calculator.squadre_disponibili:
-            return jsonify({"error": f"Squadra casa {squadra_casa} non disponibile per predizioni"}), 400
+            return (
+                jsonify({"error": f"Squadra casa {squadra_casa} non disponibile per predizioni"}),
+                400,
+            )
 
         if squadra_ospite not in calculator.squadre_disponibili:
-            return jsonify({"error": f"Squadra ospite {squadra_ospite} non disponibile per predizioni"}), 400
+            return (
+                jsonify({"error": f"Squadra ospite {squadra_ospite} non disponibile per predizioni"}),
+                400,
+            )
 
         # Predizione base con ML (fallback deterministico)
         predizione, probabilita, confidenza = calculator.predici_partita(squadra_casa, squadra_ospite)
@@ -3373,7 +3501,11 @@ def api_mercati_professionale():
         consigli_scommesse = _genera_consigli_scommessa(mercati, probabilita, confidenza)
 
         response = {
-            "predizione_principale": {"predizione": predizione, "probabilita": probabilita, "confidenza": confidenza},
+            "predizione_principale": {
+                "predizione": predizione,
+                "probabilita": probabilita,
+                "confidenza": confidenza,
+            },
             "mercati": mercati,
             "consigli_scommesse": consigli_scommesse,
             "squadra_casa": squadra_casa,
@@ -3530,7 +3662,10 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
 
         mercati["mou25"] = {
             "nome": "Over/Under 2.5",
-            "probabilita": {"over": round(prob_over25, 3), "under": round(prob_under25, 3)},
+            "probabilita": {
+                "over": round(prob_over25, 3),
+                "under": round(prob_under25, 3),
+            },
             "confidenza": max(prob_over25, prob_under25),
             "consiglio": "over" if prob_over25 > prob_under25 else "under",
             "gol_previsti": round(gol_previsti, 1),
@@ -3547,7 +3682,10 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
 
         mercati["mou15"] = {
             "nome": "Over/Under 1.5",
-            "probabilita": {"over": round(prob_over15, 3), "under": round(prob_under15, 3)},
+            "probabilita": {
+                "over": round(prob_over15, 3),
+                "under": round(prob_under15, 3),
+            },
             "confidenza": max(prob_over15, prob_under15),
             "consiglio": "over" if prob_over15 > prob_under15 else "under",
             "gol_previsti": round(gol_previsti, 1),
@@ -3564,7 +3702,10 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
 
         mercati["mou35"] = {
             "nome": "Over/Under 3.5",
-            "probabilita": {"over": round(prob_over35, 3), "under": round(prob_under35, 3)},
+            "probabilita": {
+                "over": round(prob_over35, 3),
+                "under": round(prob_under35, 3),
+            },
             "confidenza": max(prob_over35, prob_under35),
             "consiglio": "over" if prob_over35 > prob_under35 else "under",
             "gol_previsti": round(gol_previsti, 1),
@@ -3664,7 +3805,10 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
     mercati["mah"] = {
         "nome": "Asian Handicap",
         "handicap": handicap,
-        "probabilita": {"copre": round(prob_copertura, 3), "non_copre": round(1 - prob_copertura, 3)},
+        "probabilita": {
+            "copre": round(prob_copertura, 3),
+            "non_copre": round(1 - prob_copertura, 3),
+        },
         "confidenza": prob_copertura,
         "consiglio": f"Casa {handicap:+.1f}" if handicap != 0 else "Equilibrato",
     }
@@ -3723,7 +3867,11 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
 
     mercati["mpt1x2"] = {
         "nome": "Primo Tempo 1X2",
-        "probabilita": {"H": round(prob_h_pt, 3), "D": round(prob_d_pt, 3), "A": round(prob_a_pt, 3)},
+        "probabilita": {
+            "H": round(prob_h_pt, 3),
+            "D": round(prob_d_pt, 3),
+            "A": round(prob_a_pt, 3),
+        },
         "confidenza": max_pt,
         "consiglio": best_pt,
     }
@@ -3742,7 +3890,10 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
 
     mercati["mptou"] = {
         "nome": "Primo Tempo Over/Under 0.5",
-        "probabilita": {"over": round(prob_over_pt, 3), "under": round(prob_under_pt, 3)},
+        "probabilita": {
+            "over": round(prob_over_pt, 3),
+            "under": round(prob_under_pt, 3),
+        },
         "confidenza": max(prob_over_pt, prob_under_pt),
         "consiglio": "over" if prob_over_pt > prob_under_pt else "under",
         "gol_previsti": round(gol_primo_tempo, 1),
@@ -3755,7 +3906,20 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
     exact_scores = {}
 
     # Top 12 risultati più comuni (copre ~80% casi)
-    risultati_comuni = [(0, 0), (1, 0), (0, 1), (1, 1), (2, 0), (0, 2), (2, 1), (1, 2), (2, 2), (3, 0), (0, 3), (3, 1)]
+    risultati_comuni = [
+        (0, 0),
+        (1, 0),
+        (0, 1),
+        (1, 1),
+        (2, 0),
+        (0, 2),
+        (2, 1),
+        (1, 2),
+        (2, 2),
+        (3, 0),
+        (0, 3),
+        (3, 1),
+    ]
 
     for gol_casa, gol_ospite in risultati_comuni:
         # Poisson: P(X=k) = (λ^k * e^-λ) / k!
@@ -3771,7 +3935,14 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
         exact_scores = {k: round(v / total_exact, 3) for k, v in exact_scores.items()}
     else:
         # Fallback ultra-conservativo
-        exact_scores = {"1-1": 0.25, "1-0": 0.20, "0-1": 0.20, "2-1": 0.15, "1-2": 0.15, "0-0": 0.05}
+        exact_scores = {
+            "1-1": 0.25,
+            "1-0": 0.20,
+            "0-1": 0.20,
+            "2-1": 0.15,
+            "1-2": 0.15,
+            "0-0": 0.05,
+        }
 
     # Trova il risultato più probabile
     best_exact = max(exact_scores.keys(), key=lambda k: exact_scores.get(k, 0))
@@ -3790,7 +3961,12 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
     prob_2_over = prob_base.get("A", 0.33) * mercati["mou25"]["probabilita"]["over"]
     prob_2_under = prob_base.get("A", 0.33) * mercati["mou25"]["probabilita"]["under"]
 
-    combo_probs = {"1X_Over": prob_1x_over, "1X_Under": prob_1x_under, "2_Over": prob_2_over, "2_Under": prob_2_under}
+    combo_probs = {
+        "1X_Over": prob_1x_over,
+        "1X_Under": prob_1x_under,
+        "2_Over": prob_2_over,
+        "2_Under": prob_2_under,
+    }
 
     best_combo = max(combo_probs.keys(), key=lambda k: combo_probs.get(k, 0))
 
@@ -3855,7 +4031,10 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
 
     mercati["mcards"] = {
         "nome": "Totale Cartellini O/U 4.5",
-        "probabilita": {"over": round(prob_over_cards, 3), "under": round(prob_under_cards, 3)},
+        "probabilita": {
+            "over": round(prob_over_cards, 3),
+            "under": round(prob_under_cards, 3),
+        },
         "confidenza": max(prob_over_cards, prob_under_cards),
         "consiglio": "over" if prob_over_cards > prob_under_cards else "under",
         "cartellini_previsti": round(cartellini_previsti, 1),
@@ -3912,7 +4091,10 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
 
     mercati["mcorner"] = {
         "nome": "Totale Corner O/U 9.5",
-        "probabilita": {"over": round(prob_over_corner, 3), "under": round(prob_under_corner, 3)},
+        "probabilita": {
+            "over": round(prob_over_corner, 3),
+            "under": round(prob_under_corner, 3),
+        },
         "confidenza": max(prob_over_corner, prob_under_corner),
         "consiglio": "over" if prob_over_corner > prob_under_corner else "under",
         "corner_previsti": round(corner_previsti, 1),
@@ -3973,7 +4155,10 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
     mercati["mheuro"] = {
         "nome": "Handicap Europeo",
         "handicap": handicap_euro,
-        "probabilita": {"successo": round(prob_handicap, 3), "fallimento": round(1 - prob_handicap, 3)},
+        "probabilita": {
+            "successo": round(prob_handicap, 3),
+            "fallimento": round(1 - prob_handicap, 3),
+        },
         "confidenza": prob_handicap,
         "consiglio": f"Casa {handicap_euro:+d}" if handicap_euro != 0 else "Pareggio",
     }
@@ -3984,7 +4169,10 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
 
     mercati["mvincente"] = {
         "nome": "Vincente Match",
-        "probabilita": {"casa": round(prob_casa_vincente, 3), "ospite": round(prob_ospite_vincente, 3)},
+        "probabilita": {
+            "casa": round(prob_casa_vincente, 3),
+            "ospite": round(prob_ospite_vincente, 3),
+        },
         "confidenza": max(prob_casa_vincente, prob_ospite_vincente),
         "consiglio": "casa" if prob_casa_vincente > prob_ospite_vincente else "ospite",
     }
@@ -4021,7 +4209,10 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
 
     mercati["mcasasegna"] = {
         "nome": "Casa Segna",
-        "probabilita": {"si": round(prob_casa_segna, 3), "no": round(prob_casa_non_segna, 3)},
+        "probabilita": {
+            "si": round(prob_casa_segna, 3),
+            "no": round(prob_casa_non_segna, 3),
+        },
         "confidenza": max(prob_casa_segna, prob_casa_non_segna),
         "consiglio": "si" if prob_casa_segna > prob_casa_non_segna else "no",
     }
@@ -4041,7 +4232,10 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
 
     mercati["mospitesegna"] = {
         "nome": "Ospite Segna",
-        "probabilita": {"si": round(prob_ospite_segna, 3), "no": round(prob_ospite_non_segna, 3)},
+        "probabilita": {
+            "si": round(prob_ospite_segna, 3),
+            "no": round(prob_ospite_non_segna, 3),
+        },
         "confidenza": max(prob_ospite_segna, prob_ospite_non_segna),
         "consiglio": "si" if prob_ospite_segna > prob_ospite_non_segna else "no",
     }
@@ -4055,7 +4249,10 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
 
     mercati["mptou15"] = {
         "nome": "Primo Tempo Over/Under 1.5",
-        "probabilita": {"over": round(prob_over_pt15, 3), "under": round(prob_under_pt15, 3)},
+        "probabilita": {
+            "over": round(prob_over_pt15, 3),
+            "under": round(prob_under_pt15, 3),
+        },
         "confidenza": max(prob_over_pt15, prob_under_pt15),
         "consiglio": "over" if prob_over_pt15 > prob_under_pt15 else "under",
         "gol_previsti": round(gol_primo_tempo, 1),
@@ -4067,7 +4264,10 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
 
     mercati["mhandicapcasa"] = {
         "nome": "Handicap Casa +0.5",
-        "probabilita": {"si": round(prob_casa_non_perde, 3), "no": round(prob_casa_perde, 3)},
+        "probabilita": {
+            "si": round(prob_casa_non_perde, 3),
+            "no": round(prob_casa_perde, 3),
+        },
         "confidenza": max(prob_casa_non_perde, prob_casa_perde),
         "consiglio": "si" if prob_casa_non_perde > prob_casa_perde else "no",
     }
@@ -4078,7 +4278,10 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
 
     mercati["mhandicapospite"] = {
         "nome": "Handicap Ospite +0.5",
-        "probabilita": {"si": round(prob_ospite_non_perde, 3), "no": round(prob_ospite_perde, 3)},
+        "probabilita": {
+            "si": round(prob_ospite_non_perde, 3),
+            "no": round(prob_ospite_perde, 3),
+        },
         "confidenza": max(prob_ospite_non_perde, prob_ospite_perde),
         "consiglio": "si" if prob_ospite_non_perde > prob_ospite_perde else "no",
     }
@@ -4088,7 +4291,10 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
     intensita_match = (aggressivita_casa + aggressivita_ospite) / 2
 
     # Variabilità deterministica per cartellini
-    _match_seed = int(hashlib.md5(f"{squadra_casa}_{squadra_ospite}_cards".encode()).hexdigest()[:8], 16)  # noqa: F841
+    _match_seed = int(
+        hashlib.md5(f"{squadra_casa}_{squadra_ospite}_cards".encode()).hexdigest()[:8],
+        16,
+    )  # noqa: F841
     # Base probability realistica (5%-45%)
     prob_rosso = max(0.05, min(0.45, intensita_match * 0.4))
     prob_no_rosso = 1 - prob_rosso
@@ -4113,9 +4319,12 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
 
     mercati["mcornercasa"] = {
         "nome": "Corner Casa Over/Under 4.5",
-        "probabilita": {"over": round(prob_corner_casa_over, 3), "under": round(prob_corner_casa_under, 3)},
+        "probabilita": {
+            "over": round(prob_corner_casa_over, 3),
+            "under": round(prob_corner_casa_under, 3),
+        },
         "confidenza": max(prob_corner_casa_over, prob_corner_casa_under),
-        "consiglio": "over" if prob_corner_casa_over > prob_corner_casa_under else "under",
+        "consiglio": ("over" if prob_corner_casa_over > prob_corner_casa_under else "under"),
         "corner_previsti": round(corner_casa, 1),
     }
 
@@ -4132,9 +4341,12 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
 
     mercati["mcornerospite"] = {
         "nome": "Corner Ospite Over/Under 4.5",
-        "probabilita": {"over": round(prob_corner_ospite_over, 3), "under": round(prob_corner_ospite_under, 3)},
+        "probabilita": {
+            "over": round(prob_corner_ospite_over, 3),
+            "under": round(prob_corner_ospite_under, 3),
+        },
         "confidenza": max(prob_corner_ospite_over, prob_corner_ospite_under),
-        "consiglio": "over" if prob_corner_ospite_over > prob_corner_ospite_under else "under",
+        "consiglio": ("over" if prob_corner_ospite_over > prob_corner_ospite_under else "under"),
         "corner_previsti": round(corner_ospite, 1),
     }
 
@@ -4186,7 +4398,11 @@ def _genera_consigli_scommessa(mercati: Dict, probabilita_1x2: Dict, confidenza_
         "alta_confidenza": [],
         "media_confidenza": [],
         "speculativi": [],
-        "riepilogo": {"migliore_scommessa": None, "value_totale": 0, "strategia_consigliata": None},
+        "riepilogo": {
+            "migliore_scommessa": None,
+            "value_totale": 0,
+            "strategia_consigliata": None,
+        },
     }
 
     # Analizza ogni mercato per trovare value bets
@@ -4269,7 +4485,7 @@ def _genera_consigli_scommessa(mercati: Dict, probabilita_1x2: Dict, confidenza_
         consigli["riepilogo"]["migliore_scommessa"] = {
             "mercato": migliore[0],
             "value_score": round(migliore[1] * migliore[2], 3),
-            "tipo": "alta_confidenza" if migliore[1] >= 0.65 and migliore[2] >= 0.6 else "media_confidenza",
+            "tipo": ("alta_confidenza" if migliore[1] >= 0.65 and migliore[2] >= 0.6 else "media_confidenza"),
         }
 
         # Strategia consigliata
@@ -4387,8 +4603,8 @@ def api_statistiche():
                 "partite_totali": len(calculator.df_features),
                 "squadre_disponibili": len(calculator.squadre_disponibili),
                 "periodo": {
-                    "da": calculator.df_features["Date"].min() if "Date" in calculator.df_features.columns else "N/A",
-                    "a": calculator.df_features["Date"].max() if "Date" in calculator.df_features.columns else "N/A",
+                    "da": (calculator.df_features["Date"].min() if "Date" in calculator.df_features.columns else "N/A"),
+                    "a": (calculator.df_features["Date"].max() if "Date" in calculator.df_features.columns else "N/A"),
                 },
             },
             "distribuzione_risultati": {
@@ -4400,15 +4616,18 @@ def api_statistiche():
                 / len(calculator.df_features),
             },
             "media_gol": {
-                "casa": calculator.df_features["FTHG"].mean() if "FTHG" in calculator.df_features.columns else 0,
-                "trasferta": calculator.df_features["FTAG"].mean() if "FTAG" in calculator.df_features.columns else 0,
+                "casa": (calculator.df_features["FTHG"].mean() if "FTHG" in calculator.df_features.columns else 0),
+                "trasferta": (calculator.df_features["FTAG"].mean() if "FTAG" in calculator.df_features.columns else 0),
                 "totali": (
                     (calculator.df_features["FTHG"].mean() + calculator.df_features["FTAG"].mean())
                     if "FTHG" in calculator.df_features.columns
                     else 0
                 ),
             },
-            "cache_info": {"predizioni_cached": len(calculator.cache_deterministica), "hit_rate": "N/A"},
+            "cache_info": {
+                "predizioni_cached": len(calculator.cache_deterministica),
+                "hit_rate": "N/A",
+            },
             "modalita": "professional_deterministic",
             "timestamp": datetime.now().isoformat(),
         }
@@ -4425,7 +4644,12 @@ def api_statistiche():
         return jsonify({"error": "Sistema non inizializzato"}), 500
 
     test_results = []
-    test_pairs = [("Inter", "Milan"), ("Milan", "Inter"), ("Juventus", "Napoli"), ("Napoli", "Juventus")]
+    test_pairs = [
+        ("Inter", "Milan"),
+        ("Milan", "Inter"),
+        ("Juventus", "Napoli"),
+        ("Napoli", "Juventus"),
+    ]
 
     for casa, ospite in test_pairs:
         try:
@@ -4512,7 +4736,11 @@ def api_monitoring_accuracy():
         # Check se file esiste
         if not os.path.exists(tracking_file):
             return jsonify(
-                {"status": "no_data", "message": "Nessun dato di tracking disponibile", "predictions_count": 0}
+                {
+                    "status": "no_data",
+                    "message": "Nessun dato di tracking disponibile",
+                    "predictions_count": 0,
+                }
             )
 
         # Leggi CSV
@@ -4622,7 +4850,7 @@ def api_monitoring_accuracy():
                     "better": bool(vs_backtest > 0),  # Convert numpy.bool_ to Python bool
                 },
                 "model_info": {
-                    "primary": "random_forest" if calculator.use_ml else "deterministic",
+                    "primary": ("random_forest" if calculator.use_ml else "deterministic"),
                     "fallback": "deterministic",
                     "deployed_date": "2026-03-14",
                 },
@@ -4671,21 +4899,51 @@ def api_model_performance():
                 "total_predictions": total_matches,
                 "note": "✅ Validato su 537 partite reali",
             },
-            "over_under_15": {"accuracy": 0.528, "total_predictions": total_matches},  # ⚠️ STIMATO (non validato)
-            "over_under_35": {"accuracy": 0.463, "total_predictions": total_matches},  # ⚠️ STIMATO (non validato)
+            "over_under_15": {
+                "accuracy": 0.528,
+                "total_predictions": total_matches,
+            },  # ⚠️ STIMATO (non validato)
+            "over_under_35": {
+                "accuracy": 0.463,
+                "total_predictions": total_matches,
+            },  # ⚠️ STIMATO (non validato)
             "goal_nogoal": {
                 "accuracy": 0.503,  # ✅ VALIDATO: Backtest 537 partite (6 Feb 2026)
                 "total_predictions": total_matches,
                 "note": "✅ Validato - entrambe segnano",
             },
-            "casa_segna": {"accuracy": 0.532, "total_predictions": total_matches},  # ⚠️ STIMATO (non validato)
-            "ospite_segna": {"accuracy": 0.508, "total_predictions": total_matches},  # ⚠️ STIMATO (non validato)
-            "cartellini_totali": {"accuracy": 0.451, "total_predictions": total_matches},  # ⚠️ STIMATO (non validato)
-            "corner_totali": {"accuracy": 0.468, "total_predictions": total_matches},  # ⚠️ STIMATO (non validato)
-            "primo_tempo": {"accuracy": 0.381, "total_predictions": total_matches},  # ⚠️ STIMATO (non validato)
-            "exact_score": {"accuracy": 0.128, "total_predictions": total_matches},  # ⚠️ STIMATO (non validato)
-            "asian_handicap": {"accuracy": 0.442, "total_predictions": total_matches},  # ⚠️ STIMATO (non validato)
-            "handicap_europeo": {"accuracy": 0.448, "total_predictions": total_matches},  # ⚠️ STIMATO (non validato)
+            "casa_segna": {
+                "accuracy": 0.532,
+                "total_predictions": total_matches,
+            },  # ⚠️ STIMATO (non validato)
+            "ospite_segna": {
+                "accuracy": 0.508,
+                "total_predictions": total_matches,
+            },  # ⚠️ STIMATO (non validato)
+            "cartellini_totali": {
+                "accuracy": 0.451,
+                "total_predictions": total_matches,
+            },  # ⚠️ STIMATO (non validato)
+            "corner_totali": {
+                "accuracy": 0.468,
+                "total_predictions": total_matches,
+            },  # ⚠️ STIMATO (non validato)
+            "primo_tempo": {
+                "accuracy": 0.381,
+                "total_predictions": total_matches,
+            },  # ⚠️ STIMATO (non validato)
+            "exact_score": {
+                "accuracy": 0.128,
+                "total_predictions": total_matches,
+            },  # ⚠️ STIMATO (non validato)
+            "asian_handicap": {
+                "accuracy": 0.442,
+                "total_predictions": total_matches,
+            },  # ⚠️ STIMATO (non validato)
+            "handicap_europeo": {
+                "accuracy": 0.448,
+                "total_predictions": total_matches,
+            },  # ⚠️ STIMATO (non validato)
         }
 
         response = {
@@ -4703,7 +4961,7 @@ def api_model_performance():
             "sistema_info": {
                 "squadre_supportate": len(calculator.squadre_disponibili),
                 "mercati_disponibili": 27,
-                "dataset_size": len(calculator.df_features) if calculator.df_features is not None else 0,
+                "dataset_size": (len(calculator.df_features) if calculator.df_features is not None else 0),
             },
             "timestamp": datetime.now().isoformat(),
         }
@@ -4730,7 +4988,12 @@ def api_accuracy_report():
         report = {
             "backtesting_period": "2021-2025",
             "total_matches_tested": 1777,
-            "overall_accuracy": {"percentage": 65.8, "correct": 961, "total": 1777, "grade": "Professionale"},
+            "overall_accuracy": {
+                "percentage": 65.8,
+                "correct": 961,
+                "total": 1777,
+                "grade": "Professionale",
+            },
             "accuracy_by_market": {
                 "risultato_finale_1x2": 43.2,  # Backtest reale 567 partite
                 "over_under_25": 48.5,  # Stimato proporzionale
@@ -4743,10 +5006,18 @@ def api_accuracy_report():
             },
             "confidence_analysis": {
                 "high_confidence": {"threshold": 0.6, "accuracy": 68.2, "matches": 423},
-                "medium_confidence": {"threshold": 0.4, "accuracy": 52.1, "matches": 892},
+                "medium_confidence": {
+                    "threshold": 0.4,
+                    "accuracy": 52.1,
+                    "matches": 892,
+                },
                 "low_confidence": {"threshold": 0.3, "accuracy": 43.7, "matches": 462},
             },
-            "team_performance": {"top_teams_accuracy": 58.3, "mid_teams_accuracy": 52.1, "bottom_teams_accuracy": 51.2},
+            "team_performance": {
+                "top_teams_accuracy": 58.3,
+                "mid_teams_accuracy": 52.1,
+                "bottom_teams_accuracy": 51.2,
+            },
             "seasonal_trends": {
                 "stagione_2021_22": 52.8,
                 "stagione_2022_23": 54.7,
@@ -4782,13 +5053,13 @@ def api_health():
         "status": "healthy" if (sistema_inizializzato and db_healthy) else "unhealthy",
         "sistema_inizializzato": sistema_inizializzato,
         "database_connesso": db_healthy,
-        "database_records": len(calculator.df_features) if calculator.df_features is not None else 0,
+        "database_records": (len(calculator.df_features) if calculator.df_features is not None else 0),
         "squadre_caricate": len(calculator.squadre_disponibili),
         "cache_attiva": len(calculator.cache_deterministica) > 0,
         "cache_entries": len(calculator.cache_deterministica),
         "uptime": "In esecuzione",
         "version": "1.0.0-enterprise",
-        "environment": "production" if os.environ.get("FLASK_ENV") == "production" else "development",
+        "environment": ("production" if os.environ.get("FLASK_ENV") == "production" else "development"),
         "last_check": datetime.now().isoformat(),
         "security_headers_enabled": True,
         "rate_limiting_enabled": True,
@@ -4879,7 +5150,11 @@ def api_health_detailed():
                 "message": "Cache manager not initialized (fallback to memory cache)",
             }
     except Exception as e:
-        checks["redis"] = {"status": "degraded", "error": str(e), "message": "Fallback to memory cache"}
+        checks["redis"] = {
+            "status": "degraded",
+            "error": str(e),
+            "message": "Fallback to memory cache",
+        }
         # NON degradare overall_healthy - Redis è opzionale
 
     # 4. Check External APIs (The Odds API) - OPTIONAL
@@ -4887,7 +5162,7 @@ def api_health_detailed():
     checks["odds_api"] = {
         "status": "configured" if odds_api_key else "not_configured",
         "key_length": len(odds_api_key) if odds_api_key else 0,
-        "message": "API key presente" if odds_api_key else "Richiede ODDS_API_KEY env var",
+        "message": ("API key presente" if odds_api_key else "Richiede ODDS_API_KEY env var"),
     }
 
     # 5. System Resources (disk, memory, CPU) - REQUIRED
@@ -5008,7 +5283,7 @@ def api_database_diagnostic():
                 "database_url_set": db_url != "not_set",
                 "database_url_length": db_url_length,  # Per verificare che sia completo
                 "database_fingerprint": db_fingerprint,  # Traccia se database cambia tra deploys
-                "database_host_masked": db_host[:8] + "***" if len(db_host) > 8 else db_host,
+                "database_host_masked": (db_host[:8] + "***" if len(db_host) > 8 else db_host),
                 "database_name": db_name,
                 "database_connected": is_db_available(),
                 "connection_error": connection_error,  # Errore specifico se connessione fallisce
@@ -5040,13 +5315,19 @@ def api_migrate_csv_to_postgres():
         from database import is_db_available
 
         if not is_db_available():
-            return jsonify({"success": False, "error": "Database PostgreSQL non disponibile"}), 503
+            return (
+                jsonify({"success": False, "error": "Database PostgreSQL non disponibile"}),
+                503,
+            )
 
         # Path al CSV (nel repository)
         csv_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "tracking_giocate.csv")
 
         if not os.path.exists(csv_path):
-            return jsonify({"success": False, "error": f"File CSV non trovato: {csv_path}"}), 404
+            return (
+                jsonify({"success": False, "error": f"File CSV non trovato: {csv_path}"}),
+                404,
+            )
 
         # Leggi CSV
         df = pd.read_csv(csv_path)
@@ -5101,14 +5382,24 @@ def api_migrate_csv_to_postgres():
 
             except Exception as e:
                 logger.error(f"❌ Errore riga {row_num}", error=str(e))
-                stats["errors"].append({"row": row_num, "error": str(e), "partita": str(row.get("Partita", "unknown"))})
+                stats["errors"].append(
+                    {
+                        "row": row_num,
+                        "error": str(e),
+                        "partita": str(row.get("Partita", "unknown")),
+                    }
+                )
                 stats["skipped"] += 1
 
         # Report finale
         logger.info("📊 Migrazione completata", **stats)
 
         return jsonify(
-            {"success": True, "stats": stats, "message": f"Migrate {stats['migrated']}/{stats['total_rows']} righe"}
+            {
+                "success": True,
+                "stats": stats,
+                "message": f"Migrate {stats['migrated']}/{stats['total_rows']} righe",
+            }
         )
 
     except Exception as e:
@@ -5183,7 +5474,9 @@ def api_run_migration_002():
                 group_id_exists = cursor.fetchone() is not None
 
                 logger.info(
-                    "✅ Migrazione 002 completata", bet_groups_table=bet_groups_exists, group_id_field=group_id_exists
+                    "✅ Migrazione 002 completata",
+                    bet_groups_table=bet_groups_exists,
+                    group_id_field=group_id_exists,
                 )
 
                 return jsonify(
@@ -5227,7 +5520,11 @@ def api_automation_status():
                 last_retrain = last_retrain.decode("utf-8")  # type: ignore[union-attr]
         except Exception:
             # Fallback: prova file system
-            timestamp_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "automation_status.json")
+            timestamp_file = os.path.join(
+                os.path.dirname(os.path.dirname(__file__)),
+                "data",
+                "automation_status.json",
+            )
             if os.path.exists(timestamp_file):
                 try:
                     with open(timestamp_file, "r") as f:
@@ -5268,7 +5565,10 @@ def api_force_update():
         df_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "dataset_features.csv")
 
         if not os.path.exists(df_path):
-            return jsonify({"success": False, "error": "Dataset features non trovato"}), 500
+            return (
+                jsonify({"success": False, "error": "Dataset features non trovato"}),
+                500,
+            )
 
         # Ricarica dataset in ProfessionalCalculator
         calculator.df_features = pd.read_csv(df_path)
@@ -5292,7 +5592,11 @@ def api_force_update():
 
         # Fallback: salva anche su file system (directory data/ è più sicura)
         try:
-            timestamp_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "automation_status.json")
+            timestamp_file = os.path.join(
+                os.path.dirname(os.path.dirname(__file__)),
+                "data",
+                "automation_status.json",
+            )
             existing_data = {}
             if os.path.exists(timestamp_file):
                 with open(timestamp_file, "r") as f:
@@ -5360,7 +5664,7 @@ def api_metrics():
             # Application metrics
             "app_predictions_total": len(calculator.cache_deterministica),
             "app_teams_loaded": len(calculator.squadre_disponibili),
-            "app_database_records": len(calculator.df_features) if calculator.df_features is not None else 0,
+            "app_database_records": (len(calculator.df_features) if calculator.df_features is not None else 0),
             "app_status": 1 if sistema_inizializzato else 0,
             # Performance metrics
             "app_cache_size": len(calculator.cache_deterministica),
@@ -5428,7 +5732,10 @@ def api_metrics_summary():
                 "dataset_caricato": calculator.df_features is not None,
             },
             "mercati_principali": {
-                "risultato_finale": {"accuratezza": 43.2, "confidenza": "Media"},  # Backtest reale
+                "risultato_finale": {
+                    "accuratezza": 43.2,
+                    "confidenza": "Media",
+                },  # Backtest reale
                 "over_under_25": {"accuratezza": 48.5, "confidenza": "Media"},
                 "goal_nogoal": {"accuratezza": 46.3, "confidenza": "Media"},
             },
@@ -5649,7 +5956,16 @@ def api_diario_stats():
         all_bets = DiarioStorage.get_all_bets()
 
         if len(all_bets) == 0:
-            return jsonify({"total": 0, "pending": 0, "completed": 0, "roi": 0.0, "win_rate": 0.0, "profit": 0.0})
+            return jsonify(
+                {
+                    "total": 0,
+                    "pending": 0,
+                    "completed": 0,
+                    "roi": 0.0,
+                    "win_rate": 0.0,
+                    "profit": 0.0,
+                }
+            )
 
         # Statistiche base
         total = len(all_bets)
@@ -5823,7 +6139,10 @@ def api_diario_add():
         required = ["partita", "mercato", "quota", "stake"]
         for field in required:
             if field not in data:
-                return jsonify({"success": False, "error": f"Campo obbligatorio: {field}"}), 400
+                return (
+                    jsonify({"success": False, "error": f"Campo obbligatorio: {field}"}),
+                    400,
+                )
 
         # Check duplicati (verifica su tutte le bet pending)
         pending_bets = DiarioStorage.get_all_bets(risultato="PENDING")
@@ -5916,7 +6235,10 @@ def api_diario_edit():
         # Verifica che sia PENDING
         bet = DiarioStorage.get_all_bets()[bet_id]  # Throws if not exists
         if bet["risultato"] != "PENDING":
-            return jsonify({"success": False, "error": "Impossibile modificare bet completata"}), 400
+            return (
+                jsonify({"success": False, "error": "Impossibile modificare bet completata"}),
+                400,
+            )
 
         # Prepara updates
         updates = {}
@@ -5985,12 +6307,18 @@ def api_diario_add_multipla():
         eventi = data["eventi"]
 
         if len(eventi) < 2:
-            return jsonify({"success": False, "error": "Multipla richiede almeno 2 eventi"}), 400
+            return (
+                jsonify({"success": False, "error": "Multipla richiede almeno 2 eventi"}),
+                400,
+            )
 
         # Validazione eventi
         for idx, evento in enumerate(eventi, 1):
             if not all(k in evento for k in ["partita", "mercato", "quota"]):
-                return jsonify({"success": False, "error": f"Evento {idx} incompleto"}), 400
+                return (
+                    jsonify({"success": False, "error": f"Evento {idx} incompleto"}),
+                    400,
+                )
 
         # Calcola quota totale (prodotto)
         quota_totale = 1.0
@@ -6028,11 +6356,24 @@ def api_diario_add_multipla():
         logger.info(f"✅ Multipla creata (ID {group_id}): {len(eventi)} eventi, quota {quota_totale:.2f}")
 
         return jsonify(
-            {"success": True, "message": "Multipla salvata", "group_id": group_id, "quota_totale": quota_totale}
+            {
+                "success": True,
+                "message": "Multipla salvata",
+                "group_id": group_id,
+                "quota_totale": quota_totale,
+            }
         )
 
     except NotImplementedError:
-        return jsonify({"success": False, "error": "Multiple supportate solo con database PostgreSQL"}), 501
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": "Multiple supportate solo con database PostgreSQL",
+                }
+            ),
+            501,
+        )
     except Exception as e:
         logger.error(f"❌ Errore add multipla: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
@@ -6125,7 +6466,15 @@ def api_diario_update_evento_multipla():
     except ValueError as e:
         return jsonify({"success": False, "error": str(e)}), 400
     except NotImplementedError:
-        return jsonify({"success": False, "error": "Multiple supportate solo con database PostgreSQL"}), 501
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": "Multiple supportate solo con database PostgreSQL",
+                }
+            ),
+            501,
+        )
     except Exception as e:
         logger.error(f"❌ Errore update evento multipla: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
@@ -6259,7 +6608,15 @@ def api_calculate_kelly():
         quota = float(data.get("quota", 0))
 
         if prob_win <= 0 or prob_win >= 1:
-            return jsonify({"success": False, "error": "Probabilit\u00e0 vincita deve essere tra 0 e 1"}), 400
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "Probabilit\u00e0 vincita deve essere tra 0 e 1",
+                    }
+                ),
+                400,
+            )
 
         if quota <= 1.0:
             return jsonify({"success": False, "error": "Quota deve essere > 1.0"}), 400
@@ -6287,7 +6644,7 @@ def api_calculate_kelly():
                 "unita_betting": round(config["unita_betting"], 2),
                 "kelly_fraction": kelly_fraction,
                 "expected_value": round(ev, 2),
-                "stake_pct_bankroll": round(kelly_stake / bankroll * 100, 2) if bankroll > 0 else 0,
+                "stake_pct_bankroll": (round(kelly_stake / bankroll * 100, 2) if bankroll > 0 else 0),
             }
         )
 
@@ -6374,7 +6731,13 @@ def api_monitoring_performance():
         perf_monitor = get_performance_monitor()
         stats = perf_monitor.get_stats()
 
-        return jsonify({"status": "success", "endpoints": stats, "timestamp": datetime.now().isoformat()})
+        return jsonify(
+            {
+                "status": "success",
+                "endpoints": stats,
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
 
     except Exception as e:
         get_error_tracker().record_error(e, {"endpoint": "/api/monitoring/performance"})
@@ -6420,13 +6783,13 @@ def api_monitoring_health_detailed():
         uptime_seconds = time.time() - app.config.get("START_TIME", time.time())
 
         health_data = {
-            "status": "healthy" if sistema_inizializzato and db_healthy else "unhealthy",
+            "status": ("healthy" if sistema_inizializzato and db_healthy else "unhealthy"),
             "timestamp": datetime.now().isoformat(),
             "uptime_seconds": round(uptime_seconds, 2),
             "components": {
                 "database": {
                     "status": "healthy" if db_healthy else "unhealthy",
-                    "records": len(calculator.df_features) if calculator.df_features is not None else 0,
+                    "records": (len(calculator.df_features) if calculator.df_features is not None else 0),
                     "teams": len(calculator.squadre_disponibili),
                 },
                 "cache": {
@@ -6436,7 +6799,7 @@ def api_monitoring_health_detailed():
                     "memory_mb": cache_stats.get("memory_usage_mb", 0),
                 },
                 "ml_models": {
-                    "status": "healthy" if getattr(calculator, "models", None) else "unhealthy",
+                    "status": ("healthy" if getattr(calculator, "models", None) else "unhealthy"),
                     "models_loaded": (
                         len(getattr(calculator, "models", [])) if getattr(calculator, "models", None) else 0
                     ),
@@ -6470,7 +6833,11 @@ def monitoring_dashboard():
 @app.errorhandler(429)
 def rate_limit_handler(e):
     """Gestione rate limit exceeded"""
-    logger.warning("Rate limit exceeded", remote_addr=request.remote_addr, endpoint=request.endpoint)
+    logger.warning(
+        "Rate limit exceeded",
+        remote_addr=request.remote_addr,
+        endpoint=request.endpoint,
+    )
     return (
         jsonify(
             {
@@ -6486,8 +6853,16 @@ def rate_limit_handler(e):
 @app.errorhandler(500)
 def internal_error_handler(e):
     """Gestione errori interni"""
-    logger.error("Internal server error", error=str(e), endpoint=request.endpoint, remote_addr=request.remote_addr)
-    return jsonify({"error": "Internal server error", "message": "Errore interno del server"}), 500
+    logger.error(
+        "Internal server error",
+        error=str(e),
+        endpoint=request.endpoint,
+        remote_addr=request.remote_addr,
+    )
+    return (
+        jsonify({"error": "Internal server error", "message": "Errore interno del server"}),
+        500,
+    )
 
 
 @app.errorhandler(404)
@@ -6531,7 +6906,13 @@ if __name__ == "__main__":
 
         # Avvia server Flask con configurazione enterprise
         if __name__ == "__main__":
-            app.run(host="0.0.0.0", port=port, debug=debug_mode, use_reloader=False, threaded=True)
+            app.run(
+                host="0.0.0.0",
+                port=port,
+                debug=debug_mode,
+                use_reloader=False,
+                threaded=True,
+            )
 
     except Exception as e:
         logger.error("❌ Errore critico avvio", error=str(e))

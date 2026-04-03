@@ -100,20 +100,29 @@ class TestPredictEnterpriseEndpoint:
 
     def test_predict_accepts_valid_teams(self, client):
         """Predict should accept valid Serie A teams"""
-        response = client.post("/api/predict_enterprise", json={"squadra_casa": "Inter", "squadra_ospite": "Milan"})
+        response = client.post(
+            "/api/predict_enterprise",
+            json={"squadra_casa": "Inter", "squadra_ospite": "Milan"},
+        )
         # Should return 200 even if teams not in dataset (graceful handling)
         assert response.status_code in [200, 400, 404]
 
     def test_predict_returns_json(self, client):
         """Predict response should be valid JSON"""
-        response = client.post("/api/predict_enterprise", json={"squadra_casa": "Inter", "squadra_ospite": "Milan"})
+        response = client.post(
+            "/api/predict_enterprise",
+            json={"squadra_casa": "Inter", "squadra_ospite": "Milan"},
+        )
         if response.status_code == 200:
             data = json.loads(response.data)
             assert isinstance(data, dict)
 
     def test_predict_includes_probabilities(self, client):
         """Predict should include probabilita field (inside mercati)"""
-        response = client.post("/api/predict_enterprise", json={"squadra_casa": "Inter", "squadra_ospite": "Milan"})
+        response = client.post(
+            "/api/predict_enterprise",
+            json={"squadra_casa": "Inter", "squadra_ospite": "Milan"},
+        )
         if response.status_code == 200:
             data = json.loads(response.data)
             # Probabilità sono dentro mercati.m1x2.probabilita

@@ -1,8 +1,9 @@
 """Type stubs for monitoring module"""
-from typing import Any, Callable, Dict, Optional, TypeVar
-from collections.abc import Callable as CallableType
 
-F = TypeVar('F', bound=Callable[..., Any])
+from collections.abc import Callable as CallableType
+from typing import Any, Callable, Dict, Optional, TypeVar
+
+F = TypeVar("F", bound=Callable[..., Any])
 
 class StructuredLogger:
     def info(self, message: str, **context: Any) -> None: ...

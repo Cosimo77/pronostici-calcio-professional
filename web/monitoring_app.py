@@ -18,80 +18,87 @@ except ImportError as e:
 
 # Setup Flask con configurazione minimal
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'monitoring-key-2025')
-app.config['DEBUG'] = False
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "monitoring-key-2025")
+app.config["DEBUG"] = False
+
 
 # Configurazione base sicurezza - NO CSP per debug
 @app.after_request
 def after_request(response):
-    response.headers['X-Content-Type-Options'] = 'nosniff'
-    response.headers['X-Frame-Options'] = 'DENY'
-    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
     # CSP disabilitato completamente per permettere inline styles/scripts
     # response.headers['Content-Security-Policy'] = "..."  # COMMENTATO
     return response
 
-@app.route('/favicon.ico')
+
+@app.route("/favicon.ico")
 def favicon():
     """Favicon placeholder per evitare 500 error"""
-    return '', 204
+    return "", 204
 
-@app.route('/')
+
+@app.route("/")
 def home():
     """Homepage funzionante"""
-    return jsonify({
-        'status': 'operational',
-        'message': '🚀 Sistema Pronostici Calcio - Versione Minimal',
-        'timestamp': datetime.now().isoformat(),
-        'version': '1.0-minimal',
-        'endpoints': [
-            '/api/health',
-            '/monitoring', 
-            '/automation',
-            '/api/status'
-        ]
-    })
+    return jsonify(
+        {
+            "status": "operational",
+            "message": "🚀 Sistema Pronostici Calcio - Versione Minimal",
+            "timestamp": datetime.now().isoformat(),
+            "version": "1.0-minimal",
+            "endpoints": ["/api/health", "/monitoring", "/automation", "/api/status"],
+        }
+    )
 
-@app.route('/api/health')
+
+@app.route("/api/health")
 def api_health():
     """API di health working"""
-    return jsonify({
-        'status': 'healthy',
-        'sistema_inizializzato': True,
-        'database_records': 1500,  # Simulato
-        'squadre_caricate': 220,   # Simulato
-        'cache_entries': 45,
-        'environment': os.environ.get('RENDER', 'production'),
-        'timestamp': datetime.now().isoformat(),
-        'version': 'minimal-working'
-    })
+    return jsonify(
+        {
+            "status": "healthy",
+            "sistema_inizializzato": True,
+            "database_records": 1500,  # Simulato
+            "squadre_caricate": 220,  # Simulato
+            "cache_entries": 45,
+            "environment": os.environ.get("RENDER", "production"),
+            "timestamp": datetime.now().isoformat(),
+            "version": "minimal-working",
+        }
+    )
 
-@app.route('/api/metrics_summary')
+
+@app.route("/api/metrics_summary")
 def api_metrics():
     """API metriche simulate - redirect a app principale se disponibile"""
     # Questa è solo una fallback, la dashboard usa l'API principale
-    return jsonify({
-        'performance': {
-            'accuratezza_complessiva': 54.1,
-            'partite_analizzate': 0,  # Calcolato dinamicamente da app_professional
-            'predizioni_corrette': 0,
-            'confidenza_media': 68.5,
-            'mercati_supportati': 8
-        },
-        'stato_operativo': {
-            'sistema_attivo': True,
-            'squadre_disponibili': 0,
-            'cache_predizioni': 45,
-            'dataset_caricato': True
-        },
-        'mercati_principali': {
-            'corner_over': {'accuratezza': '58%', 'confidenza': 'Alta'},
-            'cartellini_over': {'accuratezza': '56%', 'confidenza': 'Media'},
-            'goal_over': {'accuratezza': '52%', 'confidenza': 'Media'}
+    return jsonify(
+        {
+            "performance": {
+                "accuratezza_complessiva": 54.1,
+                "partite_analizzate": 0,  # Calcolato dinamicamente da app_professional
+                "predizioni_corrette": 0,
+                "confidenza_media": 68.5,
+                "mercati_supportati": 8,
+            },
+            "stato_operativo": {
+                "sistema_attivo": True,
+                "squadre_disponibili": 0,
+                "cache_predizioni": 45,
+                "dataset_caricato": True,
+            },
+            "mercati_principali": {
+                "corner_over": {"accuratezza": "58%", "confidenza": "Alta"},
+                "cartellini_over": {"accuratezza": "56%", "confidenza": "Media"},
+                "goal_over": {"accuratezza": "52%", "confidenza": "Media"},
+            },
         }
-    })
+    )
 
-@app.route('/monitoring')
+
+@app.route("/monitoring")
 def monitoring():
     """Dashboard di monitoraggio"""
     html = """
@@ -103,7 +110,7 @@ def monitoring():
     <title>🔍 Monitoraggio Sistema Professionale</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
+        body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
             background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
             color: white;
@@ -248,7 +255,7 @@ def monitoring():
     <script>
         function updateTimestamp() {
             document.getElementById('timestamp').textContent = new Date().toLocaleString('it-IT');
-            document.getElementById('last-update').textContent = 
+            document.getElementById('last-update').textContent =
                 `Ultimo aggiornamento: ${new Date().toLocaleString('it-IT')}`;
         }
 
@@ -278,7 +285,7 @@ def monitoring():
 
         // Inizializzazione
         updateTimestamp();
-        
+
         // Auto-refresh ogni 30 secondi
         setInterval(updateTimestamp, 30000);
     </script>
@@ -287,92 +294,106 @@ def monitoring():
     """
     return render_template_string(html)
 
-@app.route('/api/status')
+
+@app.route("/api/status")
 def status():
     """Status endpoint"""
-    return jsonify({
-        'monitoring': 'operational',
-        'deployment': 'successful',
-        'problem': 'resolved',
-        'message': '🎉 Sistema completamente operativo!'
-    })
+    return jsonify(
+        {
+            "monitoring": "operational",
+            "deployment": "successful",
+            "problem": "resolved",
+            "message": "🎉 Sistema completamente operativo!",
+        }
+    )
 
-@app.route('/automation')
+
+@app.route("/automation")
 def automation_page():
     """Pagina stato automazione"""
     try:
         from pathlib import Path
-        template_path = Path(__file__).parent / 'templates' / 'automation_status.html'
+
+        template_path = Path(__file__).parent / "templates" / "automation_status.html"
         if template_path.exists():
-            with open(template_path, 'r', encoding='utf-8') as f:
+            with open(template_path, "r", encoding="utf-8") as f:
                 return f.read()
         else:
-            return jsonify({'error': 'Template non trovato'}), 404
+            return jsonify({"error": "Template non trovato"}), 404
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/api/automation_status')
+
+@app.route("/api/automation_status")
 def automation_status_api():
     """API stato automazione"""
     try:
-        from pathlib import Path
         import json
-        
-        status_file = Path(__file__).parent.parent / 'logs' / 'automation_status.json'
-        
+        from pathlib import Path
+
+        status_file = Path(__file__).parent.parent / "logs" / "automation_status.json"
+
         if status_file.exists():
-            with open(status_file, 'r') as f:
+            with open(status_file, "r") as f:
                 status_data = json.load(f)
             return jsonify(status_data)
         else:
-            return jsonify({
-                'started_at': None,
-                'last_daily_update': None,
-                'last_weekly_retrain': None,
-                'last_backup': None,
-                'last_health_check': None,
-                'errors': [],
-                'running': False
-            })
+            return jsonify(
+                {
+                    "started_at": None,
+                    "last_daily_update": None,
+                    "last_weekly_retrain": None,
+                    "last_backup": None,
+                    "last_health_check": None,
+                    "errors": [],
+                    "running": False,
+                }
+            )
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/api/dataset_info')
+
+@app.route("/api/dataset_info")
 def dataset_info_api():
     """API info dataset"""
     try:
-        from pathlib import Path
         import csv
-        
-        dataset_file = Path(__file__).parent.parent / 'data' / 'dataset_pulito.csv'
-        
+        from pathlib import Path
+
+        dataset_file = Path(__file__).parent.parent / "data" / "dataset_pulito.csv"
+
         if dataset_file.exists():
-            with open(dataset_file, 'r') as f:
+            with open(dataset_file, "r") as f:
                 reader = csv.DictReader(f)
                 rows = list(reader)
-                
+
                 match_count = len(rows)
-                last_match_date = rows[-1].get('Date', 'N/A') if rows else 'N/A'
-                
-                return jsonify({
-                    'match_count': match_count,
-                    'last_match_date': last_match_date,
-                    'dataset_file': str(dataset_file.name),
-                    'updated_at': datetime.fromtimestamp(dataset_file.stat().st_mtime).isoformat()
-                })
+                last_match_date = rows[-1].get("Date", "N/A") if rows else "N/A"
+
+                return jsonify(
+                    {
+                        "match_count": match_count,
+                        "last_match_date": last_match_date,
+                        "dataset_file": str(dataset_file.name),
+                        "updated_at": datetime.fromtimestamp(dataset_file.stat().st_mtime).isoformat(),
+                    }
+                )
         else:
-            return jsonify({
-                'match_count': 0,
-                'last_match_date': 'N/A',
-                'error': 'Dataset non trovato'
-            })
+            return jsonify(
+                {
+                    "match_count": 0,
+                    "last_match_date": "N/A",
+                    "error": "Dataset non trovato",
+                }
+            )
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
+
 
 # Per development
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=False)
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=False)
 
 # Per WSGI (Render)
 application = app

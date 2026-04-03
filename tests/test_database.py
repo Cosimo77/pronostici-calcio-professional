@@ -74,7 +74,12 @@ class TestBetModelWithoutDB:
     @patch("database.models.is_db_available", return_value=False)
     def test_create_raises_error_when_db_unavailable(self, mock_is_available):
         """Test: create() solleva RuntimeError se DB non disponibile"""
-        data = {"partita": "Inter-Milan", "mercato": "1X2", "quota_sisal": 2.5, "stake": 10.0}
+        data = {
+            "partita": "Inter-Milan",
+            "mercato": "1X2",
+            "quota_sisal": 2.5,
+            "stake": 10.0,
+        }
 
         with pytest.raises(RuntimeError, match="Database non disponibile"):
             BetModel.create(data)
