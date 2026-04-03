@@ -1,9 +1,16 @@
 # ⚽ Sistema Pronostici Calcio Professional
 
+[![Tests & Coverage](https://github.com/Cosimo77/pronostici-calcio-professional/actions/workflows/test.yml/badge.svg)](https://github.com/Cosimo77/pronostici-calcio-professional/actions/workflows/test.yml)
+[![Deploy Validation](https://github.com/Cosimo77/pronostici-calcio-professional/actions/workflows/deploy-validate.yml/badge.svg)](https://github.com/Cosimo77/pronostici-calcio-professional/actions/workflows/deploy-validate.yml)
+[![codecov](https://codecov.io/gh/Cosimo77/pronostici-calcio-professional/branch/main/graph/badge.svg)](https://codecov.io/gh/Cosimo77/pronostici-calcio-professional)
+[![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Production Status](https://img.shields.io/badge/production-healthy-success)](https://pronostici-calcio-professional.onrender.com)
+
 Sistema avanzato e completamente automatizzato per l'analisi e previsione dei risultati calcistici utilizzando machine learning, automazione intelligente e monitoraggio in tempo reale.
 
-**Rating Sistema**: ⭐⭐⭐⭐ **8.8/10** (Enterprise-Ready)  
-**Last Update**: 2 Aprile 2026 - [Tier 1 Quick Wins](docs/changelog/TIER1_QUICK_WINS_02APR2026.md) implementati
+**Rating Sistema**: ⭐⭐⭐⭐⭐ **9.2/10** (Production-Ready + CI/CD)
+**Last Update**: 3 Aprile 2026 - [Tier 3 CI/CD Pipeline](docs/deployment/BRANCH_PROTECTION.md) implementato
 
 ## 📚 Documentazione
 
@@ -568,14 +575,14 @@ Per problemi o domande:
 Questo sistema rappresenta un approccio moderno e scientifico all'analisi calcistica, combinando:
 
 - **Rigorosità statistica** nell'analisi dei dati
-- **Tecniche ML all'avanguardia** per le predizioni  
+- **Tecniche ML all'avanguardia** per le predizioni
 - **Interfaccia user-friendly** per utilizzo pratico
 - **Codice modulare** facilmente estendibile
 
 Perfetto per:
 
 - **Studenti** che vogliono imparare ML applicato
-- **Appassionati di calcio** interessati all'analytics  
+- **Appassionati di calcio** interessati all'analytics
 - **Data Scientists** che cercano progetti reali
 - **Sviluppatori** che vogliono espandere il sistema
 

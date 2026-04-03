@@ -1,0 +1,52 @@
+name: Deploy Validation
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  validate-deploy:
+    name: Validate Production Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Wait for Render deploy
+        run: sleep 60
+
+      - name: Health check
+        run: |
+          echo "🏥 Checking production health..."
+
+          response=$(curl -s -o /dev/null -w "%{http_code}" \
+            https://pronostici-calcio-professional.onrender.com/api/health)
+
+          if [ "$response" -eq 200 ]; then
+            echo "✅ Production health check passed (HTTP $response)"
+          else
+            echo "❌ Production health check failed (HTTP $response)"
+            exit 1
+          fi
+
+      - name: Functional smoke test
+        run: |
+          echo "🧪 Running smoke tests..."
+
+          # Test home page
+          curl -f -s https://pronostici-calcio-professional.onrender.com/ > /dev/null
+          echo "✅ Home page responsive"
+
+          # Test API endpoints
+          curl -f -s https://pronostici-calcio-professional.onrender.com/api/health > /dev/null
+          echo "✅ Health endpoint responsive"
+
+          curl -f -s https://pronostici-calcio-professional.onrender.com/api/squadre > /dev/null
+          echo "✅ Squadre endpoint responsive"
+
+      - name: Deploy notification
+        run: |
+          echo "## 🚀 Deploy Validated" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Production health check: PASSED" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Smoke tests: PASSED" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Production URL: https://pronostici-calcio-professional.onrender.com" >> $GITHUB_STEP_SUMMARY
