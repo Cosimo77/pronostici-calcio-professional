@@ -5,7 +5,7 @@ services:
     env: python
     region: frankfurt
     plan: free
-    buildCommand: pip install -r requirements.txt
+    buildCommand: pip install -r requirements.txt && python3 scripts/build_models_render.py
     startCommand: gunicorn --bind 0.0.0.0:$PORT --workers 2 --threads 2 --timeout 120 --worker-class gevent web.app_professional:app
     envVars:
       - key: DATABASE_URL
