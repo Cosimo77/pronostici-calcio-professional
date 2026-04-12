@@ -27,13 +27,19 @@ WORKDIR=/Users/cosimomassaro/Desktop/pronostici_calcio
 0 2 * * 0 cd $WORKDIR && $PYTHON scripts/weekly_retrain.py >> logs/weekly_retrain.log 2>&1
 
 # ============================================================
-# 4. CLEANUP CACHE E BACKUP (Ogni 3 giorni alle 03:00)
+# 4. AUTO-TRACKING RISULTATI (3x al giorno: 09:00, 15:00, 21:00)
+# Scarica risultati reali partite e aggiorna tracking accuracy live
+# ============================================================
+0 9,15,21 * * * cd $WORKDIR && $PYTHON scripts/auto_update_tracking.py >> logs/auto_tracking.log 2>&1
+
+# ============================================================
+# 5. CLEANUP CACHE E BACKUP (Ogni 3 giorni alle 03:00)
 # Pulisce Redis, log vecchi, ruota backup, temp files
 # ============================================================
 0 3 */3 * * cd $WORKDIR && $PYTHON scripts/cleanup_cache.py >> logs/cleanup.log 2>&1
 
 # ============================================================
-# 5. COMPRESSIONE LOG VECCHI (1° del mese 04:00)
+# 6. COMPRESSIONE LOG VECCHI (1° del mese 04:00)
 # Archivia log più vecchi di 30 giorni
 # ============================================================
 0 4 1 * * find $WORKDIR/logs -name "*.log" -mtime +30 -exec gzip {} \;

@@ -1,5 +1,5 @@
 Data,Giornata,Casa,Ospite,Mercato,Predizione,Probabilita_Sistema,Quota,EV_%,Risultato_Reale,Corretto,Profit,Note
-2026-02-09,0,Roma vs Cagliari,,Over/Under 2.5 - Over 2.5,,0.4761904761904761,2.1,,L,False,-10.0,Partita finita 2-0 (Under 2.5)
+2026-02-09,0,Roma vs Cagliari,,Over/Under 2.5 - Over 2.5,,0.47619047619047616,2.1,,L,False,-10.0,Partita finita 2-0 (Under 2.5)
 2026-02-09,0,Roma,Cagliari,Over/Under 2.5,Over 2.5,0.532,2.1,17.7,L,False,-10.0,"Partita finita 2-0 (Under 2.5) | Strategia: 0        FASE2_OVER_UNDER
 1        FASE2_OVER_UNDER
 2     FASE2_DOUBLE_CHANCE
@@ -68,7 +68,7 @@ Name: Strategia, dtype: object"
 14    FASE2_DOUBLE_CHANCE
 15    FASE2_DOUBLE_CHANCE
 Name: Strategia, dtype: object"
-2026-02-14,0,Como vs Fiorentina,,X2,,0.4761904761904761,2.1,6.4,,,0.0,
+2026-02-14,0,Como vs Fiorentina,,X2,,0.47619047619047616,2.1,6.4,,,0.0,
 2026-02-15,0,Udinese,Sassuolo,Over/Under 2.5,Over 2.5,0.643,2.25,45.0,,,0.0,"Auto-generato 2026-02-12 21:26 | Strategia: 0        FASE2_OVER_UNDER
 1        FASE2_OVER_UNDER
 2     FASE2_DOUBLE_CHANCE
@@ -173,8 +173,8 @@ Name: Strategia, dtype: object"
 Name: Strategia, dtype: object"
 2026-02-15,0,Udinese vs Sassuolo,,1X,,0.7352941176470588,1.36,+5.9%,,,0.0,DOUBLE CHANCE - EV 20.5% | Quota aggiornata: 1.5 → 1.36
 2026-02-15,0,Parma vs Verona,,1X,,0.7692307692307692,1.3,+6.7%,,,0.0,DOUBLE CHANCE - EV 23.4% | Quota aggiornata: 1.45 → 1.30
-2026-02-15,0,Cremonese vs Genoa,,Pareggio,,0.3367003367003366,2.97,,,,0.0,Auto-generato 2026-02-12 21:26
-2026-02-15,0,Parma vs Verona,,Over/Under 2.5 - Over 2.5,,0.4032258064516129,2.48,,,,0.0,Auto-generato 2026-02-12 21:26
+2026-02-15,0,Cremonese vs Genoa,,Pareggio,,0.33670033670033667,2.97,,,,0.0,Auto-generato 2026-02-12 21:26
+2026-02-15,0,Parma vs Verona,,Over/Under 2.5 - Over 2.5,,0.40322580645161293,2.48,,,,0.0,Auto-generato 2026-02-12 21:26
 2026-02-15,0,Cremonese,Genoa,1X2,Pareggio,0.433,2.97,28.4,,,0.0,"Auto-generato 2026-02-12 21:26 | Strategia: 0        FASE2_OVER_UNDER
 1        FASE2_OVER_UNDER
 2     FASE2_DOUBLE_CHANCE
@@ -274,5 +274,8 @@ Name: Strategia, dtype: object"
 2026-03-17,28,Fiorentina,Bologna,1X2,Pareggio,0.28,3.3,-7.6,A,False,-1.0,Test dashboard - errata
 2026-03-17,28,Napoli,Lazio,OU25,Under,0.55,2.1,15.5,Under,True,1.1,Test dashboard
 2026-03-17,28,Napoli,Lazio,1X2,Casa,0.6,1.75,5.0,H,True,0.75,Test dashboard
-2026-04-12,0,Inter,Cagliari,1X2,Casa,0.607,1.76,4.4,,,,FILTERED_OUT | EV 4.4%
-2026-04-12,0,Milan,Roma,1X2,Casa,0.552,1.94,4.6,H,True,0.94,FILTERED_OUT | EV 4.6%
+# Lecce vs Atalanta - 6 Aprile 2026
+Data,Match,Pred_Casa,Pred_Pareggio,Pred_Trasferta,Risultato,Esito_Casa,Esito_Pareggio,Esito_Trasferta,Brier_Score,Recommended_Bet,Actual_Bet,Outcome
+2026-04-06,Lecce vs Atalanta,36.4,34.0,29.7,0-X (Atalanta vinta),0,0,1,0.XXX,SKIP (soverestimazione Lecce),NONE,CORRECT_SKIP
+Date,Match,Pred_Casa,Pred_Pareggio,Pred_Trasferta,Risultato,Esito_Casa,Esito_Pareggio,Esito_Trasferta,Brier_Score,Recommended_Bet,Actual_Bet,Outcome,Notes
+2026-04-06,Lecce vs Atalanta,36.4,34.0,29.7,Atalanta WIN,0,0,1,0.2474,SKIP,NONE,CORRECT_SKIP,Asymmetric match - model underestimated Atalanta by 70.3pp
