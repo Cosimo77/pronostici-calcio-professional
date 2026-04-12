@@ -1,0 +1,58 @@
+═══════════════════════════════════════════════════════════════
+🚀 PR READY - 2 CLICK WORKFLOW
+═══════════════════════════════════════════════════════════════
+
+📍 STEP 1: Apri questo link
+https://github.com/Cosimo77/pronostici-calcio-professional/compare/main...feature/dataset-update-20260407
+
+📍 STEP 2: Clicca "Create Pull Request" (bottone verde)
+
+📍 STEP 3: (OPZIONALE) Copia/incolla titolo e descrizione sotto
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TITOLO:
+📊 Dataset Update 06/04/2026 - Production Ready
+
+DESCRIZIONE:
+Aggiornamento dataset Serie A al 06/04/2026
+
+✨ Contenuto:
+- 2970 partite totali (+4 nuove)
+- 2753 partite con features ML rigenerate
+- Fix ordinamento date DD/MM/YYYY
+- Automazione testata ✅
+
+🔧 Fix Tecnici:
+- scripts/analizza_dati.py: dayfirst=True, format='mixed'
+- scripts/feature_engineering.py: gestione date miste
+- Cron testato e funzionante
+
+🚀 Deploy:
+Al merge, Render rebuilderà automaticamente (~5 min).
+Dataset aggiornato: 2743 → 2753 records.
+
+Ready to merge ✅
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+📍 STEP 4: Clicca "Create Pull Request" finale
+
+📍 STEP 5: Attendi CI tests (~1-2 min)
+
+📍 STEP 6: Clicca "Merge Pull Request"
+
+
+═══════════════════════════════════════════════════════════════
+🤖 DOPO IL MERGE - MONITORING AUTOMATICO
+═══════════════════════════════════════════════════════════════
+
+Esegui nel terminale:
+./scripts/monitor_render_deploy.sh
+
+Lo script controllerà automaticamente ogni 30s e ti avviserà quando:
+✅ Render completa rebuild
+✅ Dataset aggiornato a 2753 records
+✅ Nuove predizioni disponibili
+
+═══════════════════════════════════════════════════════════════

@@ -65,6 +65,13 @@ from cache_manager import get_cache_manager
 # Import diario storage adapter (auto-fallback DB → CSV)
 from diario_storage import DiarioStorage
 
+# Import auto-tracking system per monitoring live accuracy
+try:
+    from utils.auto_tracking import get_tracker
+    AUTO_TRACKING_ENABLED = True
+except ImportError:
+    AUTO_TRACKING_ENABLED = False
+
 # Import monitoring system (optional - graceful degradation if not available)
 try:
     from monitoring import get_error_tracker  # type: ignore[attr-defined]
@@ -2445,6 +2452,31 @@ def api_predict_enterprise():
         logger.info(
             f"✅ Predizione Enterprise + Value Betting: {squadra_casa} vs {squadra_ospite} → {predizione} (ROI: {roi_expected * 100:+.1f}%) [Model: {actual_model}]"
         )
+
+        # ============================================
+        # AUTO-TRACKING: Salva predizione per monitoring accuracy live
+        # Traccia TUTTE le predizioni (non solo FASE1) per dashboard completo
+        # ============================================
+        if AUTO_TRACKING_ENABLED:
+            try:
+                tracker = get_tracker()
+                outcome_map = {"H": "Casa", "D": "Pareggio", "A": "Away"}
+
+                # Traccia solo se ha quote valide (esclude predizioni test)
+                if pred_odds and pred_odds > 1.01:
+                    tracker.track_prediction(
+                        casa=squadra_casa,
+                        ospite=squadra_ospite,
+                        mercato="1X2",
+                        predizione=outcome_map[predizione],
+                        probabilita=pred_prob,
+                        quota=pred_odds,
+                        ev_pct=roi_expected * 100,
+                        note=f"{strategy} | EV {roi_expected * 100:.1f}%"
+                    )
+                    logger.info(f"📊 Auto-tracking: {squadra_casa} vs {squadra_ospite} → {outcome_map[predizione]}")
+            except Exception as track_error:
+                logger.warning(f"⚠️ Auto-tracking fallito (non critico): {track_error}")
 
         return jsonify(response)
 
