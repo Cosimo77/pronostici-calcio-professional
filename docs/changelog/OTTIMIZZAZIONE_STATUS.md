@@ -8,7 +8,7 @@
 ## Setup Validato
 
 ### ✅ Pre-Flight Check PASSED
-- **Dataset**: 2,723 partite, 32 features
+- **Dataset**: 2,753 partite, 32 features
 - **Split**: 2,178 train / 545 test (80/20 senza stratify)
 - **Modelli baseline**: 3/3 disponibili
 

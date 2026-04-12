@@ -8,7 +8,7 @@
 ## Stato Baseline (Pre-Ottimizzazione)
 
 ### Dataset
-- **Partite totali**: 2,723
+- **Partite totali**: 2,753
 - **Features**: 32
 - **Train/Test split**: 2,178 / 545 (80/20)
 
