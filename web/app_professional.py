@@ -2461,7 +2461,7 @@ def api_predict_enterprise():
             try:
                 tracker = get_tracker()
                 outcome_map = {"H": "Casa", "D": "Pareggio", "A": "Away"}
-                
+
                 # Traccia solo se ha quote valide (esclude predizioni test)
                 if pred_odds and pred_odds > 1.01:
                     tracker.track_prediction(

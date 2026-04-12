@@ -21,7 +21,7 @@ else
     echo ""
     echo "⏳ Attendo 10 secondi per startup..."
     sleep 10
-    
+
     if curl -s http://localhost:5000/api/health >/dev/null 2>&1; then
         echo "✅ Server AVVIATO con successo"
         SERVER_STATUS="online"

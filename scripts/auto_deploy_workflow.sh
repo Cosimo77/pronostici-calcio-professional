@@ -18,13 +18,13 @@ INITIAL_COMMIT=$(git rev-parse main)
 while true; do
     git fetch origin main --quiet 2>/dev/null
     REMOTE_COMMIT=$(git rev-parse origin/main)
-    
+
     if [[ "$REMOTE_COMMIT" != "$INITIAL_COMMIT" ]]; then
         echo "✅ PR Mergiata! Nuovo commit su origin/main rilevato"
         echo "   Commit: $REMOTE_COMMIT"
         break
     fi
-    
+
     echo -ne "   Checking... (ogni 15s)\r"
     sleep 15
 done
@@ -47,15 +47,15 @@ echo ""
 MAX_CHECKS=20
 for i in $(seq 1 $MAX_CHECKS); do
     echo "[$i/$MAX_CHECKS] Checking Render..."
-    
+
     HEALTH=$(curl -s --max-time 10 "$RENDER_URL/api/health" 2>&1)
-    
+
     if [[ $? -eq 0 ]]; then
         STATUS=$(echo "$HEALTH" | python3 -c "import sys, json; d=json.load(sys.stdin); print(d.get('status', 'N/A'))" 2>/dev/null)
         DB_RECORDS=$(echo "$HEALTH" | python3 -c "import sys, json; d=json.load(sys.stdin); print(d.get('database_records', 0))" 2>/dev/null)
-        
+
         echo "   Status: $STATUS | DB Records: $DB_RECORDS"
-        
+
         if [[ "$DB_RECORDS" -ge 2753 ]]; then
             echo ""
             echo "═══════════════════════════════════════════════════════════════"
@@ -72,7 +72,7 @@ for i in $(seq 1 $MAX_CHECKS); do
     else
         echo "   ⚠️  Server unreachable (rebuilding...)"
     fi
-    
+
     if [[ $i -lt $MAX_CHECKS ]]; then
         sleep 30
     fi

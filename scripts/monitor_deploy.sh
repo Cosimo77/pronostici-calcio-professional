@@ -16,21 +16,21 @@ echo ""
 while [ $elapsed -lt $MAX_WAIT ]; do
     # Check health endpoint
     response=$(curl -s --max-time 10 "$RENDER_URL/api/health" 2>&1)
-    
+
     if echo "$response" | grep -q '"status": "healthy"'; then
         echo "✅ Server Render ONLINE"
-        
+
         # Estrai database_records
         db_records=$(echo "$response" | python3 -c "import sys, json; d=json.load(sys.stdin); print(d.get('database_records', 'N/A'))" 2>/dev/null)
-        
+
         echo "   📊 Database records: $db_records"
-        
+
         if [ "$db_records" = "2753" ]; then
             echo ""
             echo "🎉 DEPLOY COMPLETATO CON SUCCESSO!"
             echo "   ✅ Dataset aggiornato: 2743 → 2753 records"
             echo ""
-            
+
             # Check dataset info
             echo "📋 Verifica dataset completo:"
             curl -s "$RENDER_URL/api/dataset_info" | python3 -m json.tool | head -15
@@ -43,7 +43,7 @@ while [ $elapsed -lt $MAX_WAIT ]; do
     else
         echo "⚠️  Server in sleep/rebuild - riprovo..."
     fi
-    
+
     sleep $INTERVAL
     elapsed=$((elapsed + INTERVAL))
     echo "   ⏱️  Elapsed: ${elapsed}s / ${MAX_WAIT}s"

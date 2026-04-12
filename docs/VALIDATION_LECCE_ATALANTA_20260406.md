@@ -68,13 +68,13 @@ Motivazione:
 
 ## ⚽ Risultato Effettivo
 
-**Match:** Lecce vs Atalanta  
-**Data:** 6 Aprile 2026  
+**Match:** Lecce vs Atalanta
+**Data:** 6 Aprile 2026
 **Risultato:** **ATALANTA VINCE**
 
 **Esito:**
 - Casa (Lecce): ❌ (0)
-- Pareggio: ❌ (0)  
+- Pareggio: ❌ (0)
 - Trasferta (Atalanta): ✅ (1)
 
 ---
@@ -113,9 +113,9 @@ Brier Score = ((0.364-0)² + (0.340-0)² + (0.297-1)²) / 3
 
 ### Decision Outcome
 
-**Raccomandazione:** ❌ **SKIP** (non puntare)  
-**Azione Effettiva:** ✅ **SKIPPED**  
-**Risultato Match:** Atalanta vince  
+**Raccomandazione:** ❌ **SKIP** (non puntare)
+**Azione Effettiva:** ✅ **SKIPPED**
+**Risultato Match:** Atalanta vince
 **Outcome:** ✅ **CORRECT SKIP**
 
 ### Value Betting Analysis
@@ -163,7 +163,7 @@ Brier Score = ((0.364-0)² + (0.340-0)² + (0.297-1)²) / 3
 - ❌ Contesto stagionale (Atalanta fight Champions places)
 
 **Risultato:**
-→ Lecce con 2-3 vittorie recenti vs squadre deboli → model lo sopravvaluta  
+→ Lecce con 2-3 vittorie recenti vs squadre deboli → model lo sopravvaluta
 → Atalanta pareggi recenti vs top teams → model la sottovaluta
 
 ---
@@ -298,6 +298,6 @@ Date,Match,Pred_H,Pred_D,Pred_A,Actual,Brier,Recommended,Outcome,Notes
 
 ---
 
-**Report generato:** 6 Aprile 2026  
-**Analista:** AI Agent + User feedback  
+**Report generato:** 6 Aprile 2026
+**Analista:** AI Agent + User feedback
 **Status:** ✅ Validated - Action items identified

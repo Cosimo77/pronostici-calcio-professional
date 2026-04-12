@@ -175,12 +175,12 @@ Auto-tracking integrato direttamente in `/api/predict_enterprise`:
 @app.route("/api/predict_enterprise", methods=["POST"])
 def api_predict_enterprise():
     # ... logica predizione ...
-    
+
     # 📊 Auto-tracking
     if AUTO_TRACKING_ENABLED:
         tracker.track_prediction(...)
         logger.info("📊 Predizione tracciata")
-    
+
     return jsonify(response)
 ```
 
@@ -383,15 +383,15 @@ python3 integrations/football_data_results.py
 ## 📈 Metriche Performance
 
 ### Expected Accuracy
-- **Baseline Backtest**: 39.5% (1X2)  
-- **Target Live**: >45%  
-- **Current**: 84.6% (13 partite)  
+- **Baseline Backtest**: 39.5% (1X2)
+- **Target Live**: >45%
+- **Current**: 84.6% (13 partite)
 
 ⚠️ **Nota**: Piccolo campione, convergenza verso baseline su 100+ partite.
 
 ### Expected ROI
-- **FASE 1 Backtest**: +7.17% (158 trade)  
-- **Current Live**: +69.15% (13 trade)  
+- **FASE 1 Backtest**: +7.17% (158 trade)
+- **Current Live**: +69.15% (13 trade)
 
 ⚠️ **Variance**: Sample size troppo piccolo, ROI si stabilizzerà su +5-10% a lungo termine.
 
@@ -444,5 +444,5 @@ python3 integrations/football_data_results.py
 
 ---
 
-**Sistema Professional Auto-Tracking v1.0.0**  
+**Sistema Professional Auto-Tracking v1.0.0**
 *Accuracy Monitoring Live - Zero Manual Intervention*

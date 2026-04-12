@@ -13,29 +13,29 @@ from scripts.setup_validation_tracking import update_result, generate_performanc
 
 def main():
     """Update risultati match giocati"""
-    
+
     print("\n🎯 UPDATE MATCH RESULTS\n")
-    
+
     # Match da aggiornare (modifica questo quando hai risultati)
     # Formato: (home, away, risultato)
     # risultato: 'H' = Casa vince, 'D' = Pareggio, 'A' = Trasferta vince
-    
+
     matches_to_update = [
         # Esempio già fatto:
         ('Lecce', 'Atalanta', 'A'),  # 6 Apr - Atalanta vince
-        
+
         # Aggiungi match oggi quando giocati:
         # ('Juventus', 'Genoa', 'H'),     # Se Juve vince
         # ('Napoli', 'AC Milan', 'D'),    # Se pareggio
     ]
-    
+
     for home, away, result in matches_to_update:
         print(f"Aggiornamento: {home} vs {away} → {result}")
         update_result(home, away, result)
-    
+
     print(f"\n{'='*60}")
     print(f"✅ Aggiornamenti completati!")
-    
+
     # Genera report performance
     print(f"\n{'='*60}")
     generate_performance_report()
