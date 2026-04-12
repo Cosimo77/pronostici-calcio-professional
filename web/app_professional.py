@@ -5093,9 +5093,15 @@ def api_health():
         "version": "1.0.0-enterprise",
         "environment": ("production" if os.environ.get("FLASK_ENV") == "production" else "development"),
         "last_check": datetime.now().isoformat(),
+        "features": {
+            "security_headers_enabled": True,
+            "rate_limiting_enabled": True,
+            "auto_tracking_enabled": AUTO_TRACKING_ENABLED,
+        },
+        # Legacy fields (mantieni per backward compatibility)
         "security_headers_enabled": True,
         "rate_limiting_enabled": True,
-        # NEW: The Odds API configuration check
+        # The Odds API configuration check
         "odds_api_key_configured": bool(odds_api_key),
         "odds_api_key_length": len(odds_api_key) if odds_api_key else 0,
     }
