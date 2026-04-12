@@ -159,7 +159,7 @@ class BackgroundAutomation:
         return (
             is_monday
             and dt_time(1, 45) <= current_time <= dt_time(2, 15)
-            and (not self.last_retrain or (now - self.last_retrain).days >= 6)
+            and (not self.last_retrain or (now - last_retrain_aware).days >= 6)
         )
 
     def _run_daily_update(self):
@@ -279,7 +279,7 @@ class BackgroundAutomation:
     def _estimate_next_retrain(self):
         """Stima prossimo riaddestramento"""
         if not self.last_retrain:
-            return "Prossima Domenica alle 02:00"
+            return "Prossimo Lunedì alle 02:00 UTC"
 
         # Assicura entrambi timezone-aware per confronto
         now_aware = datetime.now(timezone.utc)
@@ -288,7 +288,7 @@ class BackgroundAutomation:
         )
         days_since = (now_aware - last_retrain_aware).days
         days_until = 7 - days_since
-        return f"Tra {days_until} giorni (Domenica 02:00)"
+        return f"Tra {days_until} giorni (Lunedì 02:00 UTC)"
 
 
 # Singleton globale

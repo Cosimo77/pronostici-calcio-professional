@@ -130,8 +130,9 @@ class DiarioStorage:
                             data["data"] = data_obj
                         except ValueError:
                             # Ultimo fallback: usa data corrente
+                            original_date = data["data"]  # Salva valore originale per log
                             data["data"] = datetime.now().date()
-                            logger.warning(f"⚠️ Formato data non riconosciuto: {data['data']}, uso data odierna")
+                            logger.warning(f"⚠️ Formato data non riconosciuto: {original_date}, uso data odierna")
 
                 return BetModel.create(data)
             except Exception as e:

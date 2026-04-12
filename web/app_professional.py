@@ -5098,9 +5098,6 @@ def api_health():
             "rate_limiting_enabled": True,
             "auto_tracking_enabled": AUTO_TRACKING_ENABLED,
         },
-        # Legacy fields (mantieni per backward compatibility)
-        "security_headers_enabled": True,
-        "rate_limiting_enabled": True,
         # The Odds API configuration check
         "odds_api_key_configured": bool(odds_api_key),
         "odds_api_key_length": len(odds_api_key) if odds_api_key else 0,

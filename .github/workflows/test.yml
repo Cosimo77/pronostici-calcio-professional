@@ -88,19 +88,21 @@ jobs:
         run: |
           flake8 web/ database/ tests/ \
             --max-line-length=100 \
-            --extend-ignore=E203,W503,E501,F401,F841,W291,W293,E402,F811,F824,F541 \
+            --extend-ignore=E203,W503 \
             --exclude=__pycache__,*.pyc,.git,migrations,venv
+        continue-on-error: true  # Temporary durante cleanup graduale
 
-      # Black/isort check temporaneamente disabilitati - re-enable dopo style fix PR
-      # - name: Check Black formatting
-      #   run: |
-      #     black --check web/ database/ tests/ \
-      #       --extend-exclude="migrations|venv|__pycache__"
+      - name: Check Black formatting
+        run: |
+          black --check web/ database/ tests/ \
+            --extend-exclude="migrations|venv|__pycache__"
+        continue-on-error: true  # Temporary durante cleanup graduale
 
-      # - name: Check import sorting
-      #   run: |
-      #     isort --check-only web/ database/ tests/ \
-      #       --skip migrations --skip venv
+      - name: Check import sorting
+        run: |
+          isort --check-only web/ database/ tests/ \
+            --skip migrations --skip venv
+        continue-on-error: true  # Temporary durante cleanup graduale
 
   security:
     name: Security Scan

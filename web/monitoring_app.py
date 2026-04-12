@@ -18,7 +18,17 @@ except ImportError as e:
 
 # Setup Flask con configurazione minimal
 app = Flask(__name__)
-app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "monitoring-key-2025")
+
+# SECRET_KEY: REQUIRED in production per session security
+if not os.environ.get("SECRET_KEY"):
+    import secrets
+
+    generated_key = secrets.token_hex(32)
+    app.logger.warning(f"⚠️ SECRET_KEY not set - generated random key (sessions will reset on restart)")
+    app.config["SECRET_KEY"] = generated_key
+else:
+    app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY")
+
 app.config["DEBUG"] = False
 
 

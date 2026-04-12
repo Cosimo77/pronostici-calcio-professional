@@ -1,6 +1,5 @@
 """Type stubs for monitoring module"""
 
-from collections.abc import Callable as CallableType
 from typing import Any, Callable, Dict, Optional, TypeVar
 
 F = TypeVar("F", bound=Callable[..., Any])

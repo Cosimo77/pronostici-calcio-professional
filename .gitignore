@@ -58,6 +58,7 @@ backups/
 *.bak
 
 # Temporary files
+update_info.txt
 tmp/
 temp/
 *.tmp
