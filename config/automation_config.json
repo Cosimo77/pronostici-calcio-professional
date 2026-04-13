@@ -9,11 +9,11 @@
         "timezone": "Europe/Rome"
       },
       "model_training": {
-        "day": "sunday",
+        "day": "monday",
         "time": "02:00",
         "frequency": "weekly",
         "enabled": true,
-        "timezone": "Europe/Rome"
+        "timezone": "UTC"
       },
       "health_check": {
         "frequency": "hourly",
