@@ -70,7 +70,8 @@ temp/
 tracking_giocate.csv
 tracking_fase2_febbraio2026.csv
 
-# Model files (se troppo grandi per Git)
-# models/*.pklbackup_*.zip
-models/**/*.pkl
+# Model files - Allow root models, ignore subdirectories
+models/enterprise/**/*.pkl
+models/backup*/**/*.pkl
+models/**/backup/**/*.pkl
 data/dataset_features_enhanced.csv
