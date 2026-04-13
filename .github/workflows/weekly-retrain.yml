@@ -58,8 +58,8 @@ jobs:
             exit 1
           fi
           
-          # Estrai accuracy dal log
-          ACCURACY=$(grep -oP 'Test accuracy:\s+\K[\d.]+%' retrain_log.txt | tail -1 || echo "N/A")
+          # Estrai accuracy dal log (compatible grep)
+          ACCURACY=$(grep "Test accuracy:" retrain_log.txt | tail -1 | awk '{print $NF}' || echo "N/A")
           echo "accuracy=$ACCURACY" >> $GITHUB_OUTPUT
           echo "📈 Test Accuracy: $ACCURACY"
       
@@ -123,7 +123,7 @@ jobs:
           fi
           
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "🔄 **Prossimo ritraining**: Lunedì $(date -d '+7 days' -u +'%d/%m/%Y') alle 02:00 UTC" >> $GITHUB_STEP_SUMMARY
+          echo "🔄 **Prossimo ritraining**: Lunedì prossimo alle 02:00 UTC (automatico)" >> $GITHUB_STEP_SUMMARY
       
       - name: Upload artifacts
         if: always()
