@@ -2608,32 +2608,12 @@ def api_batch_generate_predictions():
                     squadra_casa_norm, squadra_ospite_norm
                 )
                 
-                # Estrai best odds da bookmakers
-                odds_h = None
-                odds_d = None
-                odds_a = None
-                best_bookmaker = None
-                
-                bookmakers = match.get("bookmakers", [])
-                if bookmakers:
-                    # Prendi primo bookmaker (solitamente il migliore)
-                    bookie = bookmakers[0]
-                    best_bookmaker = bookie.get("title", "Unknown")
-                    
-                    for market in bookie.get("markets", []):
-                        if market.get("key") == "h2h":
-                            outcomes = market.get("outcomes", [])
-                            for outcome in outcomes:
-                                name = outcome.get("name")
-                                name_norm = normalize_team_name(name)  # Normalizza nome bookmaker!
-                                price = outcome.get("price")
-                                
-                                if name_norm == squadra_casa_norm:
-                                    odds_h = price
-                                elif name_norm == squadra_ospite_norm:
-                                    odds_a = price
-                                else:
-                                    odds_d = price
+                # Estrai quote MEDIATE da response parsata (NON da bookmakers array!)
+                # get_upcoming_odds() restituisce già odds_home/draw/away (medie)
+                odds_h = match.get("odds_home")
+                odds_d = match.get("odds_draw")
+                odds_a = match.get("odds_away")
+                best_bookmaker = f"{match.get('num_bookmakers', 0)} bookmakers media"
                 
                 # Calcola expected value se quote disponibili
                 strategy = "UNKNOWN"
