@@ -102,12 +102,12 @@ jobs:
           else
             echo "💾 Creazione commit..."
             git commit -m "🧠 Weekly retrain: accuracy $ACCURACY [skip ci]
-            
-📊 Ritraining automatico settimanale
-- Timestamp: $(date -u +'%Y-%m-%d %H:%M UTC')
-- Accuracy: $ACCURACY
-- Size RF: ${{ steps.retrain.outputs.rf_size }}
-- Workflow: weekly-retrain.yml"
+
+Ritraining automatico settimanale
+Timestamp: $(date -u +'%Y-%m-%d %H:%M UTC')
+Accuracy: $ACCURACY
+Size RF: ${{ steps.retrain.outputs.rf_size }}
+Workflow: weekly-retrain.yml"
             
             echo "🚀 Push su GitHub..."
             git push
