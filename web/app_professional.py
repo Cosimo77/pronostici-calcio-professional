@@ -2539,6 +2539,185 @@ def api_consigli_scommessa():
         return jsonify({"error": f"Errore interno: {str(e)}"}), 500
 
 
+@app.route("/api/batch_generate_predictions", methods=["POST"])
+@limiter.limit("5 per minute")  # Rate limiting basso per endpoint batch
+def api_batch_generate_predictions():
+    """
+    Genera predizioni in batch per tutte le partite upcoming disponibili
+    
+    Endpoint progettato per automazione GitHub Actions giornaliera.
+    Genera predizioni per prossime 48-72h e traccia automaticamente.
+    
+    Returns:
+        Summary con N predizioni generate, tracked, filtered
+    """
+    
+    if not sistema_inizializzato:
+        return jsonify({"error": "Sistema non inizializzato"}), 500
+    
+    try:
+        # 1. Fetch upcoming matches (riusa logica interna)
+        from integrations.odds_api import OddsAPIClient
+        
+        api_key = os.getenv("ODDS_API_KEY")
+        if not api_key:
+            return jsonify({
+                "error": "ODDS_API_KEY non configurata",
+                "predictions_generated": 0
+            }), 503
+        
+        odds_client = OddsAPIClient(api_key=api_key)
+        upcoming = odds_client.get_upcoming_odds()
+        
+        if not upcoming:
+            return jsonify({
+                "status": "no_matches",
+                "message": "Nessuna partita trovata nei prossimi giorni",
+                "predictions_generated": 0
+            })
+        
+        # 2. Genera predizioni per ogni partita
+        results = {
+            "generated": 0,
+            "tracked": 0,
+            "filtered": 0,
+            "errors": 0,
+            "matches_processed": []
+        }
+        
+        for match in upcoming:
+            try:
+                squadra_casa = match.get("home_team")
+                squadra_ospite = match.get("away_team")
+                
+                # Normalizza nomi squadre
+                squadra_casa_norm = calculator._normalizza_nome_squadra(squadra_casa)
+                squadra_ospite_norm = calculator._normalizza_nome_squadra(squadra_ospite)
+                
+                # Skip se squadre non disponibili
+                if squadra_casa_norm not in calculator.squadre_disponibili:
+                    results["filtered"] += 1
+                    continue
+                if squadra_ospite_norm not in calculator.squadre_disponibili:
+                    results["filtered"] += 1
+                    continue
+                
+                # Genera predizione (riusa logica calculator)
+                predizione, probabilita, confidenza = calculator.predici_partita(
+                    squadra_casa_norm, squadra_ospite_norm
+                )
+                
+                # Estrai best odds da bookmakers
+                odds_h = None
+                odds_d = None
+                odds_a = None
+                best_bookmaker = None
+                
+                bookmakers = match.get("bookmakers", [])
+                if bookmakers:
+                    # Prendi primo bookmaker (solitamente il migliore)
+                    bookie = bookmakers[0]
+                    best_bookmaker = bookie.get("title", "Unknown")
+                    
+                    for market in bookie.get("markets", []):
+                        if market.get("key") == "h2h":
+                            outcomes = market.get("outcomes", [])
+                            for outcome in outcomes:
+                                name = outcome.get("name")
+                                price = outcome.get("price")
+                                
+                                if name == squadra_casa:
+                                    odds_h = price
+                                elif name == squadra_ospite:
+                                    odds_a = price
+                                else:
+                                    odds_d = price
+                
+                # Calcola expected value se quote disponibili
+                strategy = "UNKNOWN"
+                roi_expected = 0.0
+                pred_odds = None
+                
+                if odds_h and odds_d and odds_a:
+                    # Map predizione to odds
+                    pred_odds = {
+                        "H": odds_h,
+                        "D": odds_d,
+                        "A": odds_a
+                    }.get(predizione, 0)
+                    
+                    if pred_odds and pred_odds > 1.01:
+                        pred_prob = probabilita[predizione]
+                        roi_expected = (pred_odds * pred_prob - 1)
+                        
+                        # Determina se passa filtri FASE1
+                        if predizione == "D" and 2.8 <= pred_odds <= 3.5 and roi_expected >= 0.25:
+                            strategy = "FASE1_PAREGGIO"
+                        else:
+                            strategy = "FILTERED_OUT"
+                
+                # AUTO-TRACKING: Traccia predizione
+                if AUTO_TRACKING_ENABLED and pred_odds and pred_odds > 1.01:
+                    try:
+                        tracker = get_tracker()
+                        outcome_map = {"H": "Casa", "D": "Pareggio", "A": "Away"}
+                        
+                        tracker.track_prediction(
+                            casa=squadra_casa_norm,
+                            ospite=squadra_ospite_norm,
+                            mercato="1X2",
+                            predizione=outcome_map[predizione],
+                            probabilita=probabilita[predizione],
+                            quota=pred_odds,
+                            ev_pct=roi_expected * 100,
+                            note=f"{strategy} | EV {roi_expected * 100:.1f}%"
+                        )
+                        
+                        if strategy == "FASE1_PAREGGIO":
+                            results["tracked"] += 1
+                        else:
+                            results["filtered"] += 1
+                            
+                    except Exception as track_err:
+                        logger.warning(f"⚠️ Auto-tracking fallito: {track_err}")
+                
+                results["generated"] += 1
+                results["matches_processed"].append({
+                    "match": f"{squadra_casa_norm} vs {squadra_ospite_norm}",
+                    "prediction": predizione,
+                    "confidence": round(confidenza, 3),
+                    "strategy": strategy,
+                    "ev_pct": round(roi_expected * 100, 1) if roi_expected else 0
+                })
+                
+            except Exception as match_err:
+                logger.error(f"❌ Errore processing match {match.get('home_team', '?')} vs {match.get('away_team', '?')}: {match_err}")
+                results["errors"] += 1
+                continue
+        
+        # 3. Return summary
+        response = {
+            "status": "success",
+            "timestamp": datetime.now().isoformat(),
+            "summary": {
+                "total_matches_fetched": len(upcoming),
+                "predictions_generated": results["generated"],
+                "tracked_fase1": results["tracked"],
+                "filtered_out": results["filtered"],
+                "errors": results["errors"]
+            },
+            "matches": results["matches_processed"][:10]  # Primi 10 per brevità
+        }
+        
+        logger.info(f"✅ Batch predictions: {results['generated']} generate, {results['tracked']} tracked")
+        
+        return jsonify(response)
+        
+    except Exception as e:
+        logger.error(f"❌ Errore batch_generate_predictions: {e}")
+        return jsonify({"error": f"Errore interno: {str(e)}"}), 500
+
+
 @app.route("/api/upcoming_matches", methods=["GET"])
 @limiter.limit("10 per minute")
 def api_upcoming_matches():
