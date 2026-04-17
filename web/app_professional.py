@@ -2591,9 +2591,9 @@ def api_batch_generate_predictions():
                 squadra_casa = match.get("home_team")
                 squadra_ospite = match.get("away_team")
                 
-                # Normalizza nomi squadre
-                squadra_casa_norm = calculator._normalizza_nome_squadra(squadra_casa)
-                squadra_ospite_norm = calculator._normalizza_nome_squadra(squadra_ospite)
+                # Normalizza nomi squadre usando funzione standalone
+                squadra_casa_norm = normalize_team_name(squadra_casa)
+                squadra_ospite_norm = normalize_team_name(squadra_ospite)
                 
                 # Skip se squadre non disponibili
                 if squadra_casa_norm not in calculator.squadre_disponibili:
