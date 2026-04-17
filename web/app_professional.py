@@ -2582,7 +2582,8 @@ def api_batch_generate_predictions():
             "tracked": 0,
             "filtered": 0,
             "errors": 0,
-            "matches_processed": []
+            "matches_processed": [],
+            "error_details": []  # Debug: track error messages
         }
         
         for match in upcoming:
@@ -2691,8 +2692,10 @@ def api_batch_generate_predictions():
                 })
                 
             except Exception as match_err:
-                logger.error(f"❌ Errore processing match {match.get('home_team', '?')} vs {match.get('away_team', '?')}: {match_err}")
+                error_msg = f"{match.get('home_team', '?')} vs {match.get('away_team', '?')}: {str(match_err)}"
+                logger.error(f"❌ Errore processing match: {error_msg}")
                 results["errors"] += 1
+                results["error_details"].append(error_msg)
                 continue
         
         # 3. Return summary
@@ -2706,7 +2709,8 @@ def api_batch_generate_predictions():
                 "filtered_out": results["filtered"],
                 "errors": results["errors"]
             },
-            "matches": results["matches_processed"][:10]  # Primi 10 per brevità
+            "matches": results["matches_processed"][:10],  # Primi 10 per brevità
+            "errors": results["error_details"][:5] if results["error_details"] else []  # Primi 5 errori
         }
         
         logger.info(f"✅ Batch predictions: {results['generated']} generate, {results['tracked']} tracked")
