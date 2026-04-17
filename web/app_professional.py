@@ -2539,6 +2539,35 @@ def api_consigli_scommessa():
         return jsonify({"error": f"Errore interno: {str(e)}"}), 500
 
 
+@app.route("/api/export_tracking_csv", methods=["GET"])
+@limiter.limit("30 per hour")
+def api_export_tracking_csv():
+    """
+    Esporta contenuto tracking CSV per sincronizzazione
+    
+    Usato da GitHub Actions workflow per scaricare dati da Render
+    """
+    try:
+        tracking_file = "tracking_predictions_live.csv"
+        
+        if not os.path.exists(tracking_file):
+            return jsonify({"error": "Tracking file not found"}), 404
+        
+        # Leggi e restituisci JSON (più facile da parsare che CSV puro)
+        df = pd.read_csv(tracking_file)
+        
+        return jsonify({
+            "status": "success",
+            "total_predictions": len(df),
+            "last_update": datetime.now().isoformat(),
+            "csv_content": df.to_csv(index=False)
+        })
+        
+    except Exception as e:
+        logger.error(f"Errore export tracking CSV: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/api/batch_generate_predictions", methods=["POST"])
 @limiter.limit("5 per minute")  # Rate limiting basso per endpoint batch
 def api_batch_generate_predictions():
