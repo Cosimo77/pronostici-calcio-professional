@@ -2625,11 +2625,12 @@ def api_batch_generate_predictions():
                             outcomes = market.get("outcomes", [])
                             for outcome in outcomes:
                                 name = outcome.get("name")
+                                name_norm = normalize_team_name(name)  # Normalizza nome bookmaker!
                                 price = outcome.get("price")
                                 
-                                if name == squadra_casa:
+                                if name_norm == squadra_casa_norm:
                                     odds_h = price
-                                elif name == squadra_ospite:
+                                elif name_norm == squadra_ospite_norm:
                                     odds_a = price
                                 else:
                                     odds_d = price
@@ -2638,6 +2639,10 @@ def api_batch_generate_predictions():
                 strategy = "UNKNOWN"
                 roi_expected = 0.0
                 pred_odds = None
+                
+                # Debug: log se quote non estratte
+                if not (odds_h and odds_d and odds_a):
+                    logger.warning(f"⚠️ Quote incomplete: {squadra_casa_norm} vs {squadra_ospite_norm} - h:{odds_h}, d:{odds_d}, a:{odds_a}")
                 
                 if odds_h and odds_d and odds_a:
                     # Map predizione to odds
