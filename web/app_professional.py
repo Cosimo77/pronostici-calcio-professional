@@ -68,6 +68,7 @@ from diario_storage import DiarioStorage
 # Import auto-tracking system per monitoring live accuracy
 try:
     from utils.auto_tracking import get_tracker
+
     AUTO_TRACKING_ENABLED = True
 except ImportError:
     AUTO_TRACKING_ENABLED = False
@@ -2472,7 +2473,7 @@ def api_predict_enterprise():
                         probabilita=pred_prob,
                         quota=pred_odds,
                         ev_pct=roi_expected * 100,
-                        note=f"{strategy} | EV {roi_expected * 100:.1f}%"
+                        note=f"{strategy} | EV {roi_expected * 100:.1f}%",
                     )
                     logger.info(f"📊 Auto-tracking: {squadra_casa} vs {squadra_ospite} → {outcome_map[predizione]}")
             except Exception as track_error:
@@ -2544,25 +2545,27 @@ def api_consigli_scommessa():
 def api_export_tracking_csv():
     """
     Esporta contenuto tracking CSV per sincronizzazione
-    
+
     Usato da GitHub Actions workflow per scaricare dati da Render
     """
     try:
         tracking_file = "tracking_predictions_live.csv"
-        
+
         if not os.path.exists(tracking_file):
             return jsonify({"error": "Tracking file not found"}), 404
-        
+
         # Leggi e restituisci JSON (più facile da parsare che CSV puro)
         df = pd.read_csv(tracking_file)
-        
-        return jsonify({
-            "status": "success",
-            "total_predictions": len(df),
-            "last_update": datetime.now().isoformat(),
-            "csv_content": df.to_csv(index=False)
-        })
-        
+
+        return jsonify(
+            {
+                "status": "success",
+                "total_predictions": len(df),
+                "last_update": datetime.now().isoformat(),
+                "csv_content": df.to_csv(index=False),
+            }
+        )
+
     except Exception as e:
         logger.error(f"Errore export tracking CSV: {e}")
         return jsonify({"error": str(e)}), 500
@@ -2573,38 +2576,37 @@ def api_export_tracking_csv():
 def api_batch_generate_predictions():
     """
     Genera predizioni in batch per tutte le partite upcoming disponibili
-    
+
     Endpoint progettato per automazione GitHub Actions giornaliera.
     Genera predizioni per prossime 48-72h e traccia automaticamente.
-    
+
     Returns:
         Summary con N predizioni generate, tracked, filtered
     """
-    
+
     if not sistema_inizializzato:
         return jsonify({"error": "Sistema non inizializzato"}), 500
-    
+
     try:
         # 1. Fetch upcoming matches (riusa logica interna)
         from integrations.odds_api import OddsAPIClient
-        
+
         api_key = os.getenv("ODDS_API_KEY")
         if not api_key:
-            return jsonify({
-                "error": "ODDS_API_KEY non configurata",
-                "predictions_generated": 0
-            }), 503
-        
+            return jsonify({"error": "ODDS_API_KEY non configurata", "predictions_generated": 0}), 503
+
         odds_client = OddsAPIClient(api_key=api_key)
         upcoming = odds_client.get_upcoming_odds()
-        
+
         if not upcoming:
-            return jsonify({
-                "status": "no_matches",
-                "message": "Nessuna partita trovata nei prossimi giorni",
-                "predictions_generated": 0
-            })
-        
+            return jsonify(
+                {
+                    "status": "no_matches",
+                    "message": "Nessuna partita trovata nei prossimi giorni",
+                    "predictions_generated": 0,
+                }
+            )
+
         # 2. Genera predizioni per ogni partita
         results = {
             "generated": 0,
@@ -2612,18 +2614,18 @@ def api_batch_generate_predictions():
             "filtered": 0,
             "errors": 0,
             "matches_processed": [],
-            "error_details": []  # Debug: track error messages
+            "error_details": [],  # Debug: track error messages
         }
-        
+
         for match in upcoming:
             try:
                 squadra_casa = match.get("home_team")
                 squadra_ospite = match.get("away_team")
-                
+
                 # Normalizza nomi squadre usando funzione standalone
                 squadra_casa_norm = normalize_team_name(squadra_casa)
                 squadra_ospite_norm = normalize_team_name(squadra_ospite)
-                
+
                 # Skip se squadre non disponibili
                 if squadra_casa_norm not in calculator.squadre_disponibili:
                     results["filtered"] += 1
@@ -2631,52 +2633,48 @@ def api_batch_generate_predictions():
                 if squadra_ospite_norm not in calculator.squadre_disponibili:
                     results["filtered"] += 1
                     continue
-                
+
                 # Genera predizione (riusa logica calculator)
-                predizione, probabilita, confidenza = calculator.predici_partita(
-                    squadra_casa_norm, squadra_ospite_norm
-                )
-                
+                predizione, probabilita, confidenza = calculator.predici_partita(squadra_casa_norm, squadra_ospite_norm)
+
                 # Estrai quote MEDIATE da response parsata (NON da bookmakers array!)
                 # get_upcoming_odds() restituisce già odds_home/draw/away (medie)
                 odds_h = match.get("odds_home")
                 odds_d = match.get("odds_draw")
                 odds_a = match.get("odds_away")
                 best_bookmaker = f"{match.get('num_bookmakers', 0)} bookmakers media"
-                
+
                 # Calcola expected value se quote disponibili
                 strategy = "UNKNOWN"
                 roi_expected = 0.0
                 pred_odds = None
-                
+
                 # Debug: log se quote non estratte
                 if not (odds_h and odds_d and odds_a):
-                    logger.warning(f"⚠️ Quote incomplete: {squadra_casa_norm} vs {squadra_ospite_norm} - h:{odds_h}, d:{odds_d}, a:{odds_a}")
-                
+                    logger.warning(
+                        f"⚠️ Quote incomplete: {squadra_casa_norm} vs {squadra_ospite_norm} - h:{odds_h}, d:{odds_d}, a:{odds_a}"
+                    )
+
                 if odds_h and odds_d and odds_a:
                     # Map predizione to odds
-                    pred_odds = {
-                        "H": odds_h,
-                        "D": odds_d,
-                        "A": odds_a
-                    }.get(predizione, 0)
-                    
+                    pred_odds = {"H": odds_h, "D": odds_d, "A": odds_a}.get(predizione, 0)
+
                     if pred_odds and pred_odds > 1.01:
                         pred_prob = probabilita[predizione]
-                        roi_expected = (pred_odds * pred_prob - 1)
-                        
+                        roi_expected = pred_odds * pred_prob - 1
+
                         # Determina se passa filtri FASE1
                         if predizione == "D" and 2.8 <= pred_odds <= 3.5 and roi_expected >= 0.25:
                             strategy = "FASE1_PAREGGIO"
                         else:
                             strategy = "FILTERED_OUT"
-                
+
                 # AUTO-TRACKING: Traccia predizione
                 if AUTO_TRACKING_ENABLED and pred_odds and pred_odds > 1.01:
                     try:
                         tracker = get_tracker()
                         outcome_map = {"H": "Casa", "D": "Pareggio", "A": "Away"}
-                        
+
                         tracker.track_prediction(
                             casa=squadra_casa_norm,
                             ospite=squadra_ospite_norm,
@@ -2685,33 +2683,35 @@ def api_batch_generate_predictions():
                             probabilita=probabilita[predizione],
                             quota=pred_odds,
                             ev_pct=roi_expected * 100,
-                            note=f"{strategy} | EV {roi_expected * 100:.1f}%"
+                            note=f"{strategy} | EV {roi_expected * 100:.1f}%",
                         )
-                        
+
                         if strategy == "FASE1_PAREGGIO":
                             results["tracked"] += 1
                         else:
                             results["filtered"] += 1
-                            
+
                     except Exception as track_err:
                         logger.warning(f"⚠️ Auto-tracking fallito: {track_err}")
-                
+
                 results["generated"] += 1
-                results["matches_processed"].append({
-                    "match": f"{squadra_casa_norm} vs {squadra_ospite_norm}",
-                    "prediction": predizione,
-                    "confidence": round(confidenza, 3),
-                    "strategy": strategy,
-                    "ev_pct": round(roi_expected * 100, 1) if roi_expected else 0
-                })
-                
+                results["matches_processed"].append(
+                    {
+                        "match": f"{squadra_casa_norm} vs {squadra_ospite_norm}",
+                        "prediction": predizione,
+                        "confidence": round(confidenza, 3),
+                        "strategy": strategy,
+                        "ev_pct": round(roi_expected * 100, 1) if roi_expected else 0,
+                    }
+                )
+
             except Exception as match_err:
                 error_msg = f"{match.get('home_team', '?')} vs {match.get('away_team', '?')}: {str(match_err)}"
                 logger.error(f"❌ Errore processing match: {error_msg}")
                 results["errors"] += 1
                 results["error_details"].append(error_msg)
                 continue
-        
+
         # 3. Return summary
         response = {
             "status": "success",
@@ -2721,16 +2721,16 @@ def api_batch_generate_predictions():
                 "predictions_generated": results["generated"],
                 "tracked_fase1": results["tracked"],
                 "filtered_out": results["filtered"],
-                "errors": results["errors"]
+                "errors": results["errors"],
             },
             "matches": results["matches_processed"][:10],  # Primi 10 per brevità
-            "errors": results["error_details"][:5] if results["error_details"] else []  # Primi 5 errori
+            "errors": results["error_details"][:5] if results["error_details"] else [],  # Primi 5 errori
         }
-        
+
         logger.info(f"✅ Batch predictions: {results['generated']} generate, {results['tracked']} tracked")
-        
+
         return jsonify(response)
-        
+
     except Exception as e:
         logger.error(f"❌ Errore batch_generate_predictions: {e}")
         return jsonify({"error": f"Errore interno: {str(e)}"}), 500
@@ -4977,14 +4977,30 @@ def api_monitoring_accuracy():
 
         # Filtra solo righe con risultato reale disponibile
         df_risultati = df[df["Risultato_Reale"].notna() & (df["Risultato_Reale"] != "")]
-
+        
+        # Conta predizioni pending (future/in attesa)
+        df_pending = df[df["Risultato_Reale"].isna() | (df["Risultato_Reale"] == "")]
+        
+        # Se non ci sono risultati, mostra info pending
         if len(df_risultati) == 0:
+            # Conta pending recenti (ultimi 7 giorni)
+            df["Data"] = pd.to_datetime(df["Data"], errors='coerce')
+            today = datetime.now()
+            seven_days_ago = today - timedelta(days=7)
+            df_pending_recent = df_pending[df_pending["Data"] >= seven_days_ago]
+            
             return jsonify(
                 {
-                    "status": "no_results",
-                    "message": "Nessuna partita completata ancora",
+                    "status": "pending",
+                    "status_icon": "⏳",
+                    "status_message": f"{len(df_pending_recent)} predizioni generate negli ultimi 7 giorni - in attesa di risultati",
                     "predictions_count": len(df),
-                    "pending_predictions": len(df),
+                    "pending_predictions": len(df_pending),
+                    "pending_recent_7d": len(df_pending_recent),
+                    "accuracy_7d": 0.0,
+                    "accuracy_7d_pct": 0.0,
+                    "predictions_7d": 0,
+                    "correct_7d": 0,
                 }
             )
 
@@ -5002,6 +5018,42 @@ def api_monitoring_accuracy():
             thirty_days_ago = today - timedelta(days=30)
             df_7d = df_risultati[df_risultati["Data"] >= thirty_days_ago]
             days_label = "30 giorni"
+            
+            # Se ancora vuoto, mostra info pending
+            if len(df_7d) == 0:
+                # Conta pending recenti
+                df_pending_30d = df_pending[df_pending["Data"] >= thirty_days_ago]
+                
+                return jsonify({
+                    "status": "pending",
+                    "status_icon": "⏳",
+                    "status_message": f"{len(df_pending_30d)} predizioni negli ultimi 30 giorni - in attesa di risultati",
+                    "days_window": "30 giorni",
+                    "accuracy_7d": 0.0,
+                    "accuracy_7d_pct": 0.0,
+                    "predictions_7d": 0,
+                    "correct_7d": 0,
+                    "pending_predictions_30d": len(df_pending_30d),
+                    "accuracy_lifetime": 0.0,
+                    "accuracy_lifetime_pct": 0.0,
+                    "predictions_lifetime": len(df_risultati),
+                    "market_breakdown": {},
+                    "roi_7d_pct": 0.0,
+                    "total_profit_7d": 0.0,
+                    "vs_backtest": {
+                        "baseline": 0.395,
+                        "baseline_pct": 39.5,
+                        "difference": -0.395,
+                        "difference_pct": -39.5,
+                        "better": False,
+                    },
+                    "model_info": {
+                        "primary": ("random_forest" if calculator.use_ml else "deterministic"),
+                        "fallback": "deterministic",
+                        "deployed_date": "2026-03-14",
+                    },
+                    "timestamp": datetime.now().isoformat(),
+                })
 
         # Calcola accuracy overall
         total_predictions = len(df_7d)
