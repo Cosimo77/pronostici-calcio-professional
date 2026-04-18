@@ -410,14 +410,28 @@
                     )).then(enrichedMatches => {
                         // CALCOLA TOP VALUE BETS
                         const allBets = [];
+                        
+                        // SANITY CHECK FUNCTION: Valida dati realistici
+                        const isValidBet = (odds, ev) => {
+                            const MAX_REALISTIC_ODD = 50.0;  // Quote >50 = anomalie
+                            const MAX_REALISTIC_EV = 200.0;  // EV >200% = probabilità corrotte
+                            return odds > 0 && odds <= MAX_REALISTIC_ODD && ev >= 5 && ev <= MAX_REALISTIC_EV;
+                        };
+                        
                         enrichedMatches.forEach(match => {
                             const evs = match.value_betting?.expected_values || {};
                             const odds = match.odds_real || {};
                             
                             // 1X2 - evs è già in percentuale (es: 42.6 non 0.426)
-                            if (evs.home > 5) allBets.push({match: `${match.home_team} vs ${match.away_team}`, bet: '🏠 Casa', odds: odds.home, ev: evs.home, type: '1x2'});
-                            if (evs.draw > 5) allBets.push({match: `${match.home_team} vs ${match.away_team}`, bet: '🤝 Pareggio', odds: odds.draw, ev: evs.draw, type: '1x2'});
-                            if (evs.away > 5) allBets.push({match: `${match.home_team} vs ${match.away_team}`, bet: '✈️ Trasferta', odds: odds.away, ev: evs.away, type: '1x2'});
+                            if (evs.home > 5 && isValidBet(odds.home, evs.home)) {
+                                allBets.push({match: `${match.home_team} vs ${match.away_team}`, bet: '🏠 Casa', odds: odds.home, ev: evs.home, type: '1x2'});
+                            }
+                            if (evs.draw > 5 && isValidBet(odds.draw, evs.draw)) {
+                                allBets.push({match: `${match.home_team} vs ${match.away_team}`, bet: '🤝 Pareggio', odds: odds.draw, ev: evs.draw, type: '1x2'});
+                            }
+                            if (evs.away > 5 && isValidBet(odds.away, evs.away)) {
+                                allBets.push({match: `${match.home_team} vs ${match.away_team}`, bet: '✈️ Trasferta', odds: odds.away, ev: evs.away, type: '1x2'});
+                            }
                             
                             // Over/Under 2.5 - calcolato localmente quindi in formato decimale (0.346)
                             if (match.odds_totals && match.markets?.mercati?.mou25) {
@@ -426,9 +440,16 @@
                                 const evOver = probOver * match.odds_totals.over_25 - 1;
                                 const evUnder = probUnder * match.odds_totals.under_25 - 1;
                                 
-                                // Converti in percentuale e salva
-                                if (evOver > 0.05) allBets.push({match: `${match.home_team} vs ${match.away_team}`, bet: '⚽ Over 2.5', odds: match.odds_totals.over_25, ev: evOver * 100, type: 'ou'});
-                                if (evUnder > 0.05) allBets.push({match: `${match.home_team} vs ${match.away_team}`, bet: '⚽ Under 2.5', odds: match.odds_totals.under_25, ev: evUnder * 100, type: 'ou'});
+                                // Converti in percentuale e valida
+                                const evOverPct = evOver * 100;
+                                const evUnderPct = evUnder * 100;
+                                
+                                if (evOverPct > 5 && isValidBet(match.odds_totals.over_25, evOverPct)) {
+                                    allBets.push({match: `${match.home_team} vs ${match.away_team}`, bet: '⚽ Over 2.5', odds: match.odds_totals.over_25, ev: evOverPct, type: 'ou'});
+                                }
+                                if (evUnderPct > 5 && isValidBet(match.odds_totals.under_25, evUnderPct)) {
+                                    allBets.push({match: `${match.home_team} vs ${match.away_team}`, bet: '⚽ Under 2.5', odds: match.odds_totals.under_25, ev: evUnderPct, type: 'ou'});
+                                }
                             }
                         });
                         

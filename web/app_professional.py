@@ -2952,9 +2952,43 @@ def api_upcoming_matches():
                     logger.warning(f"⚠️ {home} vs {away}: quote non disponibili")
                     continue
 
+                # SANITY CHECKS PROFESSIONALI: Validazione quote realistiche
+                def is_valid_odd(odd, min_val=1.01, max_val=50.0):
+                    """Valida range quote realistico per betting professionale"""
+                    return odd and min_val <= odd <= max_val
+
+                # Valida quote 1X2
+                if not all([is_valid_odd(odds_home), is_valid_odd(odds_draw), is_valid_odd(odds_away)]):
+                    logger.warning(
+                        f"🚨 ANOMALIA {home} vs {away}: Quote fuori range realistico "
+                        f"(H:{odds_home}, D:{odds_draw}, A:{odds_away}) - SKIP"
+                    )
+                    continue
+
+                # Valida quote O/U se presenti
+                if odds_over_25 and odds_under_25:
+                    if not all([is_valid_odd(odds_over_25, 1.2, 10.0), is_valid_odd(odds_under_25, 1.2, 10.0)]):
+                        logger.warning(
+                            f"🚨 ANOMALIA {home} vs {away}: Quote O/U fuori range "
+                            f"(Over:{odds_over_25}, Under:{odds_under_25}) - Ignoro O/U"
+                        )
+                        odds_over_25 = None
+                        odds_under_25 = None
+
                 # Predizione con value betting
                 if home in calculator.squadre_disponibili and away in calculator.squadre_disponibili:
                     predizione, probabilita, confidenza = calculator.predici_partita(home, away)
+
+                    # SANITY CHECK PROBABILITÀ: Evita predizioni troppo estreme
+                    max_prob = max(probabilita.values())
+                    min_prob = min(probabilita.values())
+                    if max_prob > 0.85 or min_prob < 0.05:
+                        logger.warning(
+                            f"🚨 ANOMALIA PROB {home} vs {away}: Probabilità troppo estreme "
+                            f"(max:{max_prob*100:.1f}%, min:{min_prob*100:.1f}%) - "
+                            f"Indica pochi dati storici o bias modello - SKIP"
+                        )
+                        continue
 
                     # Calcola mercati (include Over/Under 2.5)
                     mercati = _calcola_mercati_deterministici(home, away, probabilita)
@@ -2975,6 +3009,16 @@ def api_upcoming_matches():
                     ev_h = calc_ev(probabilita["H"], odds_home)
                     ev_d = calc_ev(probabilita["D"], odds_draw)
                     ev_a = calc_ev(probabilita["A"], odds_away)
+
+                    # SANITY CHECK EV: Valori estremi indicano dati corrotti
+                    MAX_REALISTIC_EV = 2.0  # 200% massimo realistico
+                    if abs(ev_h) > MAX_REALISTIC_EV or abs(ev_d) > MAX_REALISTIC_EV or abs(ev_a) > MAX_REALISTIC_EV:
+                        logger.warning(
+                            f"🚨 ANOMALIA EV {home} vs {away}: EV fuori range "
+                            f"(H:{ev_h*100:.1f}%, D:{ev_d*100:.1f}%, A:{ev_a*100:.1f}%) - "
+                            f"Probabilmente probabilità ML troppo estreme o quote corrotte - SKIP"
+                        )
+                        continue
 
                     # Discrepanze: dove il modello differisce dal mercato
                     diff_h = probabilita["H"] - prob_market_h
