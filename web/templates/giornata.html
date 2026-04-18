@@ -527,14 +527,19 @@
                             
                             const isBet = maxEv > 5; // Threshold al 5%
                             
-                            // FASE1 Validation (nasconde se fuori range)
+                            // Multi-Phase Validation (NON nasconde, solo etichetta)
                             const isDraw = bestOutcome === 'Pareggio';
-                            const isFase1Valid = isDraw && bestOdds >= 2.8 && bestOdds <= 3.5 && maxEv >= 25 && maxEv <= 50;
+                            const isFavorite = bestOutcome === 'Casa' || bestOutcome === 'Trasferta';
+                            const isOverUnder = bestOutcome === 'Over 2.5' || bestOutcome === 'Under 2.5';
                             
-                            // NASCONDI card se value bet NON valido secondo FASE1
-                            if (isBet && !isFase1Valid) {
-                                return '';  // Skip questa opportunità
-                            }
+                            const isFase1 = isDraw && bestOdds >= 2.8 && bestOdds <= 3.5 && maxEv >= 25 && maxEv <= 50;
+                            const isFase2 = isFavorite && bestOdds >= 1.5 && bestOdds <= 2.2 && maxEv >= 15 && maxEv <= 35;
+                            const isFase3 = isOverUnder && bestOdds >= 1.8 && bestOdds <= 2.4 && maxEv >= 20 && maxEv <= 40;
+                            
+                            let phaseBadge = '';
+                            if (isFase1) phaseBadge = '<span class="badge" style="background: #10b981; margin-left: 8px;">✅ FASE1</span>';
+                            else if (isFase2) phaseBadge = '<span class="badge" style="background: #3b82f6; margin-left: 8px;">✅ FASE2</span>';
+                            else if (isFase3) phaseBadge = '<span class="badge" style="background: #8b5cf6; margin-left: 8px;">✅ FASE3</span>';
 
                             return `
                                 <div class="match-card">
@@ -542,6 +547,7 @@
                                         <div class="teams">
                                             ${match.home_team} vs ${match.away_team}
                                             ${isBet ? '<span class="badge badge-bet">💰 VALUE BET</span>' : '<span class="badge badge-skip">⏸️ SKIP</span>'}
+                                            ${phaseBadge}
                                         </div>
                                         <div class="match-time">📅 ${formatDateTime(match.commence_time)}</div>
                                     </div>
