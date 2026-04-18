@@ -4974,6 +4974,9 @@ def api_monitoring_accuracy():
 
         # Leggi CSV
         df = pd.read_csv(tracking_file)
+        
+        # Converti Date SUBITO (prima di filtrare) per evitare errori confronto stringhe vs datetime
+        df["Data"] = pd.to_datetime(df["Data"], errors='coerce')
 
         # Filtra solo righe con risultato reale disponibile
         df_risultati = df[df["Risultato_Reale"].notna() & (df["Risultato_Reale"] != "")]
@@ -4984,7 +4987,6 @@ def api_monitoring_accuracy():
         # Se non ci sono risultati, mostra info pending
         if len(df_risultati) == 0:
             # Conta pending recenti (ultimi 7 giorni)
-            df["Data"] = pd.to_datetime(df["Data"], errors='coerce')
             today = datetime.now()
             seven_days_ago = today - timedelta(days=7)
             df_pending_recent = df_pending[df_pending["Data"] >= seven_days_ago]
