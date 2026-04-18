@@ -142,15 +142,26 @@ structlog.configure(
     cache_logger_on_first_use=True,
 )
 
-# Setup logging tradizionale come fallback
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.FileHandler("logs/professional_system.log"),
-        logging.StreamHandler(),
-    ],
+# Setup logging tradizionale con RotatingFileHandler (Max 50MB totali: 5 file x 10MB)
+from logging.handlers import RotatingFileHandler
+
+# Crea handler con rotation automatica
+rotating_handler = RotatingFileHandler(
+    "logs/professional_system.log",
+    maxBytes=10 * 1024 * 1024,  # 10MB per file
+    backupCount=5,  # Max 5 file backup (total 50MB)
+    encoding="utf-8",
 )
+rotating_handler.setLevel(logging.INFO)
+rotating_handler.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
+
+# Console handler per stdout (Render logs)
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO)
+console_handler.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
+
+# Configura root logger
+logging.basicConfig(level=logging.INFO, handlers=[rotating_handler, console_handler])
 logger = structlog.get_logger(__name__)
 
 # Configurazione Flask con path templates esplicito
