@@ -330,6 +330,9 @@
     </div>
 
     <button class="refresh-btn" onclick="loadMatches()">🔄 Aggiorna</button>
+    <a href="/diario" class="refresh-btn" style="text-decoration: none; display: inline-block; position: fixed; bottom: 30px; right: 160px;">
+        📔 Diario
+    </a>
 
     <script>
         function formatDateTime(dateStr) {
@@ -688,6 +691,22 @@
                                         ` : ''}
                                         </div>
                                     </details>
+
+                                    ${isBet ? `
+                                    <div style="text-align: center; margin-top: 16px; padding-top: 16px; border-top: 2px solid rgba(0,0,0,0.1);">
+                                        <button onclick='addToDiario(${JSON.stringify({
+                                            partita: `${match.home_team} vs ${match.away_team}`,
+                                            mercato: bestOutcome,
+                                            quota: parseFloat(bestOdds.toFixed(2)),
+                                            ev: maxEv.toFixed(1),
+                                            data: match.commence_time.split('T')[0],
+                                            fase: isFase1 ? 'FASE1' : (isFase2 ? 'FASE2' : (isFase3 ? 'FASE3' : 'CUSTOM')),
+                                            note: `${bestMarket} - EV +${maxEv.toFixed(1)}%`
+                                        })})' class="btn btn-sm" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 10px 24px; border-radius: 25px; font-weight: bold; cursor: pointer; font-size: 1em; transition: all 0.3s;">
+                                            📝 Aggiungi al Diario
+                                        </button>
+                                    </div>
+                                    ` : ''}
                                 </div>
                             `;
                         }).join('');
@@ -708,6 +727,79 @@
 
         // Auto-refresh ogni 10 minuti
         setInterval(loadMatches, 10 * 60 * 1000);
+
+        // Aggiungi opportunità al diario professionale
+        async function addToDiario(oppData) {
+            try {
+                // Mappa mercato al formato corretto
+                const marketMap = {
+                    'Casa': '1',
+                    'Pareggio': 'X',
+                    'Trasferta': '2',
+                    'Over 2.5': 'Over 2.5',
+                    'Under 2.5': 'Under 2.5'
+                };
+                
+                const mercatoFormattato = marketMap[oppData.mercato] || oppData.mercato;
+                
+                // Verifica quota con utente (potrebbe essere cambiata)
+                const quotaVerificata = prompt(
+                    `🎯 VERIFICA QUOTA:\n\n` +
+                    `Partita: ${oppData.partita}\n` +
+                    `Mercato: ${mercatoFormattato}\n\n` +
+                    `Quota attuale: ${parseFloat(oppData.quota).toFixed(2)}\n\n` +
+                    `⚠️ Controlla su bookmaker e inserisci quota REALE.\n` +
+                    `Se uguale, clicca OK:`,
+                    parseFloat(oppData.quota).toFixed(2)
+                );
+                
+                if (quotaVerificata === null || quotaVerificata.trim() === '') {
+                    return;
+                }
+                
+                const quotaFinale = parseFloat(quotaVerificata);
+                if (isNaN(quotaFinale) || quotaFinale < 1.01) {
+                    alert('❌ Quota non valida! Deve essere ≥ 1.01');
+                    return;
+                }
+                
+                const formData = {
+                    partita: oppData.partita,
+                    mercato: mercatoFormattato,
+                    quota: parseFloat(quotaFinale.toFixed(2)),
+                    stake: 'MONITOR',
+                    data: oppData.data,
+                    ev_modello: '+' + oppData.ev + '%',
+                    ev_reale: '+' + oppData.ev + '%',
+                    note: `${oppData.fase} - ${oppData.note}` + (quotaFinale !== parseFloat(oppData.quota) ? ` | Quota aggiornata: ${oppData.quota} → ${quotaFinale.toFixed(2)}` : '')
+                };
+                
+                const response = await fetch('/api/diario/add', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(formData)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    if (confirm(`✅ Aggiunto al diario come MONITOR!\n\nPartita: ${oppData.partita}\nMercato: ${mercatoFormattato} @ ${quotaFinale.toFixed(2)}\n\n📔 Vuoi aprire il diario ora?`)) {
+                        window.location.href = '/diario';
+                    }
+                } else {
+                    if (result.error === 'duplicate') {
+                        const goToDiary = confirm(result.message + '\n\nVuoi aprire il diario per modificarla?');
+                        if (goToDiary) {
+                            window.location.href = '/diario';
+                        }
+                    } else {
+                        alert('❌ Errore: ' + (result.message || result.error || 'Unknown error'));
+                    }
+                }
+            } catch (error) {
+                alert('❌ Errore di connessione: ' + error.message);
+            }
+        }
     </script>
     <!-- Legal Disclaimer -->
     <div class="legal-disclaimer">
