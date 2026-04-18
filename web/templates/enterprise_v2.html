@@ -629,6 +629,59 @@
                 `;
             }
 
+            // Mercati Multipli
+            if (data.mercati) {
+                const mercatiPrincipali = {
+                    'mou25': { nome: 'Over/Under 2.5', icon: 'activity' },
+                    'mgg': { nome: 'Goal/NoGoal', icon: 'bullseye' },
+                    'mpt1x2': { nome: 'Primo Tempo 1X2', icon: 'clock' },
+                    'mcorner': { nome: 'Corner O/U 9.5', icon: 'triangle' },
+                    'mah': { nome: 'Asian Handicap', icon: 'bar-chart' },
+                    'mcs': { nome: 'Clean Sheet', icon: 'shield-check' }
+                };
+                
+                html += `
+                    <hr class="my-4">
+                    <h5 class="mb-3">
+                        <i class="bi bi-grid-3x3"></i> Altri Mercati
+                    </h5>
+                    <div class="row">
+                `;
+                
+                for (const [key, info] of Object.entries(mercatiPrincipali)) {
+                    const mercato = data.mercati[key];
+                    if (mercato) {
+                        const conf = (mercato.confidenza * 100).toFixed(1);
+                        const consiglio = mercato.consiglio || 'N/A';
+                        
+                        html += `
+                            <div class="col-md-6 mb-3">
+                                <div class="card bg-opacity-10 bg-light">
+                                    <div class="card-body p-3">
+                                        <h6 class="card-title mb-2">
+                                            <i class="bi bi-${info.icon}"></i> ${info.nome}
+                                        </h6>
+                                        <div class="d-flex justify-content-between">
+                                            <span><strong>Consiglio:</strong> ${consiglio}</span>
+                                            <span class="badge bg-primary">${conf}%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+                
+                html += `
+                    </div>
+                    <div class="text-center mt-2">
+                        <small class="text-muted">
+                            ${Object.keys(data.mercati).length} mercati totali disponibili
+                        </small>
+                    </div>
+                `;
+            }
+
             html += '</div>';
             document.getElementById('resultContainer').innerHTML = html;
         }
