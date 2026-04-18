@@ -541,29 +541,30 @@
         });
 
         function displayPrediction(data) {
-            const prob = data.probabilita || {};
-            const predizione = data.predizione || 'N/A';
+            // Fix: API restituisce probabilita_ensemble con chiavi H/D/A
+            const prob = data.probabilita_ensemble || data.probabilita || {};
+            const predizione = data.predizione_enterprise || data.predizione || 'N/A';
             const confidenza = data.confidenza || 0;
-
+            
             let html = `
                 <div class="prediction-result">
                     <h4 class="mb-4">
                         <i class="bi bi-trophy"></i> ${data.squadra_casa} vs ${data.squadra_ospite}
                     </h4>
-
+                    
                     <div class="alert alert-info mb-4">
                         <h5><i class="bi bi-star-fill"></i> Predizione: <strong>${predizione}</strong></h5>
                         <p class="mb-0">Confidenza: <strong>${(confidenza * 100).toFixed(1)}%</strong></p>
                     </div>
-
+                    
                     <h5 class="mb-3">Probabilità per Esito:</h5>
             `;
-
+            
+            // Fix: Map H/D/A a Casa/Pareggio/Ospite
             const esiti = [
-                { nome: 'Casa', key: '1', icon: 'house', color: 'success' },
-                { nome: 'Pareggio', key: 'X', icon: 'dash-circle', color: 'warning' },
-                { nome: 'Ospite', key: '2', icon: 'airplane', color: 'danger' }
-            ];
+                { nome: 'Casa', key: 'H', icon: 'house', color: 'success' },
+                { nome: 'Pareggio', key: 'D', icon: 'dash-circle', color: 'warning' },
+                { nome: 'Ospite', key: 'A', icon: 'airplane', color: 'danger' }
 
             esiti.forEach(esito => {
                 const probValue = (prob[esito.key] || 0) * 100;
@@ -584,15 +585,46 @@
 
             if (data.value_betting) {
                 const vb = data.value_betting;
+                const rec = vb.recommendation || {};
+                
+                // Determina se c'è value dalla raccomandazione
+                const hasValue = rec.fase1_validated || false;
+                const evPct = rec.roi_expected_pct || 0;
+                
                 html += `
                     <hr class="my-4">
                     <h5 class="mb-3">
                         <i class="bi bi-graph-up-arrow"></i> Analisi Value Betting
                     </h5>
-                    <div class="alert alert-${vb.has_value ? 'success' : 'secondary'}">
-                        <strong>Expected Value:</strong> ${vb.expected_value ? (vb.expected_value * 100).toFixed(2) + '%' : 'N/A'}<br>
-                        <strong>Opportunità:</strong> ${vb.has_value ? '✅ VALUE BET' : '❌ No value'}
+                    <div class="alert alert-${hasValue ? 'success' : 'secondary'}">
+                        <div class="mb-2">
+                            <strong>Expected Value:</strong> ${evPct ? evPct.toFixed(2) + '%' : 'N/A'}
+                        </div>
+                        <div class="mb-2">
+                            <strong>Opportunità:</strong> ${hasValue ? '✅ VALUE BET' : '❌ No value'}
+                        </div>
+                        ${rec.reason ? `<div class="mt-2"><small>${rec.reason}</small></div>` : ''}
                     </div>
+                    
+                    ${vb.odds ? `
+                        <div class="mt-3">
+                            <h6>Quote Bookmaker:</h6>
+                            <div class="row text-center">
+                                <div class="col-4">
+                                    <div class="badge bg-success">${vb.odds.Casa || 'N/A'}</div>
+                                    <div><small>Casa</small></div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="badge bg-warning">${vb.odds.Pareggio || 'N/A'}</div>
+                                    <div><small>Pareggio</small></div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="badge bg-danger">${vb.odds.Trasferta || 'N/A'}</div>
+                                    <div><small>Trasferta</small></div>
+                                </div>
+                            </div>
+                        </div>
+                    ` : ''}
                 `;
             }
 
