@@ -1076,7 +1076,7 @@ def enterprise_legacy():
     """Dashboard enterprise legacy (vecchia versione)"""
     if not sistema_inizializzato:
         inizializza_sistema_professionale()
-    
+
     return render_template(
         "enterprise.html",
         squadre=calculator.squadre_disponibili,
@@ -5384,6 +5384,141 @@ def api_model_performance():
 
     except Exception as e:
         logger.error(f"❌ Errore API performance: {e}")
+        return jsonify({"error": f"Errore interno: {str(e)}"}), 500
+
+
+@app.route("/api/investor_metrics")
+@limiter.limit("30 per minute")
+def api_investor_metrics():
+    """API metriche investitore-grade: ROI per mercato, performance mensile, drawdown"""
+
+    try:
+        from datetime import datetime
+        from pathlib import Path
+
+        import numpy as np
+        import pandas as pd
+
+        tracking_file = Path("tracking_predictions_live.csv")
+
+        if not tracking_file.exists():
+            return jsonify({"error": "File tracking non trovato"}), 404
+
+        # Carica tracking predictions
+        df = pd.read_csv(tracking_file)
+
+        # Filtra solo predizioni con risultati (esclude pending)
+        df_risultati = df[df["Risultato_Reale"].notna() & (df["Risultato_Reale"] != "")].copy()
+
+        # 1. PERFORMANCE MENSILE
+        if len(df_risultati) > 0:
+            df_risultati["Data"] = pd.to_datetime(df_risultati["Data"], errors="coerce")
+            df_risultati["YearMonth"] = df_risultati["Data"].dt.to_period("M").astype(str)
+
+            monthly_perf = []
+            for month in df_risultati["YearMonth"].unique():
+                df_month = df_risultati[df_risultati["YearMonth"] == month]
+                trades = len(df_month)
+                wins = df_month["Corretto"].sum()
+                profit = df_month["Profit"].sum()
+                roi = (profit / trades) * 100 if trades > 0 else 0
+
+                monthly_perf.append(
+                    {
+                        "month": month,
+                        "trades": int(trades),
+                        "wins": int(wins),
+                        "win_rate_pct": round((wins / trades) * 100, 1) if trades > 0 else 0,
+                        "roi_pct": round(roi, 2),
+                        "profit": round(profit, 2),
+                    }
+                )
+
+            monthly_performance = sorted(monthly_perf, key=lambda x: x["month"], reverse=True)
+        else:
+            monthly_performance = []
+
+        # 2. ROI PER MERCATO
+        roi_by_market = {}
+        if len(df_risultati) > 0:
+            for market in df_risultati["Mercato"].unique():
+                if pd.isna(market):
+                    continue
+
+                df_market = df_risultati[df_risultati["Mercato"] == market]
+                trades = len(df_market)
+                wins = df_market["Corretto"].sum()
+                profit = df_market["Profit"].sum()
+                roi = (profit / trades) * 100 if trades > 0 else 0
+
+                roi_by_market[market] = {
+                    "trades": int(trades),
+                    "wins": int(wins),
+                    "win_rate_pct": round((wins / trades) * 100, 1) if trades > 0 else 0,
+                    "roi_pct": round(roi, 2),
+                    "profit": round(profit, 2),
+                }
+
+        # 3. DRAWDOWN ANALYSIS
+        if len(df_risultati) > 0:
+            df_risultati_sorted = df_risultati.sort_values("Data")
+            cumulative_profit = df_risultati_sorted["Profit"].cumsum()
+
+            # Calcola drawdown
+            running_max = cumulative_profit.cummax()
+            drawdown = cumulative_profit - running_max
+            max_drawdown = drawdown.min()
+            max_drawdown_pct = (max_drawdown / running_max.max()) * 100 if running_max.max() > 0 else 0
+
+            # Current drawdown
+            current_profit = cumulative_profit.iloc[-1]
+            peak = running_max.iloc[-1]
+            current_drawdown = current_profit - peak
+            current_drawdown_pct = (current_drawdown / peak) * 100 if peak > 0 else 0
+
+            drawdown_metrics = {
+                "max_drawdown": round(max_drawdown, 2),
+                "max_drawdown_pct": round(max_drawdown_pct, 2),
+                "current_drawdown": round(current_drawdown, 2),
+                "current_drawdown_pct": round(current_drawdown_pct, 2),
+                "peak_profit": round(peak, 2),
+                "current_profit": round(current_profit, 2),
+            }
+        else:
+            drawdown_metrics = {
+                "max_drawdown": 0,
+                "max_drawdown_pct": 0,
+                "current_drawdown": 0,
+                "current_drawdown_pct": 0,
+                "peak_profit": 0,
+                "current_profit": 0,
+            }
+
+        # 4. OVERALL STATS
+        total_trades = len(df_risultati)
+        total_wins = df_risultati["Corretto"].sum() if len(df_risultati) > 0 else 0
+        total_profit = df_risultati["Profit"].sum() if len(df_risultati) > 0 else 0
+        overall_roi = (total_profit / total_trades) * 100 if total_trades > 0 else 0
+
+        response = {
+            "monthly_performance": monthly_performance,
+            "roi_by_market": roi_by_market,
+            "drawdown_metrics": drawdown_metrics,
+            "overall": {
+                "total_trades": int(total_trades),
+                "total_wins": int(total_wins),
+                "win_rate_pct": round((total_wins / total_trades) * 100, 1) if total_trades > 0 else 0,
+                "roi_pct": round(overall_roi, 2),
+                "total_profit": round(total_profit, 2),
+            },
+            "timestamp": datetime.now().isoformat(),
+        }
+
+        logger.info("✅ Investor metrics generated successfully")
+        return jsonify(response)
+
+    except Exception as e:
+        logger.error(f"❌ Errore investor metrics: {e}")
         return jsonify({"error": f"Errore interno: {str(e)}"}), 500
 
 

@@ -235,6 +235,52 @@
             </div>
         </div>
 
+        <!-- Investor Metrics Section -->
+        <div class="row g-4 mb-4">
+            <!-- Monthly Performance Table -->
+            <div class="col-lg-6">
+                <div class="glass-card p-4">
+                    <h5><i class="bi bi-calendar3"></i> Performance Mensile</h5>
+                    <div class="table-responsive">
+                        <table class="table table-sm" id="monthlyPerformanceTable">
+                            <thead>
+                                <tr>
+                                    <th>Mese</th>
+                                    <th class="text-end">Trade</th>
+                                    <th class="text-end">WR%</th>
+                                    <th class="text-end">ROI%</th>
+                                    <th class="text-end">Profit</th>
+                                </tr>
+                            </thead>
+                            <tbody id="monthlyPerformanceBody">
+                                <tr><td colspan="5" class="text-center">Caricamento...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Drawdown Metrics -->
+            <div class="col-lg-6">
+                <div class="glass-card p-4">
+                    <h5><i class="bi bi-arrow-down-circle"></i> Drawdown Analysis</h5>
+                    <div id="drawdownMetrics">
+                        <div class="skeleton skeleton-text"></div>
+                        <div class="skeleton skeleton-text"></div>
+                        <div class="skeleton skeleton-text"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ROI by Market Chart -->
+        <div class="glass-card p-4 mb-4">
+            <h5><i class="bi bi-pie-chart"></i> ROI per Mercato</h5>
+            <div class="chart-container" style="height: 300px;">
+                <canvas id="roiByMarketChart"></canvas>
+            </div>
+        </div>
+
         <!-- Database Info -->
         <div class="glass-card p-4">
             <h5><i class="bi bi-database"></i> Database Status</h5>
@@ -330,7 +376,8 @@
             await Promise.all([
                 fetchHealth(),
                 fetchAccuracy(),
-                fetchDatabase()
+                fetchDatabase(),
+                fetchInvestorMetrics()
             ]);
             updateLastUpdate();
             showToast('success', 'Dati aggiornati!');
@@ -415,6 +462,71 @@
                 `;
             } catch (error) {
                 showToast('danger', 'Errore caricamento database');
+            }
+        }
+
+        async function fetchInvestorMetrics() {
+            try {
+                const response = await fetch('/api/investor_metrics');
+                const data = await response.json();
+
+                // 1. Populate Monthly Performance Table
+                const tbody = document.getElementById('monthlyPerformanceBody');
+                if (data.monthly_performance && data.monthly_performance.length > 0) {
+                    tbody.innerHTML = data.monthly_performance.map(month => {
+                        const roiClass = month.roi_pct >= 0 ? 'text-success' : 'text-danger';
+                        const profitClass = month.profit >= 0 ? 'text-success' : 'text-danger';
+                        return `
+                            <tr>
+                                <td>${month.month}</td>
+                                <td class="text-end">${month.trades}</td>
+                                <td class="text-end">${month.win_rate_pct}%</td>
+                                <td class="text-end ${roiClass}">${month.roi_pct > 0 ? '+' : ''}${month.roi_pct}%</td>
+                                <td class="text-end ${profitClass}">€${month.profit}</td>
+                            </tr>
+                        `;
+                    }).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center">Nessun dato disponibile</td></tr>';
+                }
+
+                // 2. Populate Drawdown Metrics
+                const dd = data.drawdown_metrics;
+                document.getElementById('drawdownMetrics').innerHTML = `
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <small class="text-muted">Max Drawdown</small><br>
+                            <strong class="text-danger">€${dd.max_drawdown} (${dd.max_drawdown_pct}%)</strong>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <small class="text-muted">Current Drawdown</small><br>
+                            <strong class="text-warning">€${dd.current_drawdown} (${dd.current_drawdown_pct}%)</strong>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted">Peak Profit</small><br>
+                            <strong>€${dd.peak_profit}</strong>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted">Current Profit</small><br>
+                            <strong class="${dd.current_profit >= 0 ? 'text-success' : 'text-danger'}">€${dd.current_profit}</strong>
+                        </div>
+                    </div>
+                `;
+
+                // 3. Update ROI by Market Chart
+                if (charts.roiByMarket && data.roi_by_market) {
+                    const markets = Object.keys(data.roi_by_market);
+                    const roiValues = markets.map(m => data.roi_by_market[m].roi_pct);
+                    const colors = roiValues.map(roi => roi >= 0 ? 'rgba(76, 175, 80, 0.8)' : 'rgba(244, 67, 54, 0.8)');
+
+                    charts.roiByMarket.data.labels = markets;
+                    charts.roiByMarket.data.datasets[0].data = roiValues;
+                    charts.roiByMarket.data.datasets[0].backgroundColor = colors;
+                    charts.roiByMarket.update();
+                }
+            } catch (error) {
+                console.error('Errore caricamento investor metrics:', error);
+                showToast('danger', 'Errore caricamento metriche investitore');
             }
         }
 
@@ -510,6 +622,34 @@
                 },
                 options: commonOptions
             });
+
+            // ROI by Market Chart
+            const ctxRoiByMarket = document.getElementById('roiByMarketChart').getContext('2d');
+            charts.roiByMarket = new Chart(ctxRoiByMarket, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'ROI %',
+                        data: [],
+                        backgroundColor: []
+                    }]
+                },
+                options: {
+                    ...commonOptions,
+                    indexAxis: 'y', // Horizontal bar chart
+                    scales: {
+                        x: {
+                            ticks: { color: textColor },
+                            grid: { color: gridColor }
+                        },
+                        y: {
+                            ticks: { color: textColor },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
         }
 
         function updateChartsTheme(theme) {
@@ -540,7 +680,7 @@
                 const profit = data.total_profit_lifetime;
                 // Simple update: show profit progression (placeholder for time series)
                 const steps = 4;
-                const progression = Array.from({length: steps}, (_, i) => 
+                const progression = Array.from({length: steps}, (_, i) =>
                     (profit / steps) * (i + 1)
                 );
                 charts.roi.data.datasets[0].data = progression;
@@ -553,7 +693,7 @@
                 if (Object.keys(breakdown).length > 0) {
                     const labels = Object.keys(breakdown);
                     const accuracies = labels.map(m => breakdown[m].accuracy_pct || 0);
-                    
+
                     charts.markets.data.labels = labels;
                     charts.markets.data.datasets[0].data = accuracies;
                     charts.markets.update();
