@@ -8,60 +8,60 @@ on:
 jobs:
   retrain-models:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0  # Fetch completo per history
-      
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
           cache: 'pip'
-      
+
       - name: Install dependencies
         run: |
           pip install --upgrade pip
           pip install -r requirements.txt
-      
+
       - name: Verifica dataset disponibile
         run: |
           if [ ! -f "data/dataset_features.csv" ]; then
             echo "❌ Dataset features non trovato!"
             exit 1
           fi
-          
+
           PARTITE=$(wc -l < data/dataset_features.csv)
           echo "📊 Dataset: $PARTITE partite"
-          
+
           if [ "$PARTITE" -lt 1000 ]; then
             echo "⚠️ Warning: Dataset potrebbe essere incompleto"
           fi
-      
+
       - name: Ritraining modelli ML
         id: retrain
         run: |
           echo "🧠 Avvio ritraining modelli..."
-          
+
           python3 riaddestra_modelli_rapido.py 2>&1 | tee retrain_log.txt
           RETRAIN_EXIT=$?
-          
+
           echo "::group::Training Logs"
           cat retrain_log.txt
           echo "::endgroup::"
-          
+
           if [ $RETRAIN_EXIT -ne 0 ]; then
             echo "❌ Ritraining fallito con exit code $RETRAIN_EXIT"
             exit 1
           fi
-          
+
           # Verifica modelli generati
           echo "📦 Verifica modelli generati..."
           ls -lh models/*.pkl || echo "⚠️ Nessun modello .pkl trovato"
-          
+
           if [ -f "models/randomforest_model.pkl" ]; then
             RF_SIZE=$(du -h models/randomforest_model.pkl | cut -f1)
             echo "✅ RandomForest: $RF_SIZE"
@@ -70,87 +70,89 @@ jobs:
             echo "❌ RandomForest model non generato!"
             exit 1
           fi
-          
+
           # Estrai accuracy dal log (compatible grep)
           ACCURACY=$(grep "Test accuracy:" retrain_log.txt | tail -1 | awk '{print $NF}' || echo "N/A")
           echo "accuracy=$ACCURACY" >> $GITHUB_OUTPUT
           echo "📈 Test Accuracy: $ACCURACY"
-      
+
       - name: Commit nuovi modelli
         run: |
           echo "📋 Configurazione git..."
           git config user.name "GitHub Actions Bot"
           git config user.email "actions@github.com"
-          
+
           echo "📂 File models prima del commit:"
           ls -lh models/*.pkl
-          
+
           echo "🔍 Git status prima del add:"
           git status models/
-          
+
           # Aggiungi solo modelli .pkl modificati
           echo "➕ git add models/*.pkl..."
           git add models/*.pkl models/metadata.pkl 2>/dev/null || true
-          
+
           echo "🔍 Git status dopo il add:"
           git status --short models/
-          
+
           ACCURACY="${{ steps.retrain.outputs.accuracy }}"
-          
+          RF_SIZE="${{ steps.retrain.outputs.rf_size }}"
+          TIMESTAMP=$(date -u +'%Y-%m-%d %H:%M UTC')
+
           if git diff --staged --quiet; then
             echo "ℹ️  Nessun modello modificato (skip commit)"
           else
             echo "💾 Creazione commit..."
-            git commit -m "🧠 Weekly retrain: accuracy $ACCURACY [skip ci]
+            git commit -m "🧠 Weekly retrain: accuracy $ACCURACY [skip ci]" \
+              -m "" \
+              -m "Ritraining automatico settimanale" \
+              -m "Timestamp: $TIMESTAMP" \
+              -m "Accuracy: $ACCURACY" \
+              -m "Size RF: $RF_SIZE" \
+              -m "Workflow: weekly-retrain.yml"
 
-Ritraining automatico settimanale
-Timestamp: $(date -u +'%Y-%m-%d %H:%M UTC')
-Accuracy: $ACCURACY
-Size RF: ${{ steps.retrain.outputs.rf_size }}
-Workflow: weekly-retrain.yml"
-            
             echo "🚀 Push su GitHub..."
             git push
             echo "✅ Modelli committati e pushati"
           fi
-      
+
       - name: Trigger Render redeploy
         if: success()
         run: |
           echo "🚀 Triggering Render redeploy..."
-          
+
           # Render auto-deploya su push a main, quindi questo è già fatto
           # Verifichiamo solo che il deploy sia partito
           sleep 5
-          
+
           curl -s -o /dev/null -w "Render webhook status: %{http_code}\n" \
             "https://pronostici-calcio-professional.onrender.com/api/health" || echo "⚠️ Health check fallito (Render potrebbe essere in deploy)"
-      
+
       - name: Summary Report
         if: always()
         run: |
           echo "## 🧠 Ritraining Settimanale Completato" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           ACCURACY="${{ steps.retrain.outputs.accuracy }}"
           RF_SIZE="${{ steps.retrain.outputs.rf_size }}"
-          
+
           echo "### 📊 Metriche" >> $GITHUB_STEP_SUMMARY
           echo "- **Test Accuracy**: $ACCURACY" >> $GITHUB_STEP_SUMMARY
           echo "- **RandomForest Size**: $RF_SIZE" >> $GITHUB_STEP_SUMMARY
           echo "- **Timestamp**: $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           if [ -f "retrain_log.txt" ]; then
             echo "### 📝 Training Log (ultimi 20 righe)" >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
             tail -20 retrain_log.txt >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "🔄 **Prossimo ritraining**: Lunedì prossimo alle 02:00 UTC (automatico)" >> $GITHUB_STEP_SUMMARY
-      
+
       - name: Upload artifacts
         if: always()
         uses: actions/upload-artifact@v4
