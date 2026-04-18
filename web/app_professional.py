@@ -6808,7 +6808,7 @@ def api_diario_update():
         bet_id = int(data["id"])
         risultato = data["risultato"]
 
-        if risultato not in ["WIN", "LOSS", "VOID", "SKIP"]:
+        if risultato not in ["WIN", "LOSS", "VOID", "SKIP", "PENDING"]:
             return jsonify({"success": False, "error": "Risultato non valido"}), 400
 
         profit = DiarioStorage.update_risultato(bet_id, risultato)
