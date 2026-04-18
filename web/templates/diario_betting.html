@@ -256,7 +256,12 @@
                 <!-- Bankroll Management -->
                 <div class="row mt-3">
                     <div class="col-md-12">
-                        <h6 class="text-muted mb-2"><i class="bi bi-wallet2"></i> Bankroll Management</h6>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <h6 class="text-muted mb-2"><i class="bi bi-wallet2"></i> Bankroll Management</h6>
+                            <button onclick="document.getElementById('trading-tab').click()" class="btn btn-sm btn-outline-primary" style="padding: 4px 12px;">
+                                <i class="bi bi-gear"></i> Configura
+                            </button>
+                        </div>
                     </div>
                     <div class="col-md-3">
                         <div class="stat-card stat-neutral">
@@ -647,6 +652,11 @@
                                     <label for="bet-stake" class="form-label">Stake (€) *</label>
                                     <input type="text" class="form-control" id="bet-stake" placeholder="es. 2.00 o MONITOR" pattern="^(\d+(\.\d{1,2})?|MONITOR)$" title="Inserisci un numero (es. 2.00) o MONITOR" required>
                                     <small class="text-muted">Numero per bet reale, 'MONITOR' per tracciamento</small>
+                                    <div id="stake-suggestion" style="display: none; margin-top: 8px; padding: 8px; background: #e3f2fd; border-radius: 4px; border-left: 3px solid #2196f3;">
+                                        <small style="color: #1565c0;">
+                                            💡 <strong>Suggerimento:</strong> <span id="stake-suggestion-text"></span>
+                                        </small>
+                                    </div>
                                 </div>
                                 <div class="col-md-4 mb-3">
                                     <label for="bet-data" class="form-label">Data Partita</label>
@@ -2111,6 +2121,47 @@
                         document.getElementById('config-stop-loss').value = data.bankroll.stop_loss_percentage;
                     }
                 });
+        });
+        
+        // Auto-calcola stake suggerito quando cambia quota
+        document.getElementById('bet-quota').addEventListener('input', async function() {
+            const quota = parseFloat(this.value);
+            if (!quota || quota < 1.01) {
+                document.getElementById('stake-suggestion').style.display = 'none';
+                return;
+            }
+            
+            try {
+                // Fetch bankroll corrente
+                const bankrollResp = await fetch('/api/bankroll');
+                const bankrollData = await bankrollResp.json();
+                
+                if (!bankrollData.success) return;
+                
+                const unitaBetting = bankrollData.bankroll.unita_betting;
+                const bankrollCorrente = bankrollData.bankroll.bankroll_corrente;
+                
+                // Stake flat 1% (1 unità)
+                const stakeFlat1Pct = unitaBetting;
+                
+                // Stake flat 2% (2 unità) - raccomandato per FASE1
+                const stakeFlat2Pct = unitaBetting * 2;
+                
+                // Mostra suggerimento
+                const suggestionDiv = document.getElementById('stake-suggestion');
+                const suggestionText = document.getElementById('stake-suggestion-text');
+                
+                suggestionText.innerHTML = `
+                    <strong>1%:</strong> €${stakeFlat1Pct.toFixed(2)} · 
+                    <strong>2% (FASE1):</strong> €${stakeFlat2Pct.toFixed(2)} · 
+                    <em>Bankroll: €${bankrollCorrente.toFixed(0)}</em>
+                `;
+                
+                suggestionDiv.style.display = 'block';
+                
+            } catch (error) {
+                console.error('Errore calcolo stake suggerito:', error);
+            }
         });
     </script>
     
