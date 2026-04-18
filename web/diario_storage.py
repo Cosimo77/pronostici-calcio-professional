@@ -113,6 +113,47 @@ class DiarioStorage:
         return bets
 
     @staticmethod
+    def get_by_id(bet_id: int) -> Optional[Dict]:
+        """Ottieni singola bet per ID"""
+        if DiarioStorage._use_database():
+            try:
+                return BetModel.get_by_id(bet_id)
+            except Exception as e:
+                logger.error("Database query failed, falling back to CSV", error=str(e))
+                # Fall through to CSV
+
+        # CSV fallback
+        if not os.path.exists(DiarioStorage.CSV_FILE):
+            return None
+
+        df = pd.read_csv(DiarioStorage.CSV_FILE)
+
+        # Cerca per indice (ID = row index nel CSV)
+        if bet_id >= len(df):
+            return None
+
+        row = df.iloc[bet_id]
+        return {
+            "id": int(bet_id),
+            "group_id": (str(row["group_id"]) if pd.notna(row["group_id"]) and row["group_id"] != "" else None),
+            "bet_number": (
+                int(row["bet_number"]) if "bet_number" in row and pd.notna(row["bet_number"]) else 1
+            ),
+            "tipo_bet": (str(row["tipo_bet"]) if "tipo_bet" in row and pd.notna(row["tipo_bet"]) else "SINGLE"),
+            "data": str(row["Data"]),
+            "partita": str(row["Partita"]),
+            "mercato": str(row["Mercato"]),
+            "quota_sistema": (float(row["Quota_Sistema"]) if pd.notna(row["Quota_Sistema"]) else None),
+            "quota_sisal": float(row["Quota_Sisal"]),
+            "ev_modello": (str(row["EV_Modello"]) if pd.notna(row["EV_Modello"]) else "N/A"),
+            "ev_realistico": (str(row["EV_Realistico"]) if pd.notna(row["EV_Realistico"]) else "N/A"),
+            "stake": str(row["Stake"]),
+            "risultato": str(row["Risultato"]),
+            "profit": float(row["Profit"]) if pd.notna(row["Profit"]) else 0.0,
+            "note": str(row["Note"]) if pd.notna(row["Note"]) else "",
+        }
+
+    @staticmethod
     def create_bet(data: Dict) -> int:
         """Crea nuova bet"""
         if DiarioStorage._use_database():

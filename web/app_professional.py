@@ -6839,8 +6839,12 @@ def api_diario_edit():
         data = request.get_json()
         bet_id = int(data.get("id"))
 
+        # Ottieni bet per ID (non per indice!)
+        bet = DiarioStorage.get_by_id(bet_id)
+        if not bet:
+            return jsonify({"success": False, "error": "Bet non trovata"}), 404
+
         # Verifica che sia PENDING
-        bet = DiarioStorage.get_all_bets()[bet_id]  # Throws if not exists
         if bet["risultato"] != "PENDING":
             return (
                 jsonify({"success": False, "error": "Impossibile modificare bet completata"}),
