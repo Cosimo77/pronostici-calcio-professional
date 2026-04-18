@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Giornata Serie A - Pronostici Completi</title>
-    
+
     <!-- Google Analytics 4 -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
     <script>
@@ -16,7 +16,7 @@
             'page_location': window.location.href
         });
     </script>
-    
+
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -282,7 +282,7 @@
             background: #dc3545;
             color: white;
         }
-        
+
         /* Legal Disclaimer Styles */
         .legal-disclaimer {
             margin: 40px auto 20px;
@@ -292,28 +292,361 @@
             border-radius: 12px;
             border: 1px solid #ff6b35;
         }
-        
+
         .disclaimer-title {
             text-align: center;
             color: #ff6b35;
             font-size: 1.1em;
             margin-bottom: 10px;
         }
-        
+
         .disclaimer-content {
             color: #ddd;
             font-size: 0.9em;
             line-height: 1.6;
             text-align: justify;
         }
-        
+
         .disclaimer-link {
             color: #ff6b35;
             text-decoration: none;
         }
-        
+
         .disclaimer-link:hover {
             text-decoration: underline;
+        }
+        /* Accessibility: Inline styles moved to classes */
+        .info-banner-blue {
+            background: #e3f2fd;
+            border-left-color: #2196f3;
+        }
+        .text-blue-dark {
+            color: #1565c0;
+        }
+        .diario-link-fixed {
+            text-decoration: none;
+            display: inline-block;
+            position: fixed;
+            bottom: 30px;
+            right: 160px;
+        }
+        /* TOP 3 Highlights Styles */
+        .top3-container {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            color: white;
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+        }
+        .top3-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .top3-title {
+            margin: 0;
+            font-size: 1.5em;
+        }
+        .top3-counter {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+        .top3-description {
+            margin: 0 0 20px 0;
+            opacity: 0.9;
+        }
+        .top3-grid {
+            display: grid;
+            gap: 12px;
+        }
+        .top3-card {
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(10px);
+            padding: 16px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .top3-medal {
+            font-size: 1.8em;
+            margin-bottom: 4px;
+        }
+        .top3-match-title {
+            font-size: 1.1em;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        .top3-bet-details {
+            font-size: 0.95em;
+            opacity: 0.9;
+        }
+        .top3-ev-container {
+            text-align: right;
+        }
+        .top3-ev-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #4ade80;
+        }
+        .top3-ev-label {
+            font-size: 0.85em;
+            opacity: 0.8;
+        }
+        .badge-fase1 {
+            background: #10b981;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75em;
+            margin-left: 8px;
+        }
+        .badge-fase2 {
+            background: #3b82f6;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75em;
+            margin-left: 8px;
+        }
+        .badge-fase3 {
+            background: #8b5cf6;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75em;
+            margin-left: 8px;
+        }
+        .no-validated-warning {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            color: white;
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+        }
+        .no-validated-title {
+            margin: 0 0 12px 0;
+            font-size: 1.3em;
+        }
+        .no-validated-text {
+            margin: 0;
+            opacity: 0.95;
+        }
+        .filter-toggle-container {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .filter-toggle-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: #f8f9fa;
+            padding: 12px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            border: 2px solid #dee2e6;
+        }
+        .filter-toggle-checkbox {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        /* Match Card Badge Styles */
+        .badge-fase1-inline {
+            background: #10b981;
+            margin-left: 8px;
+        }
+        .badge-fase2-inline {
+            background: #3b82f6;
+            margin-left: 8px;
+        }
+        .badge-fase3-inline {
+            background: #8b5cf6;
+            margin-left: 8px;
+        }
+        .match-card-border-validated {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        /* Value Bet Banner */
+        .value-bet-recommendation {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            color: white;
+        }
+        .value-bet-title {
+            margin: 0 0 12px 0;
+            font-size: 1.3em;
+        }
+        .value-bet-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(10px);
+            padding: 16px;
+            border-radius: 6px;
+        }
+        .value-bet-market {
+            font-size: 0.85em;
+            margin-bottom: 4px;
+            opacity: 0.8;
+        }
+        .value-bet-outcome {
+            font-size: 1.8em;
+            font-weight: bold;
+        }
+        .value-bet-odds {
+            font-size: 0.95em;
+            margin-top: 4px;
+            opacity: 0.9;
+        }
+        .value-bet-ev-container {
+            text-align: right;
+        }
+        .value-bet-ev-value {
+            font-size: 2.2em;
+            font-weight: bold;
+        }
+        .value-bet-ev-label {
+            font-size: 0.85em;
+            opacity: 0.8;
+        }
+        /* No Value Banner */
+        .no-value-banner {
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            color: white;
+            text-align: center;
+        }
+        .no-value-title {
+            margin: 0 0 8px 0;
+            font-size: 1.1em;
+        }
+        .no-value-text {
+            margin: 0;
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+        /* EV Display in Odds Banner */
+        .ev-display {
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+        .ev-positive {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .ev-neutral {
+            color: #ffc107;
+            font-weight: normal;
+        }
+        .ev-negative {
+            color: #dc3545;
+            font-weight: normal;
+        }
+        /* Details/Summary */
+        .details-technical {
+            margin-top: 16px;
+        }
+        .summary-technical {
+            cursor: pointer;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            font-weight: 600;
+            color: #495057;
+        }
+        .details-content {
+            padding: 16px;
+            background: #ffffff;
+            border: 1px solid #dee2e6;
+            border-top: none;
+            border-radius: 0 0 6px 6px;
+        }
+        .market-box-inline {
+            margin-bottom: 12px;
+        }
+        .market-title-small {
+            font-size: 1em;
+            margin-bottom: 8px;
+        }
+        .ml-disclaimer {
+            font-size: 0.85em;
+            color: #6c757d;
+            margin-top: 8px;
+            font-style: italic;
+        }
+        .ou-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+        .ou-card {
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+        .ou-label {
+            font-size: 0.85em;
+            color: #666;
+            margin-bottom: 4px;
+        }
+        .ou-odds-value {
+            font-weight: bold;
+        }
+        .ou-ev-display {
+            font-size: 0.85em;
+            margin-top: 4px;
+        }
+        .ou-value-bet-box {
+            padding: 10px;
+            background: #d4edda;
+            border-radius: 4px;
+            border-left: 3px solid #28a745;
+        }
+        .ou-value-bet-title {
+            color: #155724;
+        }
+        .ou-value-bet-details {
+            font-size: 0.9em;
+            color: #155724;
+        }
+        .bookmakers-info {
+            font-size: 0.8em;
+            color: #6c757d;
+            margin-top: 8px;
+        }
+        .market-box-margin-top {
+            margin-top: 12px;
+        }
+        .diario-button-container {
+            text-align: center;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 2px solid rgba(0,0,0,0.1);
+        }
+        .btn-add-to-diario {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 25px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+        .btn-add-to-diario:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
         }
     </style>
 </head>
@@ -333,9 +666,9 @@
             </p>
         </div>
 
-        <div class="info-banner" style="background: #e3f2fd; border-left-color: #2196f3;">
-            <h3 style="color: #1565c0;">🎯 Fasi di Validazione</h3>
-            <p style="color: #1565c0;">
+        <div class="info-banner info-banner-blue">
+            <h3 class="text-blue-dark">🎯 Fasi di Validazione</h3>
+            <p class="text-blue-dark">
                 <strong>✅ FASE1:</strong> Pareggi (quote 2.8-3.5, EV 25-50%) - Backtest validato: +7.17% ROI<br>
                 <strong>✅ FASE2:</strong> Favoriti 1X2 (quote 1.5-2.2, EV 15-35%) - Rischio medio-basso<br>
                 <strong>✅ FASE3:</strong> Over/Under 2.5 (quote 1.8-2.4, EV 20-40%) - Mercato alternativo<br>
@@ -349,7 +682,7 @@
     </div>
 
     <button class="refresh-btn" onclick="loadMatches()">🔄 Aggiorna</button>
-    <a href="/diario" class="refresh-btn" style="text-decoration: none; display: inline-block; position: fixed; bottom: 30px; right: 160px;">
+    <a href="/diario" class="refresh-btn diario-link-fixed">
         📔 Diario
     </a>
 
@@ -373,7 +706,7 @@
                             <div class="error">
                                 <h3>❌ ${data.error}</h3>
                                 <p>${data.setup_instructions ? 'Setup richiesto:' : ''}</p>
-                                ${data.setup_instructions ? Object.entries(data.setup_instructions).map(([key, val]) => 
+                                ${data.setup_instructions ? Object.entries(data.setup_instructions).map(([key, val]) =>
                                     `<p><strong>${key}:</strong> ${val}</p>`
                                 ).join('') : ''}
                             </div>
@@ -382,7 +715,7 @@
                     }
 
                     const matches = data.matches || [];
-                    
+
                     if (matches.length === 0) {
                         container.innerHTML = '<div class="loading">😴 Nessuna partita disponibile al momento</div>';
                         return;
@@ -402,7 +735,7 @@
                     };
 
                     // Ora per ogni partita chiediamo i mercati completi
-                    Promise.all(matches.map(match => 
+                    Promise.all(matches.map(match =>
                         fetch('/api/predict_enterprise', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -432,18 +765,18 @@
                     )).then(enrichedMatches => {
                         // CALCOLA TOP VALUE BETS
                         const allBets = [];
-                        
+
                         // SANITY CHECK FUNCTION: Valida dati realistici
                         const isValidBet = (odds, ev) => {
                             const MAX_REALISTIC_ODD = 50.0;  // Quote >50 = anomalie
                             const MAX_REALISTIC_EV = 200.0;  // EV >200% = probabilità corrotte
                             return odds > 0 && odds <= MAX_REALISTIC_ODD && ev >= 5 && ev <= MAX_REALISTIC_EV;
                         };
-                        
+
                         enrichedMatches.forEach(match => {
                             const evs = match.value_betting?.expected_values || {};
                             const odds = match.odds_real || {};
-                            
+
                             // 1X2 - evs è già in percentuale (es: 42.6 non 0.426)
                             if (evs.home > 5 && isValidBet(odds.home, evs.home)) {
                                 allBets.push({match: `${match.home_team} vs ${match.away_team}`, bet: '🏠 Casa', odds: odds.home, ev: evs.home, type: '1x2'});
@@ -454,18 +787,18 @@
                             if (evs.away > 5 && isValidBet(odds.away, evs.away)) {
                                 allBets.push({match: `${match.home_team} vs ${match.away_team}`, bet: '✈️ Trasferta', odds: odds.away, ev: evs.away, type: '1x2'});
                             }
-                            
+
                             // Over/Under 2.5 - calcolato localmente quindi in formato decimale (0.346)
                             if (match.odds_totals && match.markets?.mercati?.mou25) {
                                 const probOver = match.markets.mercati.mou25.probabilita?.over || 0;
                                 const probUnder = match.markets.mercati.mou25.probabilita?.under || 0;
                                 const evOver = probOver * match.odds_totals.over_25 - 1;
                                 const evUnder = probUnder * match.odds_totals.under_25 - 1;
-                                
+
                                 // Converti in percentuale e valida
                                 const evOverPct = evOver * 100;
                                 const evUnderPct = evUnder * 100;
-                                
+
                                 if (evOverPct > 5 && isValidBet(match.odds_totals.over_25, evOverPct)) {
                                     allBets.push({match: `${match.home_team} vs ${match.away_team}`, bet: '⚽ Over 2.5', odds: match.odds_totals.over_25, ev: evOverPct, type: 'ou'});
                                 }
@@ -474,74 +807,74 @@
                                 }
                             }
                         });
-                        
+
                         // Filtra opportunità VALIDATE (FASE1/2/3)
                         const validatedBets = allBets.filter(bet => {
                             const isDraw = bet.bet.includes('Pareggio') || bet.bet.includes('🤝');
                             const isFavorite = bet.bet.includes('🏠 Casa') || bet.bet.includes('✈️ Trasferta');
                             const isOverUnder = bet.bet.includes('Over 2.5') || bet.bet.includes('Under 2.5');
-                            
+
                             const isFase1 = isDraw && bet.odds >= 2.8 && bet.odds <= 3.5 && bet.ev >= 25 && bet.ev <= 50;
                             const isFase2 = isFavorite && bet.odds >= 1.5 && bet.odds <= 2.2 && bet.ev >= 15 && bet.ev <= 35;
                             const isFase3 = isOverUnder && bet.odds >= 1.8 && bet.odds <= 2.4 && bet.ev >= 20 && bet.ev <= 40;
-                            
+
                             return isFase1 || isFase2 || isFase3;
                         });
-                        
+
                         // Ordina per EV decrescente
                         allBets.sort((a, b) => b.ev - a.ev);
                         validatedBets.sort((a, b) => b.ev - a.ev);
                         const top3 = validatedBets.slice(0, 3);
-                        
+
                         // RENDER HIGHLIGHTS
                         let highlightsHTML = '';
                         if (top3.length > 0) {
                             highlightsHTML = `
-                                <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 20px; border-radius: 12px; margin-bottom: 24px; color: white; box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);">
-                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                                        <h2 style="margin: 0; font-size: 1.5em;">💎 TOP 3 Opportunità Validate</h2>
-                                        <div style="background: rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 20px; font-weight: bold;">
+                                <div class="top3-container">
+                                    <div class="top3-header">
+                                        <h2 class="top3-title">💎 TOP 3 Opportunità Validate</h2>
+                                        <div class="top3-counter">
                                             🎯 ${validatedBets.length} / ${allBets.length} validate
                                         </div>
                                     </div>
-                                    <p style="margin: 0 0 20px 0; opacity: 0.9;">✅ Solo FASE1/2/3 - Range affidabili validati su backtest</p>
-                                    <div style="display: grid; gap: 12px;">
+                                    <p class="top3-description">✅ Solo FASE1/2/3 - Range affidabili validati su backtest</p>
+                                    <div class="top3-grid">
                                         ${top3.map((bet, i) => {
                                             // Multi-Phase Validation
                                             const isDraw = bet.bet.includes('Pareggio') || bet.bet.includes('🤝');
                                             const isFavorite = bet.bet.includes('🏠 Casa') || bet.bet.includes('✈️ Trasferta');
                                             const isOverUnder = bet.bet.includes('Over 2.5') || bet.bet.includes('Under 2.5');
-                                            
+
                                             // FASE1: Pareggi conservativi (backtest validato +7.17% ROI)
                                             const isFase1 = isDraw && bet.odds >= 2.8 && bet.odds <= 3.5 && bet.ev >= 25 && bet.ev <= 50;
-                                            
+
                                             // FASE2: Favoriti 1X2 (quote medio-basse)
                                             const isFase2 = isFavorite && bet.odds >= 1.5 && bet.odds <= 2.2 && bet.ev >= 15 && bet.ev <= 35;
-                                            
+
                                             // FASE3: Over/Under 2.5 (mercato alternativo)
                                             const isFase3 = isOverUnder && bet.odds >= 1.8 && bet.odds <= 2.4 && bet.ev >= 20 && bet.ev <= 40;
-                                            
+
                                             let validationBadge = '';
                                             if (isFase1) {
-                                                validationBadge = '<span style="background: #10b981; padding: 4px 8px; border-radius: 4px; font-size: 0.75em; margin-left: 8px;">✅ FASE1</span>';
+                                                validationBadge = '<span class="badge-fase1">✅ FASE1</span>';
                                             } else if (isFase2) {
-                                                validationBadge = '<span style="background: #3b82f6; padding: 4px 8px; border-radius: 4px; font-size: 0.75em; margin-left: 8px;">✅ FASE2</span>';
+                                                validationBadge = '<span class="badge-fase2">✅ FASE2</span>';
                                             } else if (isFase3) {
-                                                validationBadge = '<span style="background: #8b5cf6; padding: 4px 8px; border-radius: 4px; font-size: 0.75em; margin-left: 8px;">✅ FASE3</span>';
+                                                validationBadge = '<span class="badge-fase3">✅ FASE3</span>';
                                             }
-                                            
+
                                             return `
-                                            <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 16px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+                                            <div class="top3-card">
                                                 <div>
-                                                    <div style="font-size: 1.8em; margin-bottom: 4px;">${['🥇','🥈','🥉'][i]}</div>
-                                                    <div style="font-size: 1.1em; font-weight: bold; margin-bottom: 4px;">
+                                                    <div class="top3-medal">${['🥇','🥈','🥉'][i]}</div>
+                                                    <div class="top3-match-title">
                                                         ${bet.match} ${validationBadge}
                                                     </div>
-                                                    <div style="font-size: 0.95em; opacity: 0.9;">${bet.bet} @ ${bet.odds.toFixed(2)}</div>
+                                                    <div class="top3-bet-details">${bet.bet} @ ${bet.odds.toFixed(2)}</div>
                                                 </div>
-                                                <div style="text-align: right;">
-                                                    <div style="font-size: 2em; font-weight: bold; color: #4ade80;">+${bet.ev.toFixed(1)}%</div>
-                                                    <div style="font-size: 0.85em; opacity: 0.8;">Expected Value</div>
+                                                <div class="top3-ev-container">
+                                                    <div class="top3-ev-value">+${bet.ev.toFixed(1)}%</div>
+                                                    <div class="top3-ev-label">Expected Value</div>
                                                 </div>
                                             </div>
                                         `}).join('')}
@@ -551,39 +884,39 @@
                         } else if (allBets.length > 0) {
                             // Nessuna opportunità validata, mostra warning
                             highlightsHTML = `
-                                <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 20px; border-radius: 12px; margin-bottom: 24px; color: white; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);">
-                                    <h2 style="margin: 0 0 12px 0; font-size: 1.3em;">⚠️ Nessuna Opportunità Validata</h2>
-                                    <p style="margin: 0; opacity: 0.95;">
+                                <div class="no-validated-warning">
+                                    <h2 class="no-validated-title">⚠️ Nessuna Opportunità Validata</h2>
+                                    <p class="no-validated-text">
                                         Trovate ${allBets.length} opportunità, ma NESSUNA rientra nei range affidabili (FASE1/2/3).<br>
                                         <strong>Rischio elevato</strong> - Consigliato attendere partite con migliori parametri.
                                     </p>
                                 </div>
                             `;
                         }
-                        
+
                         // Toggle filter (solo validated)
                         const filterToggleHTML = validatedBets.length > 0 && allBets.length > validatedBets.length ? `
-                            <div style="margin-bottom: 20px; text-align: center;">
-                                <label style="display: inline-flex; align-items: center; gap: 10px; background: #f8f9fa; padding: 12px 20px; border-radius: 25px; cursor: pointer; font-weight: 600; border: 2px solid #dee2e6;">
-                                    <input type="checkbox" id="filterValidated" style="width: 18px; height: 18px; cursor: pointer;">
+                            <div class="filter-toggle-container">
+                                <label class="filter-toggle-label">
+                                    <input type="checkbox" id="filterValidated" class="filter-toggle-checkbox">
                                     <span>🎯 Mostra solo opportunità validate (FASE1/2/3)</span>
                                 </label>
                             </div>
                         ` : '';
-                        
+
                         container.innerHTML = highlightsHTML + filterToggleHTML + enrichedMatches.map(match => {
                             const odds = match.odds_real || {};
                             const vb = match.value_betting || {};
                             const evs = vb.expected_values || {};
                             const markets = match.markets || {};
-                            
+
                             // DEBUG: Log per vedere la struttura dei mercati
                             console.log('🔍 Match:', match.home_team, 'vs', match.away_team);
                             console.log('📊 Markets object:', markets);
                             console.log('🎯 mercati field:', markets.mercati);
                             console.log('⚽ mbtts:', markets.mercati?.mbtts);
                             console.log('📈 mou25:', markets.mercati?.mou25);
-                            
+
                             // Calcola anche i value bet per O/U se disponibili
                             let evOverUnder = { over: -100, under: -100 };
                             if (match.odds_totals && markets.mercati && markets.mercati.mou25 && markets.mercati.mou25.probabilita) {
@@ -592,11 +925,11 @@
                                 evOverUnder.over = (probOver * match.odds_totals.over_25 - 1) * 100;
                                 evOverUnder.under = (probUnder * match.odds_totals.under_25 - 1) * 100;
                             }
-                            
+
                             const maxEv1X2 = Math.max(evs.home || -100, evs.draw || -100, evs.away || -100);
                             const maxEvOU = Math.max(evOverUnder.over, evOverUnder.under);
                             const maxEv = Math.max(maxEv1X2, maxEvOU);
-                            
+
                             let bestOutcome, bestOdds, bestMarket;
                             if (maxEv === maxEv1X2) {
                                 bestMarket = '1X2';
@@ -607,40 +940,40 @@
                                 bestOutcome = evOverUnder.over === maxEvOU ? 'Over 2.5' : 'Under 2.5';
                                 bestOdds = bestOutcome === 'Over 2.5' ? match.odds_totals.over_25 : match.odds_totals.under_25;
                             }
-                            
+
                             const isBet = maxEv > 5; // Threshold al 5%
-                            
+
                             // Multi-Phase Validation (NON nasconde, solo etichetta)
                             const isDraw = bestOutcome === 'Pareggio';
                             const isFavorite = bestOutcome === 'Casa' || bestOutcome === 'Trasferta';
                             const isOverUnder = bestOutcome === 'Over 2.5' || bestOutcome === 'Under 2.5';
-                            
+
                             const isFase1 = isDraw && bestOdds >= 2.8 && bestOdds <= 3.5 && maxEv >= 25 && maxEv <= 50;
                             const isFase2 = isFavorite && bestOdds >= 1.5 && bestOdds <= 2.2 && maxEv >= 15 && maxEv <= 35;
                             const isFase3 = isOverUnder && bestOdds >= 1.8 && bestOdds <= 2.4 && maxEv >= 20 && maxEv <= 40;
-                            
+
                             let phaseBadge = '';
                             let borderColor = 'rgba(0,0,0,0.1)';
                             let cardClass = 'match-card';
-                            
+
                             if (isFase1) {
-                                phaseBadge = '<span class="badge" style="background: #10b981; margin-left: 8px;">✅ FASE1</span>';
+                                phaseBadge = '<span class="badge badge-fase1-inline">✅ FASE1</span>';
                                 borderColor = '#10b981';
                                 cardClass = 'match-card validated-fase1';
                             } else if (isFase2) {
-                                phaseBadge = '<span class="badge" style="background: #3b82f6; margin-left: 8px;">✅ FASE2</span>';
+                                phaseBadge = '<span class="badge badge-fase2-inline">✅ FASE2</span>';
                                 borderColor = '#3b82f6';
                                 cardClass = 'match-card validated-fase2';
                             } else if (isFase3) {
-                                phaseBadge = '<span class="badge" style="background: #8b5cf6; margin-left: 8px;">✅ FASE3</span>';
+                                phaseBadge = '<span class="badge badge-fase3-inline">✅ FASE3</span>';
                                 borderColor = '#8b5cf6';
                                 cardClass = 'match-card validated-fase3';
                             }
-                            
+
                             const isValidated = isFase1 || isFase2 || isFase3;
 
                             return `
-                                <div class="${cardClass}" data-validated="${isValidated}" style="border-left: 4px solid ${borderColor}; ${isValidated ? 'box-shadow: 0 2px 8px rgba(0,0,0,0.15);' : ''}">
+                                <div class="${cardClass} ${isValidated ? 'match-card-border-validated' : ''}" data-validated="${isValidated}" style="border-left: 4px solid ${borderColor};">
                                     <div class="match-header">
                                         <div class="teams">
                                             ${match.home_team} vs ${match.away_team}
@@ -651,24 +984,24 @@
                                     </div>
 
                                     ${isBet ? `
-                                    <div style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); padding: 20px; border-radius: 8px; margin-bottom: 16px; color: white;">
-                                        <h3 style="margin: 0 0 12px 0; font-size: 1.3em;">💰 RACCOMANDAZIONE VALUE BET</h3>
-                                        <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 16px; border-radius: 6px;">
+                                    <div class="value-bet-recommendation">
+                                        <h3 class="value-bet-title">💰 RACCOMANDAZIONE VALUE BET</h3>
+                                        <div class="value-bet-content">
                                             <div>
-                                                <div style="font-size: 0.85em; margin-bottom: 4px; opacity: 0.8;">Mercato: ${bestMarket}</div>
-                                                <div style="font-size: 1.8em; font-weight: bold;">${bestOutcome.toUpperCase()}</div>
-                                                <div style="font-size: 0.95em; margin-top: 4px; opacity: 0.9;">Quota: ${bestOdds?.toFixed(2)}</div>
+                                                <div class="value-bet-market">Mercato: ${bestMarket}</div>
+                                                <div class="value-bet-outcome">${bestOutcome.toUpperCase()}</div>
+                                                <div class="value-bet-odds">Quota: ${bestOdds?.toFixed(2)}</div>
                                             </div>
-                                            <div style="text-align: right;">
-                                                <div style="font-size: 2.2em; font-weight: bold;">+${maxEv.toFixed(1)}%</div>
-                                                <div style="font-size: 0.85em; opacity: 0.8;">Expected Value</div>
+                                            <div class="value-bet-ev-container">
+                                                <div class="value-bet-ev-value">+${maxEv.toFixed(1)}%</div>
+                                                <div class="value-bet-ev-label">Expected Value</div>
                                             </div>
                                         </div>
                                     </div>
                                     ` : `
-                                    <div style="background: linear-gradient(135deg, #6c757d 0%, #495057 100%); padding: 16px; border-radius: 8px; margin-bottom: 16px; color: white; text-align: center;">
-                                        <h3 style="margin: 0 0 8px 0; font-size: 1.1em;">⏸️ NESSUN VALUE</h3>
-                                        <p style="margin: 0; font-size: 0.9em; opacity: 0.9;">Le quote non offrono valore matematico positivo. Skip consigliato.</p>
+                                    <div class="no-value-banner">
+                                        <h3 class="no-value-title">⏸️ NESSUN VALUE</h3>
+                                        <p class="no-value-text">Le quote non offrono valore matematico positivo. Skip consigliato.</p>
                                     </div>
                                     `}
 
@@ -676,33 +1009,33 @@
                                         <div>
                                             <h4>🏠 Casa</h4>
                                             <div class="price">${odds.home?.toFixed(2) || '-'}</div>
-                                            <div style="font-size: 0.9em; margin-top: 5px; color: ${evs.home > 5 ? '#28a745' : (evs.home > 0 ? '#ffc107' : '#dc3545')}; font-weight: ${evs.home > 5 ? 'bold' : 'normal'};">
+                                            <div class="ev-display ${evs.home > 5 ? 'ev-positive' : (evs.home > 0 ? 'ev-neutral' : 'ev-negative')}">
                                                 EV: ${evs.home > 0 ? '+' : ''}${evs.home?.toFixed(1) || 0}%
                                             </div>
                                         </div>
                                         <div>
                                             <h4>🤝 Pareggio</h4>
                                             <div class="price">${odds.draw?.toFixed(2) || '-'}</div>
-                                            <div style="font-size: 0.9em; margin-top: 5px; color: ${evs.draw > 5 ? '#28a745' : (evs.draw > 0 ? '#ffc107' : '#dc3545')}; font-weight: ${evs.draw > 5 ? 'bold' : 'normal'};">
+                                            <div class="ev-display ${evs.draw > 5 ? 'ev-positive' : (evs.draw > 0 ? 'ev-neutral' : 'ev-negative')}">
                                                 EV: ${evs.draw > 0 ? '+' : ''}${evs.draw?.toFixed(1) || 0}%
                                             </div>
                                         </div>
                                         <div>
                                             <h4>✈️ Trasferta</h4>
                                             <div class="price">${odds.away?.toFixed(2) || '-'}</div>
-                                            <div style="font-size: 0.9em; margin-top: 5px; color: ${evs.away > 5 ? '#28a745' : (evs.away > 0 ? '#ffc107' : '#dc3545')}; font-weight: ${evs.away > 5 ? 'bold' : 'normal'};">
+                                            <div class="ev-display ${evs.away > 5 ? 'ev-positive' : (evs.away > 0 ? 'ev-neutral' : 'ev-negative')}">
                                                 EV: ${evs.away > 0 ? '+' : ''}${evs.away?.toFixed(1) || 0}%
                                             </div>
                                         </div>
                                     </div>
 
-                                    <details style="margin-top: 16px;">
-                                        <summary style="cursor: pointer; padding: 12px; background: #f8f9fa; border-radius: 6px; font-weight: 600; color: #495057;">
+                                    <details class="details-technical">
+                                        <summary class="summary-technical">
                                             📊 Dettagli Tecnici e Predizione ML
                                         </summary>
-                                        <div style="padding: 16px; background: #ffffff; border: 1px solid #dee2e6; border-top: none; border-radius: 0 0 6px 6px;">
-                                            <div class="market-box" style="margin-bottom: 12px;">
-                                                <h3 style="font-size: 1em; margin-bottom: 8px;">🎯 Predizione Machine Learning</h3>
+                                        <div class="details-content">
+                                            <div class="market-box market-box-inline">
+                                                <h3 class="market-title-small">🎯 Predizione Machine Learning</h3>
                                                 <div class="prediction-item">
                                                     <span class="pred-label">Esito più probabile</span>
                                                     <div class="pred-value">
@@ -710,33 +1043,33 @@
                                                         <span class="confidence">${(markets.confidenza * 100).toFixed(0) || 0}%</span>
                                                     </div>
                                                 </div>
-                                                <div style="font-size: 0.85em; color: #6c757d; margin-top: 8px; font-style: italic;">
+                                                <div class="ml-disclaimer">
                                                     ⚠️ La predizione ML indica solo la probabilità, non la convenienza della scommessa
                                                 </div>
                                             </div>
 
                                         ${match.odds_totals ? `
-                                            <div class="market-box" style="margin-top: 12px;">
-                                                <h3 style="font-size: 1em; margin-bottom: 8px;">⚽ Over/Under 2.5 Goals</h3>
-                                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px;">
-                                                    <div style="padding: 10px; background: #f8f9fa; border-radius: 4px;">
-                                                        <div style="font-size: 0.85em; color: #666; margin-bottom: 4px;">Over 2.5</div>
-                                                        <div style="font-weight: bold;">@ ${match.odds_totals.over_25}</div>
+                                            <div class="market-box market-box-margin-top">
+                                                <h3 class="market-title-small">⚽ Over/Under 2.5 Goals</h3>
+                                                <div class="ou-grid">
+                                                    <div class="ou-card">
+                                                        <div class="ou-label">Over 2.5</div>
+                                                        <div class="ou-odds-value">@ ${match.odds_totals.over_25}</div>
                                                         ${(() => {
                                                             const probOver = (markets.mercati && markets.mercati.mou25 && markets.mercati.mou25.probabilita) ? markets.mercati.mou25.probabilita.over : 0;
                                                             const evOver = probOver * match.odds_totals.over_25 - 1;
-                                                            return `<div style="font-size: 0.85em; margin-top: 4px; color: ${evOver > 0.05 ? '#28a745' : (evOver > 0 ? '#ffc107' : '#dc3545')}; font-weight: ${evOver > 0.05 ? 'bold' : 'normal'};">
+                                                            return `<div class="ou-ev-display ${evOver > 0.05 ? 'ev-positive' : (evOver > 0 ? 'ev-neutral' : 'ev-negative')}">
                                                                 EV: ${evOver > 0 ? '+' : ''}${(evOver * 100).toFixed(1)}%
                                                             </div>`;
                                                         })()}
                                                     </div>
-                                                    <div style="padding: 10px; background: #f8f9fa; border-radius: 4px;">
-                                                        <div style="font-size: 0.85em; color: #666; margin-bottom: 4px;">Under 2.5</div>
-                                                        <div style="font-weight: bold;">@ ${match.odds_totals.under_25}</div>
+                                                    <div class="ou-card">
+                                                        <div class="ou-label">Under 2.5</div>
+                                                        <div class="ou-odds-value">@ ${match.odds_totals.under_25}</div>
                                                         ${(() => {
                                                             const probUnder = (markets.mercati && markets.mercati.mou25 && markets.mercati.mou25.probabilita) ? markets.mercati.mou25.probabilita.under : 0;
                                                             const evUnder = probUnder * match.odds_totals.under_25 - 1;
-                                                            return `<div style="font-size: 0.85em; margin-top: 4px; color: ${evUnder > 0.05 ? '#28a745' : (evUnder > 0 ? '#ffc107' : '#dc3545')}; font-weight: ${evUnder > 0.05 ? 'bold' : 'normal'};">
+                                                            return `<div class="ou-ev-display ${evUnder > 0.05 ? 'ev-positive' : (evUnder > 0 ? 'ev-neutral' : 'ev-negative')}">
                                                                 EV: ${evUnder > 0 ? '+' : ''}${(evUnder * 100).toFixed(1)}%
                                                             </div>`;
                                                         })()}
@@ -751,14 +1084,14 @@
                                                         const bestOU = evOver > evUnder ? 'Over' : 'Under';
                                                         const bestEV = Math.max(evOver, evUnder);
                                                         const bestOdds = bestOU === 'Over' ? match.odds_totals.over_25 : match.odds_totals.under_25;
-                                                        return `<div style="padding: 10px; background: #d4edda; border-radius: 4px; border-left: 3px solid #28a745;">
-                                                            <strong style="color: #155724;">💰 VALUE BET: ${bestOU} 2.5</strong><br>
-                                                            <span style="font-size: 0.9em; color: #155724;">Quota: ${bestOdds} | ROI atteso: +${(bestEV * 100).toFixed(1)}%</span>
+                                                        return `<div class="ou-value-bet-box">
+                                                            <strong class="ou-value-bet-title">💰 VALUE BET: ${bestOU} 2.5</strong><br>
+                                                            <span class="ou-value-bet-details">Quota: ${bestOdds} | ROI atteso: +${(bestEV * 100).toFixed(1)}%</span>
                                                         </div>`;
                                                     }
                                                     return '';
                                                 })()}
-                                                <div style="font-size: 0.8em; color: #6c757d; margin-top: 8px;">
+                                                <div class="bookmakers-info">
                                                     📊 Quote reali da ${match.odds_totals.n_bookmakers} bookmaker
                                                 </div>
                                             </div>
@@ -767,7 +1100,7 @@
                                     </details>
 
                                     ${isBet ? `
-                                    <div style="text-align: center; margin-top: 16px; padding-top: 16px; border-top: 2px solid rgba(0,0,0,0.1);">
+                                    <div class="diario-button-container">
                                         <button onclick='addToDiario(${JSON.stringify({
                                             partita: `${match.home_team} vs ${match.away_team}`,
                                             mercato: bestOutcome,
@@ -776,7 +1109,7 @@
                                             data: match.commence_time.split('T')[0],
                                             fase: isFase1 ? 'FASE1' : (isFase2 ? 'FASE2' : (isFase3 ? 'FASE3' : 'CUSTOM')),
                                             note: `${bestMarket} - EV +${maxEv.toFixed(1)}%`
-                                        })})' class="btn btn-sm" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 10px 24px; border-radius: 25px; font-weight: bold; cursor: pointer; font-size: 1em; transition: all 0.3s;">
+                                        })})' class="btn btn-sm btn-add-to-diario">
                                             📝 Aggiungi al Diario
                                         </button>
                                     </div>
@@ -807,7 +1140,7 @@
             if (e.target && e.target.id === 'filterValidated') {
                 const showOnlyValidated = e.target.checked;
                 const allCards = document.querySelectorAll('.match-card');
-                
+
                 allCards.forEach(card => {
                     const isValidated = card.getAttribute('data-validated') === 'true';
                     if (showOnlyValidated && !isValidated) {
@@ -830,9 +1163,9 @@
                     'Over 2.5': 'Over 2.5',
                     'Under 2.5': 'Under 2.5'
                 };
-                
+
                 const mercatoFormattato = marketMap[oppData.mercato] || oppData.mercato;
-                
+
                 // Verifica quota con utente (potrebbe essere cambiata)
                 const quotaVerificata = prompt(
                     `🎯 VERIFICA QUOTA:\n\n` +
@@ -843,17 +1176,17 @@
                     `Se uguale, clicca OK:`,
                     parseFloat(oppData.quota).toFixed(2)
                 );
-                
+
                 if (quotaVerificata === null || quotaVerificata.trim() === '') {
                     return;
                 }
-                
+
                 const quotaFinale = parseFloat(quotaVerificata);
                 if (isNaN(quotaFinale) || quotaFinale < 1.01) {
                     alert('❌ Quota non valida! Deve essere ≥ 1.01');
                     return;
                 }
-                
+
                 const formData = {
                     partita: oppData.partita,
                     mercato: mercatoFormattato,
@@ -864,15 +1197,15 @@
                     ev_reale: '+' + oppData.ev + '%',
                     note: `${oppData.fase} - ${oppData.note}` + (quotaFinale !== parseFloat(oppData.quota) ? ` | Quota aggiornata: ${oppData.quota} → ${quotaFinale.toFixed(2)}` : '')
                 };
-                
+
                 const response = await fetch('/api/diario/add', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify(formData)
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (result.success) {
                     if (confirm(`✅ Aggiunto al diario come MONITOR!\n\nPartita: ${oppData.partita}\nMercato: ${mercatoFormattato} @ ${quotaFinale.toFixed(2)}\n\n📔 Vuoi aprire il diario ora?`)) {
                         window.location.href = '/diario';
@@ -901,9 +1234,9 @@
             <strong>Questo sito fornisce analisi statistiche e pronostici calcistici a scopo puramente educativo e di intrattenimento.</strong>
             Le informazioni contenute <u>non costituiscono consulenza finanziaria</u>, invito al gioco d'azzardo o sollecitazione a scommettere denaro.
             <br><br>
-            <strong>🔞 Servizio riservato a maggiorenni (+18 anni).</strong> Il gioco può causare dipendenza patologica. 
-            Gioca responsabilmente e solo con somme che puoi permetterti di perdere. 
-            Per assistenza: <a href="https://www.sos-azzardo.it" target="_blank" rel="noopener noreferrer" class="disclaimer-link">SOS Azzardo</a> - 
+            <strong>🔞 Servizio riservato a maggiorenni (+18 anni).</strong> Il gioco può causare dipendenza patologica.
+            Gioca responsabilmente e solo con somme che puoi permetterti di perdere.
+            Per assistenza: <a href="https://www.sos-azzardo.it" target="_blank" rel="noopener noreferrer" class="disclaimer-link">SOS Azzardo</a> -
             Numero Verde 800.558.822.
             <br><br>
             Le quote mostrate sono indicative e possono variare. Verifica sempre le quote reali sui siti dei bookmaker autorizzati ADM (Agenzia delle Dogane e dei Monopoli).

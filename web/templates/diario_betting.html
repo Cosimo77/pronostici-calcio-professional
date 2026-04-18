@@ -4,11 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>📔 Diario Betting Professionale</title>
-    
+
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
-    
+
     <style>
         body {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -199,6 +199,43 @@
         .bg-light-gray {
             background: #f8f9fa;
         }
+        /* Accessibility: Inline styles moved to classes */
+        .flex-between {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .btn-config-sm {
+            padding: 4px 12px;
+        }
+        .cursor-pointer {
+            cursor: pointer;
+        }
+        .stake-suggestion-box {
+            display: none;
+            margin-top: 8px;
+            padding: 8px;
+            background: #e3f2fd;
+            border-radius: 4px;
+            border-left: 3px solid #2196f3;
+        }
+        .stake-suggestion-text {
+            color: #1565c0;
+        }
+        .kelly-result-box {
+            display: none;
+            margin-top: 8px;
+            padding: 10px;
+            background: #d1f2eb;
+            border-radius: 4px;
+            border-left: 3px solid #28a745;
+        }
+        .kelly-result-text {
+            color: #155724;
+        }
+        .kelly-input-hidden {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -252,13 +289,13 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Bankroll Management -->
                 <div class="row mt-3">
                     <div class="col-md-12">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div class="flex-between">
                             <h6 class="text-muted mb-2"><i class="bi bi-wallet2"></i> Bankroll Management</h6>
-                            <button onclick="document.getElementById('trading-tab').click()" class="btn btn-sm btn-outline-primary" style="padding: 4px 12px;">
+                            <button onclick="document.getElementById('trading-tab').click()" class="btn btn-sm btn-outline-primary btn-config-sm">
                                 <i class="bi bi-gear"></i> Configura
                             </button>
                         </div>
@@ -288,7 +325,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Risk Metrics -->
                 <div class="row mt-3">
                     <div class="col-md-12">
@@ -384,7 +421,7 @@
                         <canvas id="equityCurveChart"></canvas>
                     </div>
                 </div>
-                
+
                 <!-- Win Rate & Performance Charts -->
                 <div class="row mb-3">
                     <div class="col-md-6">
@@ -408,7 +445,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="row">
                     <div class="col-md-6">
                         <div class="card">
@@ -418,24 +455,24 @@
                             <div class="card-body">
                                 <div class="mb-3">
                                     <label class="form-label">
-                                        Probabilità Vincita (%) 
+                                        Probabilità Vincita (%)
                                         <i class="bi bi-info-circle text-muted" title="Probabilità che il modello assegna all'esito. La trovi nella dashboard opportunità (es. EV 22% con quota 3.20 → prob ~32%)"></i>
                                     </label>
                                     <input type="number" id="kelly-prob" class="form-control" placeholder="es. 45 (dalla dashboard opportunità)" min="1" max="99" step="0.1">
                                     <small class="text-muted">
-                                        💡 <strong>Dove trovarla:</strong> Dashboard Opportunità → colonna "EV Modello". 
+                                        💡 <strong>Dove trovarla:</strong> Dashboard Opportunità → colonna "EV Modello".
                                         Formula inversa: <code>prob = (EV/100 + 1) / quota</code>
                                     </small>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">
-                                        Quota 
+                                        Quota
                                         <i class="bi bi-info-circle text-muted" title="Quota bookmaker reale (verificata su Sisal)"></i>
                                     </label>
                                     <input type="number" id="kelly-quota" class="form-control" placeholder="es. 3.20 (da Sisal)" min="1.01" step="0.01">
                                     <small class="text-muted">⚠️ Usa quota <strong>REALE</strong> da Sisal, non quella del modello</small>
                                 </div>
-                                
+
                                 <!-- Helper: Calcola probabilità da EV -->
                                 <div class="alert alert-info py-2 mb-3">
                                     <small>
@@ -453,11 +490,11 @@
                                         </div>
                                     </small>
                                 </div>
-                                
+
                                 <button onclick="calculateKelly()" class="btn btn-primary w-100">
                                     <i class="bi bi-calculator-fill"></i> Calcola Stake Ottimale
                                 </button>
-                                
+
                                 <div id="kelly-result" class="mt-3 hidden">
                                     <div class="alert alert-success">
                                         <h6><i class="bi bi-check-circle"></i> Stake Suggerito</h6>
@@ -470,7 +507,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="col-md-6">
                         <div class="card">
                             <div class="card-header">
@@ -518,7 +555,7 @@
                                 <label class="btn btn-outline-primary" for="bet-type-singola">
                                     <i class="bi bi-circle"></i> Singola
                                 </label>
-                                
+
                                 <input type="radio" class="btn-check" name="bet-type" id="bet-type-multipla" value="multipla" autocomplete="off">
                                 <label class="btn btn-outline-primary" for="bet-type-multipla">
                                     <i class="bi bi-stack"></i> Multipla
@@ -537,21 +574,21 @@
                                     <label for="bet-mercato" class="form-label">Mercato *</label>
                                     <select class="form-select" id="bet-mercato" required>
                                         <option value="">Seleziona mercato</option>
-                                        
+
                                         <!-- 1X2 -->
                                         <optgroup label="🎯 1X2">
                                             <option value="1">1 (Casa)</option>
                                             <option value="X">X (Pareggio)</option>
                                             <option value="2">2 (Ospite)</option>
                                         </optgroup>
-                                        
+
                                         <!-- Doppia Chance -->
                                         <optgroup label="🔀 Doppia Chance">
                                             <option value="1X">1X (Casa o Pareggio)</option>
                                             <option value="X2">X2 (Pareggio o Ospite)</option>
                                             <option value="12">12 (Casa o Ospite)</option>
                                         </optgroup>
-                                        
+
                                         <!-- Over/Under -->
                                         <optgroup label="⚽ Over/Under">
                                             <option value="UNDER_15">Under 1.5</option>
@@ -561,7 +598,7 @@
                                             <option value="UNDER_35">Under 3.5</option>
                                             <option value="OVER_35">Over 3.5</option>
                                         </optgroup>
-                                        
+
                                         <!-- Over/Under Squadra -->
                                         <optgroup label="🏠⚽ Over/Under Squadra">
                                             <option value="HOME_OVER_05">Casa Over 0.5</option>
@@ -573,13 +610,13 @@
                                             <option value="AWAY_OVER_15">Ospite Over 1.5</option>
                                             <option value="AWAY_UNDER_15">Ospite Under 1.5</option>
                                         </optgroup>
-                                        
+
                                         <!-- Goal/No Goal -->
                                         <optgroup label="🥅 Goal/No Goal">
                                             <option value="GG">GG (Goal)</option>
                                             <option value="NG">NG (No Goal)</option>
                                         </optgroup>
-                                        
+
                                         <!-- Over/Under + Goal -->
                                         <optgroup label="⚽🥅 Over/Under + Goal">
                                             <option value="OVER_15_GG">Over 1.5 + GG</option>
@@ -589,7 +626,7 @@
                                             <option value="UNDER_25_NG">Under 2.5 + NG</option>
                                             <option value="UNDER_35_NG">Under 3.5 + NG</option>
                                         </optgroup>
-                                        
+
                                         <!-- BTTS + Risultato -->
                                         <optgroup label="🎲 BTTS + Risultato">
                                             <option value="1_GG">1 + GG</option>
@@ -599,14 +636,14 @@
                                             <option value="X_NG">X + NG</option>
                                             <option value="2_NG">2 + NG</option>
                                         </optgroup>
-                                        
+
                                         <!-- Primo Tempo -->
                                         <optgroup label="⏱️ Primo Tempo">
                                             <option value="1T_1">1T 1 (Casa)</option>
                                             <option value="1T_X">1T X (Pareggio)</option>
                                             <option value="1T_2">1T 2 (Ospite)</option>
                                         </optgroup>
-                                        
+
                                         <!-- Asian Handicap -->
                                         <optgroup label="📊 Asian Handicap">
                                             <option value="AH_-1">AH -1.0 (Casa)</option>
@@ -614,14 +651,14 @@
                                             <option value="AH_+0.5">AH +0.5 (Ospite)</option>
                                             <option value="AH_+1">AH +1.0 (Ospite)</option>
                                         </optgroup>
-                                        
+
                                         <!-- Multigol -->
                                         <optgroup label="🎯 Multigol">
                                             <option value="MG_1_2">Multigol 1-2</option>
                                             <option value="MG_2_3">Multigol 2-3</option>
                                             <option value="MG_3_4">Multigol 3-4</option>
                                         </optgroup>
-                                        
+
                                         <!-- DC + Multigol -->
                                         <optgroup label="🔀⚽ DC + Multigol">
                                             <option value="DC_1X_MG_1_3">1X + MG 1-3</option>
@@ -631,7 +668,7 @@
                                             <option value="DC_12_MG_2_4">12 + MG 2-4</option>
                                             <option value="DC_12_MG_3_5">12 + MG 3-5</option>
                                         </optgroup>
-                                        
+
                                         <!-- Corner & Cartellini -->
                                         <optgroup label="📋 Statistiche">
                                             <option value="CORNER_OVER_9">Corner Over 9.5</option>
@@ -650,21 +687,21 @@
                                 </div>
                                 <div class="col-md-4 mb-3">
                                     <div class="form-check mb-2">
-                                        <input class="form-check-input" type="checkbox" id="use-kelly" style="cursor: pointer;">
-                                        <label class="form-check-label" for="use-kelly" style="cursor: pointer;">
+                                        <input class="form-check-input cursor-pointer" type="checkbox" id="use-kelly">
+                                        <label class="form-check-label cursor-pointer" for="use-kelly">
                                             🎯 Usa Kelly Criterion (Auto-Stake)
                                         </label>
                                     </div>
                                     <label for="bet-stake" class="form-label">Stake (€) *</label>
                                     <input type="text" class="form-control" id="bet-stake" placeholder="es. 2.00 o MONITOR" pattern="^(\d+(\.\d{1,2})?|MONITOR)$" title="Inserisci un numero (es. 2.00) o MONITOR" required>
                                     <small class="text-muted" id="stake-label">Numero per bet reale, 'MONITOR' per tracciamento</small>
-                                    <div id="stake-suggestion" style="display: none; margin-top: 8px; padding: 8px; background: #e3f2fd; border-radius: 4px; border-left: 3px solid #2196f3;">
-                                        <small style="color: #1565c0;">
+                                    <div id="stake-suggestion" class="stake-suggestion-box">
+                                        <small class="stake-suggestion-text">
                                             💡 <strong>Suggerimento:</strong> <span id="stake-suggestion-text"></span>
                                         </small>
                                     </div>
-                                    <div id="kelly-result" style="display: none; margin-top: 8px; padding: 10px; background: #d1f2eb; border-radius: 4px; border-left: 3px solid #28a745;">
-                                        <small style="color: #155724;">
+                                    <div id="kelly-result" class="kelly-result-box">
+                                        <small class="kelly-result-text">
                                             🎯 <strong>Kelly Stake:</strong> <span id="kelly-stake-value">€0.00</span><br>
                                             📊 Edge: <span id="kelly-edge-value">0%</span> | Prob Win: <span id="kelly-prob-value">0%</span>
                                         </small>
@@ -676,7 +713,7 @@
                                 </div>
                             </div>
 
-                            <div class="row" id="kelly-input-row" style="display: none;">
+                            <div class="row kelly-input-hidden" id="kelly-input-row">
                                 <div class="col-md-6 mb-3">
                                     <label for="bet-prob-win" class="form-label">Probabilità Vincita (%) *</label>
                                     <input type="number" class="form-control" id="bet-prob-win" step="0.1" min="0" max="100" placeholder="es. 45.5">
@@ -688,7 +725,7 @@
                                     <small class="text-muted">Vantaggio aggiuntivo (default: 0%)</small>
                                 </div>
                             </div>
-                            
+
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label for="bet-ev-modello" class="form-label">EV Modello</label>
@@ -773,29 +810,29 @@
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    
+
     <script>
         // Flag lazy loading
         let completedLoaded = false;
-        
+
         // Carica dati al load (ottimizzato con debouncing)
         document.addEventListener('DOMContentLoaded', function() {
             loadStats();
-            
+
             // Delay loadPendingBets per non bloccare rendering iniziale
             setTimeout(loadPendingBets, 50);
-            
+
             // Auto-fill data odierna
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('bet-data').value = today;
             document.getElementById('multipla-data').value = today;
-            
+
             // Toggle form singola/multipla
             document.querySelectorAll('input[name="bet-type"]').forEach(radio => {
                 radio.addEventListener('change', function() {
                     const formSingola = document.getElementById('form-add-bet');
                     const formMultipla = document.getElementById('form-add-multipla');
-                    
+
                     if (this.value === 'singola') {
                         formSingola.classList.add('form-singola-visible');
                         formSingola.classList.remove('form-multipla-hidden');
@@ -810,7 +847,7 @@
                     }
                 });
             });
-            
+
             // Submit form multipla
             document.getElementById('form-add-multipla').addEventListener('submit', async function(e) {
                 e.preventDefault();
@@ -823,11 +860,11 @@
             try {
                 const response = await fetch('/api/diario/stats');
                 const data = await response.json();
-                
+
                 // Performance stats
                 document.getElementById('stat-total').textContent = data.total;
                 document.getElementById('stat-pending').textContent = data.pending;
-                
+
                 // Info puntate skipped (MONITOR non giocate)
                 const skippedInfo = document.getElementById('stat-skipped-info');
                 if (data.skipped  && data.skipped > 0) {
@@ -835,10 +872,10 @@
                 } else {
                     skippedInfo.textContent = '';
                 }
-                
+
                 document.getElementById('stat-roi').textContent = data.roi.toFixed(1) + '%';
                 document.getElementById('stat-wr').textContent = data.win_rate.toFixed(1) + '%';
-                
+
                 // Colora ROI
                 const roiCard = document.getElementById('stat-roi-card');
                 if (data.roi > 0) {
@@ -848,14 +885,14 @@
                 } else {
                     roiCard.className = 'stat-card stat-neutral';
                 }
-                
+
                 // Bankroll Management
                 if (data.bankroll_iniziale) {
                     document.getElementById('bankroll-iniziale').textContent = '€' + data.bankroll_iniziale.toFixed(0);
                     document.getElementById('bankroll-corrente').textContent = '€' + data.bankroll_corrente.toFixed(2);
                     document.getElementById('unita-betting').textContent = '€' + data.unita_betting.toFixed(2);
                     document.getElementById('roi-bankroll').textContent = data.roi_bankroll.toFixed(1) + '%';
-                    
+
                     // Colora bankroll corrente
                     const bankrollCard = document.getElementById('bankroll-corrente-card');
                     if (data.bankroll_corrente > data.bankroll_iniziale) {
@@ -865,7 +902,7 @@
                     } else {
                         bankrollCard.className = 'stat-card stat-neutral';
                     }
-                    
+
                     // Colora ROI bankroll
                     const roiBankrollCard = document.getElementById('roi-bankroll-card');
                     if (data.roi_bankroll > 0) {
@@ -876,7 +913,7 @@
                         roiBankrollCard.className = 'stat-card stat-neutral';
                     }
                 }
-                
+
                 // Risk Metrics
                 if (data.sharpe_ratio !== undefined) {
                     document.getElementById('sharpe-ratio').textContent = data.sharpe_ratio.toFixed(2);
@@ -897,45 +934,45 @@
                     fetch('/api/diario/pending'),
                     fetch('/api/diario/multiple_pending')
                 ]);
-                
+
                 const dataSingole = await responseSingole.json();
                 const dataMultiple = await responseMultiple.json();
-                
+
                 const container = document.getElementById('pending-bets');
-                
+
                 // Gestione errori API
                 if (dataSingole.error && dataMultiple.error) {
                     container.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> Errore di connessione</div>`;
                     return;
                 }
-                
+
                 const singole = dataSingole.bets || [];
                 const multiple = dataMultiple.multiple || [];
-                
+
                 if (singole.length === 0 && multiple.length === 0) {
                     container.innerHTML = '<p class="text-muted text-center"><i class="bi bi-inbox"></i> Nessuna puntata in attesa</p>';
                     return;
                 }
-                
+
                 let html = '';
-                
+
                 // Render Multiple
                 multiple.forEach(multipla => {
                     html += renderMultipla(multipla, 'pending');
                 });
-                
+
                 // Render Singole
                 singole.forEach((bet, idx) => {
                     // Salta eventi che fanno parte di multiple (hanno group_id)
                     if (bet.group_id) return;
-                    
+
                     html += `
                         <div class="bet-card bet-pending">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
                                     <h5><i class="bi bi-calendar3"></i> ${bet.data} - ${bet.partita}</h5>
                                     <p class="mb-2">
-                                        <strong>Mercato:</strong> <span class="badge bg-primary">${bet.mercato}</span> 
+                                        <strong>Mercato:</strong> <span class="badge bg-primary">${bet.mercato}</span>
                                         @ <strong>${parseFloat(bet.quota).toFixed(2)}</strong>
                                     </p>
                                     <p class="mb-2">
@@ -965,19 +1002,19 @@
                         </div>
                     `;
                 });
-                
+
                 container.innerHTML = html;
             } catch (error) {
                 console.error('Errore caricamento pending:', error);
             }
         }
-        
+
         // Render multipla card con eventi espandibili
         function renderMultipla(multipla, source) {
-            const classRisultato = multipla.risultato === 'PENDING' ? 'bet-pending' : 
-                                  multipla.risultato === 'WIN' ? 'bet-win' : 
+            const classRisultato = multipla.risultato === 'PENDING' ? 'bet-pending' :
+                                  multipla.risultato === 'WIN' ? 'bet-win' :
                                   multipla.risultato === 'LOSS' ? 'bet-loss' : 'bet-skip';
-            
+
             let html = `
                 <div class="multipla-card ${classRisultato}">
                     <div class="multipla-header" onclick="toggleEventiMultipla(${multipla.id})">
@@ -988,12 +1025,12 @@
                                 <span class="badge bg-secondary ms-1">${multipla.num_eventi} eventi</span>
                             </h5>
                             <p class="mb-1">
-                                <strong>Data:</strong> ${multipla.data} | 
-                                <strong>Quota:</strong> ${parseFloat(multipla.quota_totale).toFixed(2)} | 
+                                <strong>Data:</strong> ${multipla.data} |
+                                <strong>Quota:</strong> ${parseFloat(multipla.quota_totale).toFixed(2)} |
                                 <strong>Stake:</strong> €${parseFloat(multipla.stake).toFixed(2)}
                             </p>
-                            ${multipla.risultato !== 'PENDING' ? 
-                                `<p class="mb-0"><strong>Profit:</strong> <span class="${parseFloat(multipla.profit) >= 0 ? 'text-success' : 'text-danger'}">€${parseFloat(multipla.profit).toFixed(2)}</span></p>` 
+                            ${multipla.risultato !== 'PENDING' ?
+                                `<p class="mb-0"><strong>Profit:</strong> <span class="${parseFloat(multipla.profit) >= 0 ? 'text-success' : 'text-danger'}">€${parseFloat(multipla.profit).toFixed(2)}</span></p>`
                                 : ''}
                             ${multipla.note ? `<p class="text-muted small mb-0"><i class="bi bi-sticky"></i> ${multipla.note}</p>` : ''}
                         </div>
@@ -1001,22 +1038,22 @@
                             <i class="bi bi-chevron-down"></i>
                         </div>
                     </div>
-                    
+
                     <div class="multipla-eventi" id="eventi-multipla-${multipla.id}">
                         ${multipla.eventi.map(evento => {
-                            const classEvento = evento.risultato === 'PENDING' ? '' : 
-                                              evento.risultato === 'WIN' ? 'border-success' : 
+                            const classEvento = evento.risultato === 'PENDING' ? '' :
+                                              evento.risultato === 'WIN' ? 'border-success' :
                                               evento.risultato === 'LOSS' ? 'border-danger' : 'border-secondary';
-                            
+
                             return `
                                 <div class="evento-item ${classEvento}">
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div>
-                                            <strong>${evento.partita}</strong> - 
-                                            <span class="badge bg-primary">${evento.mercato}</span> @ 
+                                            <strong>${evento.partita}</strong> -
+                                            <span class="badge bg-primary">${evento.mercato}</span> @
                                             <strong>${parseFloat(evento.quota_sisal).toFixed(2)}</strong>
-                                            ${evento.risultato !== 'PENDING' ? 
-                                                `<span class="badge ${evento.risultato === 'WIN' ? 'bg-success' : evento.risultato === 'LOSS' ? 'bg-danger' : 'bg-secondary'} ms-2">${evento.risultato}</span>` 
+                                            ${evento.risultato !== 'PENDING' ?
+                                                `<span class="badge ${evento.risultato === 'WIN' ? 'bg-success' : evento.risultato === 'LOSS' ? 'bg-danger' : 'bg-secondary'} ms-2">${evento.risultato}</span>`
                                                 : ''}
                                         </div>
                                         ${multipla.risultato === 'PENDING' ? `
@@ -1036,7 +1073,7 @@
                                 </div>
                             `;
                         }).join('')}
-                        
+
                         <div class="mt-3 text-end">
                             <button class="btn btn-sm btn-outline-danger" onclick="deleteMultipla(${multipla.id}, '${source}')" title="Elimina multipla">
                                 <i class="bi bi-trash"></i> Elimina Multipla
@@ -1045,14 +1082,14 @@
                     </div>
                 </div>
             `;
-            
+
             return html;
         }
 
         // Funzione per caricare puntate completate (singole + multiple)
         async function loadCompletedBets() {
             const container = document.getElementById('completed-bets');
-            
+
             // Mostra skeleton
             container.innerHTML = `
                 <div class="text-center text-muted py-4">
@@ -1060,43 +1097,43 @@
                     <span>Caricamento storico...</span>
                 </div>
             `;
-            
+
             try {
                 // Fetch parallelo singole e multiple
                 const [responseSingole, responseMultiple] = await Promise.all([
                     fetch('/api/diario/completed'),
                     fetch('/api/diario/multiple_completed')
                 ]);
-                
+
                 const dataSingole = await responseSingole.json();
                 const dataMultiple = await responseMultiple.json();
-                
+
                 if (dataSingole.error && dataMultiple.error) {
                     container.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> Errore di connessione</div>`;
                     return;
                 }
-            
+
                 const singole = dataSingole.bets || [];
                 const multiple = dataMultiple.multiple || [];
-                
+
                 if (singole.length === 0 && multiple.length === 0) {
                     container.innerHTML = '<p class="text-muted text-center">Nessuna puntata completata ancora</p>';
                     return;
                 }
-            
+
                 let html = '';
-                
+
                 // Render Multiple
                 multiple.forEach(multipla => {
                     html += renderMultipla(multipla, 'completed');
                 });
-                
+
                 // Render Singole (salta quelle con group_id)
                 singole.forEach(bet => {
                     if (bet.group_id) return;  // Salta eventi di multiple
-                    
+
                     let cardClass, icon, profitClass;
-                    
+
                     if (bet.risultato === 'WIN') {
                         cardClass = 'bet-win';
                         icon = 'trophy-fill';
@@ -1114,14 +1151,14 @@
                         icon = 'x-circle-fill';
                         profitClass = 'text-danger';
                     }
-                    
+
                     html += `
                         <div class="bet-card ${cardClass}">
                             <div class="d-flex justify-content-between">
                                 <div>
                                     <h6><i class="bi bi-${icon}"></i> ${bet.data} - ${bet.partita}</h6>
                                     <p class="mb-1 small">
-                                        <strong>${bet.mercato}</strong> @ ${parseFloat(bet.quota).toFixed(2)} 
+                                        <strong>${bet.mercato}</strong> @ ${parseFloat(bet.quota).toFixed(2)}
                                         | Stake: ${bet.stake_raw || bet.stake}
                                     </p>
                                     ${bet.note ? `<p class="text-muted small mb-0">${bet.note}</p>` : ''}
@@ -1131,8 +1168,8 @@
                                         ${bet.risultato === 'SKIP' || bet.risultato === 'VOID' ? '—' : (bet.profit > 0 ? '+' : '') + '€' + bet.profit.toFixed(2)}
                                     </h5>
                                     <small class="text-muted d-block mb-2">
-                                        ${bet.risultato === 'SKIP' ? '🚫 NON GIOCATA' : 
-                                          bet.risultato === 'VOID' ? '↻ ANNULLATA' : 
+                                        ${bet.risultato === 'SKIP' ? '🚫 NON GIOCATA' :
+                                          bet.risultato === 'VOID' ? '↻ ANNULLATA' :
                                           bet.risultato}
                                     </small>
                                     <div class="btn-group btn-group-sm" role="group">
@@ -1148,7 +1185,7 @@
                         </div>
                     `;
                 });
-                
+
                 container.innerHTML = html;
             } catch (error) {
                 container.innerHTML = '<p class="text-danger">Errore caricamento dati</p>';
@@ -1166,11 +1203,11 @@
         // Form submit nuova puntata
         document.getElementById('form-add-bet').addEventListener('submit', async function(e) {
             e.preventDefault();
-            
+
             // Gestione MONITOR per stake (no float conversion)
             const stakeInput = document.getElementById('bet-stake').value.trim().toUpperCase();
             const stakeValue = stakeInput === 'MONITOR' ? 'MONITOR' : parseFloat(stakeInput);
-            
+
             const formData = {
                 partita: document.getElementById('bet-partita').value,
                 mercato: document.getElementById('bet-mercato').value,
@@ -1181,38 +1218,38 @@
                 ev_reale: document.getElementById('bet-ev-reale').value || 'N/A',
                 note: document.getElementById('bet-note').value
             };
-            
+
             try {
                 const response = await fetch('/api/diario/add', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify(formData)
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (result.success) {
                     document.getElementById('add-bet-result').innerHTML = `
                         <div class="alert alert-success">
                             <i class="bi bi-check-circle"></i> Puntata salvata con successo!
                         </div>
                     `;
-                    
+
                     // Reset form
                     document.getElementById('form-add-bet').reset();
                     const today = new Date().toISOString().split('T')[0];
                     document.getElementById('bet-data').value = today;
-                    
+
                     // Ricarica stats immediatamente
                     loadStats();
-                    
+
                     // Delay anti-race-condition + auto-switch a tab "In Attesa"
                     setTimeout(() => {
                         // Switch a tab "In Attesa"
                         const pendingTab = document.getElementById('pending-tab');
                         const bsTab = new bootstrap.Tab(pendingTab);
                         bsTab.show();
-                        
+
                         // Reload pending dopo switch (bet ora visibile)
                         setTimeout(() => loadPendingBets(), 100);
                     }, 300);
@@ -1251,13 +1288,13 @@
         async function editBet(bet) {
             const nuovoStake = prompt(`💰 Modifica Stake per:\n${bet.partita} - ${bet.mercato}\n\nStake attuale: ${bet.stake}\nInserisci nuovo stake (es. 2.00 o MONITOR):`, bet.stake);
             if (nuovoStake === null) return;  // Annullato
-            
+
             const nuovaQuota = prompt(`🎯 Modifica Quota:\n\nQuota attuale: ${parseFloat(bet.quota).toFixed(2)}\nInserisci nuova quota (es. 1.45):`, parseFloat(bet.quota).toFixed(2));
             if (nuovaQuota === null) return;
-            
+
             const nuoveNote = prompt(`📝 Modifica Note:\n\nNote attuali: ${bet.note || 'Nessuna'}\nInserisci nuove note (opzionale):`, bet.note || '');
             if (nuoveNote === null) return;
-            
+
             try {
                 const response = await fetch('/api/diario/edit', {
                     method: 'POST',
@@ -1269,9 +1306,9 @@
                         note: nuoveNote.trim()
                     })
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (result.success) {
                     alert(`✅ Puntata aggiornata!\n\nStake: ${nuovoStake}\nQuota: ${nuovaQuota}`);
                     loadStats();
@@ -1283,23 +1320,23 @@
                 alert('❌ Errore: ' + error.message);
             }
         }
-        
+
         // Reset completo diario
         async function resetDiario() {
             const conferma1 = confirm('⚠️ ATTENZIONE: Stai per cancellare TUTTO il diario.\n\nUn backup sarà creato automaticamente.\n\nContinuare?');
             if (!conferma1) return;
-            
+
             const conferma2 = confirm('🔴 ULTIMA CONFERMA: Tutti i dati saranno persi irreversibilmente.\n\nSei SICURO di voler procedere?');
             if (!conferma2) return;
-            
+
             try {
                 const response = await fetch('/api/diario/reset', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'}
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (result.success) {
                     alert(`✅ Diario resettato!\n\nBackup salvato: ${result.backup_file}`);
                     location.reload();  // Ricarica pagina
@@ -1310,41 +1347,41 @@
                 alert('❌ Errore reset: ' + error.message);
             }
         }
-        
+
         // Aggiorna risultato puntata
         async function updateBet(betId, risultato) {
             if (!confirm(`Confermi risultato ${risultato}?`)) return;
-            
+
             try {
                 const response = await fetch('/api/diario/update', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({id: betId, risultato: risultato})
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (result.success) {
                     alert(`✅ Risultato aggiornato! Profit: €${result.profit.toFixed(2)}`);
-                    
+
                     // Ricarica stats immediatamente
                     loadStats();
-                    
+
                     // Delay anti-race-condition + auto-switch a tab "Completate"
                     setTimeout(() => {
                         // Reload pending (bet WIN ora rimossa)
                         loadPendingBets();
-                        
+
                         // Reset flag + switch automatico a tab "Completate"
                         completedLoaded = false;
                         const completedTab = document.getElementById('completed-tab');
                         const bsTab = new bootstrap.Tab(completedTab);
                         bsTab.show();
-                        
+
                         // Force reload tab completate dopo switch
                         setTimeout(() => loadCompletedBets(), 100);
                     }, 300);
-                    
+
                 } else {
                     alert('❌ Errore: ' + result.error);
                 }
@@ -1352,11 +1389,11 @@
                 alert('❌ Errore: ' + error.message);
             }
         }
-        
+
         // Riporta puntata completata in "In Attesa" (resetta risultato a PENDING)
         async function restoreToPending(betId) {
             if (!confirm(`🔄 Riportare questa puntata in "In Attesa"?\n\nIl risultato verrà resettato e il profit azzerato.`)) return;
-            
+
             try {
                 const response = await fetch('/api/diario/update', {
                     method: 'POST',
@@ -1366,20 +1403,20 @@
                         risultato: 'PENDING'
                     })
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (result.success) {
                     // Ricarica stats
                     loadStats();
-                    
+
                     // Delay + reload entrambe le sezioni
                     setTimeout(() => {
                         loadPendingBets();
                         completedLoaded = false;
                         loadCompletedBets();
                     }, 300);
-                    
+
                     alert('✅ Puntata riportata in "In Attesa"');
                 } else {
                     alert('❌ Errore: ' + result.error);
@@ -1388,24 +1425,24 @@
                 alert('❌ Errore: ' + error.message);
             }
         }
-        
+
         // Elimina puntata (pending o completed)
         async function deleteBet(betId, source) {
             if (!confirm(`⚠️ Confermi eliminazione?\n\nQuesta azione è IRREVERSIBILE.`)) return;
-            
+
             try {
                 const response = await fetch('/api/diario/delete', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({id: betId})
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (result.success) {
                     // Ricarica stats
                     loadStats();
-                    
+
                     // Delay + reload sezione appropriata
                     setTimeout(() => {
                         if (source === 'pending') {
@@ -1416,7 +1453,7 @@
                             loadCompletedBets();
                         }
                     }, 300);
-                    
+
                     alert('✅ Puntata eliminata');
                 } else {
                     alert('❌ Errore: ' + result.error);
@@ -1425,41 +1462,41 @@
                 alert('❌ Errore: ' + error.message);
             }
         }
-        
+
         // ==================== SCOMMESSE MULTIPLE ====================
-        
+
         let eventiMultiplaCounter = 0;
-        
+
         // Aggiungi evento a multipla
         function aggiungiEventoMultipla() {
             eventiMultiplaCounter++;
             const container = document.getElementById('eventi-multipla-container');
-            
+
             const eventoHtml = `
                 <div class="evento-multipla-row" id="evento-${eventiMultiplaCounter}">
                     <div class="row align-items-center">
                         <div class="col-md-4 mb-2">
-                            <input type="text" class="form-control form-control-sm evento-partita" 
+                            <input type="text" class="form-control form-control-sm evento-partita"
                                    placeholder="Partita (es. Inter vs Milan)" required>
                         </div>
                         <div class="col-md-3 mb-2">
                             <select class="form-select form-select-sm evento-mercato" required>
                                 <option value="">Mercato</option>
-                                
+
                                 <!-- 1X2 -->
                                 <optgroup label="🎯 1X2">
                                     <option value="1">1 (Casa)</option>
                                     <option value="X">X (Pareggio)</option>
                                     <option value="2">2 (Ospite)</option>
                                 </optgroup>
-                                
+
                                 <!-- Doppia Chance -->
                                 <optgroup label="🔀 Doppia Chance">
                                     <option value="1X">1X (Casa/Pareggio)</option>
                                     <option value="X2">X2 (Pareggio/Ospite)</option>
                                     <option value="12">12 (Casa/Ospite)</option>
                                 </optgroup>
-                                
+
                                 <!-- Over/Under -->
                                 <optgroup label="⚽ Over/Under">
                                     <option value="UNDER_15">Under 1.5</option>
@@ -1469,7 +1506,7 @@
                                     <option value="UNDER_35">Under 3.5</option>
                                     <option value="OVER_35">Over 3.5</option>
                                 </optgroup>
-                                
+
                                 <!-- Over/Under Squadra -->
                                 <optgroup label="🏠⚽ Over/Under Squadra">
                                     <option value="HOME_OVER_05">Casa Over 0.5</option>
@@ -1481,13 +1518,13 @@
                                     <option value="AWAY_OVER_15">Ospite Over 1.5</option>
                                     <option value="AWAY_UNDER_15">Ospite Under 1.5</option>
                                 </optgroup>
-                                
+
                                 <!-- Goal/No Goal -->
                                 <optgroup label="🥅 Goal/No Goal">
                                     <option value="GG">GG (Goal)</option>
                                     <option value="NG">NG (No Goal)</option>
                                 </optgroup>
-                                
+
                                 <!-- Over/Under + Goal -->
                                 <optgroup label="⚽🥅 Over/Under + Goal">
                                     <option value="OVER_15_GG">Over 1.5 + GG</option>
@@ -1497,7 +1534,7 @@
                                     <option value="UNDER_25_NG">Under 2.5 + NG</option>
                                     <option value="UNDER_35_NG">Under 3.5 + NG</option>
                                 </optgroup>
-                                
+
                                 <!-- BTTS + Risultato -->
                                 <optgroup label="🎲 BTTS + Risultato">
                                     <option value="1_GG">1 + GG</option>
@@ -1507,14 +1544,14 @@
                                     <option value="X_NG">X + NG</option>
                                     <option value="2_NG">2 + NG</option>
                                 </optgroup>
-                                
+
                                 <!-- Primo Tempo -->
                                 <optgroup label="⏱️ Primo Tempo">
                                     <option value="1T_1">1T 1 (Casa)</option>
                                     <option value="1T_X">1T X (Pareggio)</option>
                                     <option value="1T_2">1T 2 (Ospite)</option>
                                 </optgroup>
-                                
+
                                 <!-- Asian Handicap -->
                                 <optgroup label="📊 Asian Handicap">
                                     <option value="AH_-1">AH -1.0 (Casa)</option>
@@ -1522,14 +1559,14 @@
                                     <option value="AH_+0.5">AH +0.5 (Ospite)</option>
                                     <option value="AH_+1">AH +1.0 (Ospite)</option>
                                 </optgroup>
-                                
+
                                 <!-- Multigol -->
                                 <optgroup label="🎯 Multigol">
                                     <option value="MG_1_2">Multigol 1-2</option>
                                     <option value="MG_2_3">Multigol 2-3</option>
                                     <option value="MG_3_4">Multigol 3-4</option>
                                 </optgroup>
-                                
+
                                 <!-- DC + Multigol -->
                                 <optgroup label="🔀⚽ DC + Multigol">
                                     <option value="DC_1X_MG_1_3">1X + MG 1-3</option>
@@ -1539,7 +1576,7 @@
                                     <option value="DC_12_MG_2_4">12 + MG 2-4</option>
                                     <option value="DC_12_MG_3_5">12 + MG 3-5</option>
                                 </optgroup>
-                                
+
                                 <!-- Corner & Cartellini -->
                                 <optgroup label="📋 Statistiche">
                                     <option value="CORNER_OVER_9">Corner Over 9.5</option>
@@ -1550,12 +1587,12 @@
                             </select>
                         </div>
                         <div class="col-md-3 mb-2">
-                            <input type="number" class="form-control form-control-sm evento-quota" 
-                                   placeholder="Quota" step="0.01" min="1.01" required 
+                            <input type="number" class="form-control form-control-sm evento-quota"
+                                   placeholder="Quota" step="0.01" min="1.01" required
                                    onchange="ricalcolaQuotaTotale()">
                         </div>
                         <div class="col-md-2 mb-2 text-end">
-                            <button type="button" class="btn-remove-evento" onclick="rimuoviEventoMultipla(${eventiMultiplaCounter})" 
+                            <button type="button" class="btn-remove-evento" onclick="rimuoviEventoMultipla(${eventiMultiplaCounter})"
                                     title="Rimuovi evento">
                                 <i class="bi bi-x"></i>
                             </button>
@@ -1563,11 +1600,11 @@
                     </div>
                 </div>
             `;
-            
+
             container.insertAdjacentHTML('beforeend', eventoHtml);
             ricalcolaQuotaTotale();
         }
-        
+
         // Rimuovi evento da multipla
         function rimuoviEventoMultipla(id) {
             const evento = document.getElementById(`evento-${id}`);
@@ -1576,13 +1613,13 @@
                 ricalcolaQuotaTotale();
             }
         }
-        
+
         // Ricalcola quota totale (prodotto quote)
         function ricalcolaQuotaTotale() {
             const quoteInputs = document.querySelectorAll('.evento-quota');
             let quotaTotale = 1.0;
             let count = 0;
-            
+
             quoteInputs.forEach(input => {
                 const quota = parseFloat(input.value);
                 if (quota && quota >= 1.01) {
@@ -1590,16 +1627,16 @@
                     count++;
                 }
             });
-            
+
             // Display quota totale
             document.getElementById('quota-totale-display').textContent = quotaTotale.toFixed(2);
-            
+
             // Calcola vincita potenziale
             const stake = parseFloat(document.getElementById('multipla-stake').value) || 0;
             const vincita = stake * quotaTotale;
             document.getElementById('vincita-potenziale-display').textContent = '€' + vincita.toFixed(2);
         }
-        
+
         // Aggiorna stake multipla → ricalcola vincita
         document.addEventListener('DOMContentLoaded', function() {
             const stakeInput = document.getElementById('multipla-stake');
@@ -1607,40 +1644,40 @@
                 stakeInput.addEventListener('input', ricalcolaQuotaTotale);
             }
         });
-        
+
         // Salva multipla
         async function salvaMultipla() {
             const nome = document.getElementById('multipla-nome').value.trim() || 'Multipla';
             const stake = parseFloat(document.getElementById('multipla-stake').value);
             const data = document.getElementById('multipla-data').value;
             const note = document.getElementById('multipla-note').value.trim();
-            
+
             // Valida stake
             if (!stake || stake <= 0) {
                 alert('⚠️ Inserisci uno stake valido (> 0)');
                 return;
             }
-            
+
             // Raccogli eventi
             const eventi = [];
             const eventoRows = document.querySelectorAll('.evento-multipla-row');
-            
+
             eventoRows.forEach(row => {
                 const partita = row.querySelector('.evento-partita').value.trim();
                 const mercato = row.querySelector('.evento-mercato').value;
                 const quota = parseFloat(row.querySelector('.evento-quota').value);
-                
+
                 if (partita && mercato && quota >= 1.01) {
                     eventi.push({partita, mercato, quota});
                 }
             });
-            
+
             // Valida almeno 2 eventi
             if (eventi.length < 2) {
                 alert('⚠️ Inserisci almeno 2 eventi per una multipla');
                 return;
             }
-            
+
             // Mostra loading
             document.getElementById('add-bet-result').innerHTML = `
                 <div class="alert alert-info">
@@ -1648,7 +1685,7 @@
                     Salvataggio multipla in corso...
                 </div>
             `;
-            
+
             try {
                 const response = await fetch('/api/diario/add_multipla', {
                     method: 'POST',
@@ -1661,9 +1698,9 @@
                         eventi
                     })
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (result.success) {
                     document.getElementById('add-bet-result').innerHTML = `
                         <div class="alert alert-success">
@@ -1671,12 +1708,12 @@
                             <small>Quota totale: ${result.quota_totale.toFixed(2)} - Group ID: ${result.group_id}</small>
                         </div>
                     `;
-                    
+
                     // Reset form
                     document.getElementById('form-add-multipla').reset();
                     document.getElementById('eventi-multipla-container').innerHTML = '';
                     eventiMultiplaCounter = 0;
-                    
+
                     // Reload stats e pending
                     loadStats();
                     setTimeout(loadPendingBets, 300);
@@ -1695,7 +1732,7 @@
                 `;
             }
         }
-        
+
         // Toggle espandi/comprimi eventi multipla
         function toggleEventiMultipla(groupId) {
             const eventiDiv = document.getElementById(`eventi-multipla-${groupId}`);
@@ -1703,7 +1740,7 @@
                 eventiDiv.classList.toggle('show');
             }
         }
-        
+
         // Aggiorna risultato singolo evento in multipla
         async function updateEventoMultipla(betId, risultato, groupId) {
             try {
@@ -1712,13 +1749,13 @@
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({bet_id: betId, risultato})
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (result.success) {
                     // Notify
                     alert(`✅ Evento aggiornato → ${risultato}\nProfit multipla: €${result.profit_multipla || 0}`);
-                    
+
                     // Reload
                     loadStats();
                     setTimeout(loadPendingBets, 300);
@@ -1729,20 +1766,20 @@
                 alert('❌ Errore: ' + error.message);
             }
         }
-        
+
         // Elimina multipla completa
         async function deleteMultipla(groupId, source) {
             if (!confirm(`⚠️ Confermi eliminazione MULTIPLA?\n\nVerranno eliminati TUTTI gli eventi associati.\nAzione IRREVERSIBILE.`)) return;
-            
+
             try {
                 const response = await fetch('/api/diario/delete_multipla', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({group_id: groupId})
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (result.success) {
                     alert('✅ Multipla eliminata');
                     loadStats();
@@ -1760,57 +1797,57 @@
                 alert('❌ Errore: ' + error.message);
             }
         }
-        
+
         // ==================== KELLY CRITERION & TRADING ====================
-        
+
         // Calcola probabilità da EV + Quota (helper rapido)
         function calcProbFromEV() {
             const ev = parseFloat(document.getElementById('helper-ev').value);
             const quota = parseFloat(document.getElementById('kelly-quota').value);
-            
+
             if (!ev || ev <= 0) {
                 alert('⚠️ Inserisci EV % dalla dashboard opportunità (es. 22.5)');
                 return;
             }
-            
+
             if (!quota || quota <= 1.0) {
                 alert('⚠️ Inserisci prima la quota (es. 3.20)');
                 return;
             }
-            
+
             // Formula corretta: prob = (EV/100 + 1) / quota
             // Derivata da: EV = prob × (quota - 1) - (1 - prob)
             const evDecimal = ev / 100;  // 22% → 0.22
             const prob = (evDecimal + 1) / quota;
             const probPercent = prob * 100;
-            
+
             // Valida risultato (prob deve essere tra 0-100%)
             if (probPercent <= 0 || probPercent >= 100) {
                 alert(`❌ Calcolo invalido: prob = ${probPercent.toFixed(1)}%\n\nVerifica EV e quota inseriti.`);
                 return;
             }
-            
+
             // Popola campo probabilità
             document.getElementById('kelly-prob').value = probPercent.toFixed(1);
-            
+
             alert(`✅ Probabilità calcolata: ${probPercent.toFixed(1)}%\n\nInput:\n• EV: ${ev}%\n• Quota: ${quota}\n\nOra clicca "Calcola Stake Ottimale"`);
         }
-        
+
         // Calcola stake Kelly Criterion
         async function calculateKelly() {
             const prob = parseFloat(document.getElementById('kelly-prob').value);
             const quota = parseFloat(document.getElementById('kelly-quota').value);
-            
+
             if (!prob || prob <= 0 || prob >= 100) {
                 alert('⚠️ Inserisci una probabilit\u00e0 tra 1 e 99%');
                 return;
             }
-            
+
             if (!quota || quota <= 1.0) {
                 alert('⚠️ Inserisci una quota > 1.0');
                 return;
             }
-            
+
             try {
                 const response = await fetch('/api/calculate_kelly', {
                     method: 'POST',
@@ -1820,42 +1857,42 @@
                         quota: quota
                     })
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (!result.success) {
                     alert('❌ Errore: ' + result.error);
                     return;
                 }
-                
+
                 // Mostra risultato
                 document.getElementById('kelly-stake-value').textContent = '€' + result.kelly_stake.toFixed(2);
                 document.getElementById('kelly-units-value').textContent = result.kelly_units.toFixed(2) + ' U';
                 document.getElementById('kelly-pct-value').textContent = result.stake_pct_bankroll.toFixed(2) + '%';
                 document.getElementById('kelly-ev-value').textContent = result.expected_value.toFixed(1) + '%';
-                
+
                 document.getElementById('kelly-result').classList.remove('hidden');
-                
+
             } catch (error) {
                 alert('❌ Errore calcolo Kelly: ' + error.message);
             }
         }
-        
+
         // Aggiorna configurazione bankroll
         async function updateBankrollConfig() {
             const bankrollIniziale = parseFloat(document.getElementById('config-bankroll-iniziale').value);
             const kellyFraction = parseFloat(document.getElementById('config-kelly-fraction').value);
             const stopLoss = parseFloat(document.getElementById('config-stop-loss').value);
-            
+
             if (!bankrollIniziale || bankrollIniziale < 100) {
                 alert('⚠️ Capitale iniziale minimo: €100');
                 return;
             }
-            
+
             if (!confirm(`Confermi aggiornamento configurazione?\n\nCapitale: €${bankrollIniziale}\nKelly Fraction: ${kellyFraction}\nStop Loss: ${stopLoss}%`)) {
                 return;
             }
-            
+
             try {
                 const response = await fetch('/api/bankroll', {
                     method: 'POST',
@@ -1866,9 +1903,9 @@
                         stop_loss_percentage: stopLoss
                     })
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (result.success) {
                     alert(`✅ Configurazione aggiornata!\n\nBankroll: €${result.bankroll.bankroll_iniziale}\nUnit\u00e0: €${result.bankroll.unita_betting.toFixed(2)}`);
                     loadStats();  // Ricarica stats
@@ -1879,17 +1916,17 @@
                 alert('❌ Errore: ' + error.message);
             }
         }
-        
+
         // Carica equity curve
         let equityChart = null;
         let winRateChart = null;
         let roiPerMercatoChart = null;
-        
+
         async function loadEquityCurve() {
             try {
                 const response = await fetch('/api/equity_curve');
                 const data = await response.json();
-                
+
                 // Check se ci sono dati disponibili
                 if (!data.labels || data.labels.length === 0) {
                     // Mostra messaggio placeholder
@@ -1904,14 +1941,14 @@
                     `;
                     return;
                 }
-                
+
                 const ctx = document.getElementById('equityCurveChart').getContext('2d');
-                
+
                 // Distruggi chart esistente se presente
                 if (equityChart) {
                     equityChart.destroy();
                 }
-                
+
                 // Crea nuovo chart
                 equityChart = new Chart(ctx, {
                     type: 'line',
@@ -1970,18 +2007,18 @@
                         }
                     }
                 });
-                
+
             } catch (error) {
                 console.error('Errore caricamento equity curve:', error);
             }
         }
-        
+
         async function loadWinRateEvolution() {
             try {
                 // Riusa dati equity curve o fetch specifico
                 const response = await fetch('/api/equity_curve');
                 const data = await response.json();
-                
+
                 if (!data.bet_details || data.bet_details.length === 0) {
                     const canvas = document.getElementById('winRateChart');
                     const parent = canvas.parentElement;
@@ -1994,29 +2031,29 @@
                     `;
                     return;
                 }
-                
+
                 // Calcola win rate rolling (finestra 10 bet)
                 const bets = data.bet_details;
                 const windowSize = 10;
                 const labels = [];
                 const winRates = [];
-                
+
                 for (let i = 0; i < bets.length; i++) {
                     const startIdx = Math.max(0, i - windowSize + 1);
                     const window = bets.slice(startIdx, i + 1);
                     const wins = window.filter(b => b.risultato === 'WIN').length;
                     const winRate = (wins / window.length) * 100;
-                    
+
                     labels.push(`Bet ${i + 1}`);
                     winRates.push(winRate.toFixed(1));
                 }
-                
+
                 const ctx = document.getElementById('winRateChart').getContext('2d');
-                
+
                 if (winRateChart) {
                     winRateChart.destroy();
                 }
-                
+
                 winRateChart = new Chart(ctx, {
                     type: 'line',
                     data: {
@@ -2064,16 +2101,16 @@
                         }
                     }
                 });
-                
+
             } catch (error) {
                 console.error('Errore caricamento win rate:', error);
             }
         }
-        
+
         async function loadRoiPerMercato() {
             try {
                 const all_bets = await fetch('/api/get_betting_events').then(r => r.json());
-                
+
                 if (!all_bets || all_bets.length === 0) {
                     const canvas = document.getElementById('roiPerMercatoChart');
                     const parent = canvas.parentElement;
@@ -2086,10 +2123,10 @@
                     `;
                     return;
                 }
-                
+
                 // Filtra solo completate
                 const completed = all_bets.filter(b => ['WIN', 'LOSS'].includes(b.risultato));
-                
+
                 if (completed.length === 0) {
                     const canvas = document.getElementById('roiPerMercatoChart');
                     const parent = canvas.parentElement;
@@ -2100,7 +2137,7 @@
                     `;
                     return;
                 }
-                
+
                 // Raggruppa per mercato
                 const mercati = {};
                 completed.forEach(bet => {
@@ -2112,24 +2149,24 @@
                     mercati[mercato].count += 1;
                     mercati[mercato].stake += parseFloat(bet.stake || 10);  // Default stake 10
                 });
-                
+
                 // Calcola ROI per mercato
                 const labels = [];
                 const roiValues = [];
                 const colors = ['#667eea', '#28a745', '#ffc107', '#dc3545', '#17a2b8'];
-                
+
                 Object.entries(mercati).forEach(([mercato, stats], i) => {
                     const roi = stats.stake > 0 ? (stats.profit / stats.stake) * 100 : 0;
                     labels.push(`${mercato} (${stats.count} bet)`);
                     roiValues.push(roi.toFixed(1));
                 });
-                
+
                 const ctx = document.getElementById('roiPerMercatoChart').getContext('2d');
-                
+
                 if (roiPerMercatoChart) {
                     roiPerMercatoChart.destroy();
                 }
-                
+
                 roiPerMercatoChart = new Chart(ctx, {
                     type: 'bar',
                     data: {
@@ -2165,18 +2202,18 @@
                         }
                     }
                 });
-                
+
             } catch (error) {
                 console.error('Errore caricamento ROI mercati:', error);
             }
         }
-        
+
         // Event listener per tab Trading Dashboard
         document.getElementById('trading-tab').addEventListener('shown.bs.tab', function() {
             loadEquityCurve();
             loadWinRateEvolution();
             loadRoiPerMercato();
-            
+
             // Carica config bankroll corrente nei form
             fetch('/api/bankroll')
                 .then(r => r.json())
@@ -2188,7 +2225,7 @@
                     }
                 });
         });
-        
+
         // Kelly Criterion Toggle
         document.getElementById('use-kelly').addEventListener('change', function() {
             const isKellyActive = this.checked;
@@ -2197,7 +2234,7 @@
             const stakeLabel = document.getElementById('stake-label');
             const stakeSuggestion = document.getElementById('stake-suggestion');
             const kellyResult = document.getElementById('kelly-result');
-            
+
             if (isKellyActive) {
                 kellyInputRow.style.display = 'flex';
                 stakeInput.readOnly = true;
@@ -2215,31 +2252,31 @@
                 kellyResult.style.display = 'none';
             }
         });
-        
+
         // Calcola Kelly Stake automaticamente
         async function calculateKellyStake() {
             const quota = parseFloat(document.getElementById('bet-quota').value);
             const probWin = parseFloat(document.getElementById('bet-prob-win').value) / 100; // Convert to 0-1
             const edgeInput = parseFloat(document.getElementById('bet-kelly-edge').value) || 0;
-            
+
             if (!quota || quota < 1.01 || !probWin || probWin <= 0 || probWin >= 1) {
                 document.getElementById('bet-stake').value = '';
                 return;
             }
-            
+
             try {
                 // Fetch bankroll
                 const bankrollResp = await fetch('/api/bankroll');
                 const bankrollData = await bankrollResp.json();
-                
+
                 if (!bankrollData.success) return;
-                
+
                 const bankroll = bankrollData.bankroll.bankroll_corrente;
                 const kellyFraction = bankrollData.bankroll.kelly_fraction;
-                
+
                 // Aggiungi edge alla probabilità (se specificato)
                 const probWinAdjusted = Math.min(probWin + (edgeInput / 100), 0.99);
-                
+
                 // Kelly Formula: f = (bp - q) / b
                 // b = decimal odds - 1
                 // p = probability of winning
@@ -2247,104 +2284,104 @@
                 const b = quota - 1;
                 const p = probWinAdjusted;
                 const q = 1 - p;
-                
+
                 const kellyPercent = (b * p - q) / b;
-                
+
                 // Apply Kelly fraction (conservative)
                 const kellyStake = Math.max(0, kellyPercent * kellyFraction * bankroll);
-                
+
                 // Cap stake al max_stake_percentage
                 const maxStake = bankroll * (bankrollData.bankroll.max_stake_percentage / 100);
                 const finalStake = Math.min(kellyStake, maxStake);
-                
+
                 // Update UI
                 document.getElementById('bet-stake').value = finalStake.toFixed(2);
                 document.getElementById('kelly-stake-value').textContent = '€' + finalStake.toFixed(2);
                 document.getElementById('kelly-edge-value').textContent = (edgeInput || 0).toFixed(1) + '%';
                 document.getElementById('kelly-prob-value').textContent = (probWinAdjusted * 100).toFixed(1) + '%';
-                
+
                 // Mostra warning se stake = 0 (Kelly negativo)
                 if (finalStake === 0) {
                     document.getElementById('kelly-result').style.background = '#f8d7da';
                     document.getElementById('kelly-result').style.borderLeftColor = '#dc3545';
-                    document.getElementById('kelly-stake-value').parentElement.innerHTML = 
+                    document.getElementById('kelly-stake-value').parentElement.innerHTML =
                         '⚠️ <strong>Kelly Negativo:</strong> Non scommettere (probabilità troppo bassa)';
                 } else {
                     document.getElementById('kelly-result').style.background = '#d1f2eb';
                     document.getElementById('kelly-result').style.borderLeftColor = '#28a745';
                 }
-                
+
             } catch (error) {
                 console.error('Errore calcolo Kelly:', error);
             }
         }
-        
+
         // Listener per ricalcolo Kelly quando cambiano i parametri
         document.getElementById('bet-quota').addEventListener('input', function() {
             if (document.getElementById('use-kelly').checked) {
                 calculateKellyStake();
             }
         });
-        
+
         document.getElementById('bet-prob-win').addEventListener('input', function() {
             if (document.getElementById('use-kelly').checked) {
                 calculateKellyStake();
             }
         });
-        
+
         document.getElementById('bet-kelly-edge').addEventListener('input', function() {
             if (document.getElementById('use-kelly').checked) {
                 calculateKellyStake();
             }
         });
-        
+
         // Auto-calcola stake suggerito quando cambia quota (solo se Kelly NON attivo)
         document.getElementById('bet-quota').addEventListener('input', async function() {
             // Skip se Kelly Criterion è attivo
             if (document.getElementById('use-kelly').checked) {
                 return;
             }
-            
+
             const quota = parseFloat(this.value);
             if (!quota || quota < 1.01) {
                 document.getElementById('stake-suggestion').style.display = 'none';
                 return;
             }
-            
+
             try {
                 // Fetch bankroll corrente
                 const bankrollResp = await fetch('/api/bankroll');
                 const bankrollData = await bankrollResp.json();
-                
+
                 if (!bankrollData.success) return;
-                
+
                 const unitaBetting = bankrollData.bankroll.unita_betting;
                 const bankrollCorrente = bankrollData.bankroll.bankroll_corrente;
-                
+
                 // Stake flat 1% (1 unità)
                 const stakeFlat1Pct = unitaBetting;
-                
+
                 // Stake flat 2% (2 unità) - raccomandato per FASE1
                 const stakeFlat2Pct = unitaBetting * 2;
-                
+
                 // Mostra suggerimento
                 const suggestionDiv = document.getElementById('stake-suggestion');
                 const suggestionText = document.getElementById('stake-suggestion-text');
-                
+
                 suggestionText.innerHTML = `
-                    <strong>1%:</strong> €${stakeFlat1Pct.toFixed(2)} · 
-                    <strong>2% (FASE1):</strong> €${stakeFlat2Pct.toFixed(2)} · 
+                    <strong>1%:</strong> €${stakeFlat1Pct.toFixed(2)} ·
+                    <strong>2% (FASE1):</strong> €${stakeFlat2Pct.toFixed(2)} ·
                     <em>Bankroll: €${bankrollCorrente.toFixed(0)}</em>
                 `;
-                
+
                 suggestionDiv.style.display = 'block';
-                
+
             } catch (error) {
                 console.error('Errore calcolo stake suggerito:', error);
             }
         });
     </script>
-    
+
     <!-- Chart.js per equity curve -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </body>
