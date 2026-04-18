@@ -2576,97 +2576,82 @@ def api_export_tracking_csv():
 def api_update_results():
     """
     Aggiorna risultati reali per partite completate
-    
+
     Workflow:
     1. Scarica risultati ultimi 7 giorni da football-data.co.uk
     2. Match con predizioni nel tracking CSV
     3. Aggiorna Risultato_Reale, Corretto, Profit
-    
+
     Chiamato da GitHub Actions giornalmente per mantenere tracking aggiornato
-    
+
     Returns:
         Summary: partite aggiornate, predizioni matchate, errori
     """
     try:
         from integrations.football_data_results import get_results_client
         from utils.auto_tracking import get_tracker
-        
+
         logger.info("🔄 Inizio aggiornamento risultati...")
-        
+
         # Scarica risultati recenti
         results_client = get_results_client()
         results = results_client.get_results_for_tracking(days_back=7)
-        
+
         if not results:
-            return jsonify({
-                "status": "no_data",
-                "message": "Nessun risultato recente trovato",
-                "matches_found": 0
-            })
-        
+            return jsonify({"status": "no_data", "message": "Nessun risultato recente trovato", "matches_found": 0})
+
         logger.info(f"📥 Trovati {len(results)} risultati ultimi 7 giorni")
-        
+
         # Aggiorna tracking CSV
         tracker = get_tracker()
-        
-        summary = {
-            "matches_found": len(results),
-            "predictions_updated": 0,
-            "matches_processed": [],
-            "errors": []
-        }
-        
+
+        summary = {"matches_found": len(results), "predictions_updated": 0, "matches_processed": [], "errors": []}
+
         for result in results:
             try:
-                casa = result['casa']
-                ospite = result['ospite']
-                data = result['data']
-                
+                casa = result["casa"]
+                ospite = result["ospite"]
+                data = result["data"]
+
                 # Aggiorna per ogni mercato tracciato
                 updated_1x2 = tracker.update_result(
-                    casa=casa,
-                    ospite=ospite,
-                    data=data,
-                    risultato_reale=result['1X2'],
-                    mercato='1X2'
+                    casa=casa, ospite=ospite, data=data, risultato_reale=result["1X2"], mercato="1X2"
                 )
-                
+
                 updated_ou25 = tracker.update_result(
-                    casa=casa,
-                    ospite=ospite,
-                    data=data,
-                    risultato_reale=result['OU25'],
-                    mercato='Over/Under 2.5'
+                    casa=casa, ospite=ospite, data=data, risultato_reale=result["OU25"], mercato="Over/Under 2.5"
                 )
-                
+
                 total_updated = updated_1x2 + updated_ou25
-                
+
                 if total_updated > 0:
                     summary["predictions_updated"] += total_updated
-                    summary["matches_processed"].append({
-                        "match": f"{casa} vs {ospite}",
-                        "date": data,
-                        "result": f"{result['home_goals']}-{result['away_goals']}",
-                        "predictions_updated": total_updated
-                    })
+                    summary["matches_processed"].append(
+                        {
+                            "match": f"{casa} vs {ospite}",
+                            "date": data,
+                            "result": f"{result['home_goals']}-{result['away_goals']}",
+                            "predictions_updated": total_updated,
+                        }
+                    )
                     logger.info(f"✅ {casa} vs {ospite}: {total_updated} predizioni aggiornate")
-                
+
             except Exception as match_err:
                 error_msg = f"{result.get('casa', '?')} vs {result.get('ospite', '?')}: {str(match_err)}"
                 summary["errors"].append(error_msg)
                 logger.error(f"❌ Errore: {error_msg}")
-        
+
         response = {
             "status": "success",
             "timestamp": datetime.now().isoformat(),
             "summary": summary,
-            "matches": summary["matches_processed"][:10]  # Prime 10
+            "matches": summary["matches_processed"][:10],  # Prime 10
         }
-        
+
         logger.info(f"✅ Update completato: {summary['predictions_updated']} predizioni aggiornate")
-        
+
         return jsonify(response)
-        
+
     except Exception as e:
         logger.error(f"❌ Errore update_results: {e}")
         return jsonify({"error": f"Errore interno: {str(e)}"}), 500
@@ -5075,23 +5060,23 @@ def api_monitoring_accuracy():
 
         # Leggi CSV
         df = pd.read_csv(tracking_file)
-        
+
         # Converti Date SUBITO (prima di filtrare) per evitare errori confronto stringhe vs datetime
-        df["Data"] = pd.to_datetime(df["Data"], errors='coerce')
+        df["Data"] = pd.to_datetime(df["Data"], errors="coerce")
 
         # Filtra solo righe con risultato reale disponibile
         df_risultati = df[df["Risultato_Reale"].notna() & (df["Risultato_Reale"] != "")]
-        
+
         # Conta predizioni pending (future/in attesa)
         df_pending = df[df["Risultato_Reale"].isna() | (df["Risultato_Reale"] == "")]
-        
+
         # Se non ci sono risultati, mostra info pending
         if len(df_risultati) == 0:
             # Conta pending recenti (ultimi 7 giorni)
             today = datetime.now()
             seven_days_ago = today - timedelta(days=7)
             df_pending_recent = df_pending[df_pending["Data"] >= seven_days_ago]
-            
+
             return jsonify(
                 {
                     "status": "pending",
@@ -5121,42 +5106,55 @@ def api_monitoring_accuracy():
             thirty_days_ago = today - timedelta(days=30)
             df_7d = df_risultati[df_risultati["Data"] >= thirty_days_ago]
             days_label = "30 giorni"
-            
+
             # Se ancora vuoto, mostra info pending
             if len(df_7d) == 0:
                 # Conta pending recenti
                 df_pending_30d = df_pending[df_pending["Data"] >= thirty_days_ago]
-                
-                return jsonify({
-                    "status": "pending",
-                    "status_icon": "⏳",
-                    "status_message": f"{len(df_pending_30d)} predizioni negli ultimi 30 giorni - in attesa di risultati",
-                    "days_window": "30 giorni",
-                    "accuracy_7d": 0.0,
-                    "accuracy_7d_pct": 0.0,
-                    "predictions_7d": 0,
-                    "correct_7d": 0,
-                    "pending_predictions_30d": len(df_pending_30d),
-                    "accuracy_lifetime": 0.0,
-                    "accuracy_lifetime_pct": 0.0,
-                    "predictions_lifetime": len(df_risultati),
-                    "market_breakdown": {},
-                    "roi_7d_pct": 0.0,
-                    "total_profit_7d": 0.0,
-                    "vs_backtest": {
-                        "baseline": 0.395,
-                        "baseline_pct": 39.5,
-                        "difference": -0.395,
-                        "difference_pct": -39.5,
-                        "better": False,
-                    },
-                    "model_info": {
-                        "primary": ("random_forest" if calculator.use_ml else "deterministic"),
-                        "fallback": "deterministic",
-                        "deployed_date": "2026-03-14",
-                    },
-                    "timestamp": datetime.now().isoformat(),
-                })
+
+                # Calcola accuracy lifetime anche se ultimi 30gg sono pending
+                total_lifetime = len(df_risultati)
+                correct_lifetime = int(df_risultati["Corretto"].sum()) if total_lifetime > 0 else 0
+                accuracy_lifetime = float(correct_lifetime / total_lifetime) if total_lifetime > 0 else 0.0
+                total_profit_lifetime = float(df_risultati["Profit"].sum()) if total_lifetime > 0 else 0.0
+
+                return jsonify(
+                    {
+                        "status": "pending",
+                        "status_icon": "⏳",
+                        "status_message": f"{len(df_pending_30d)} predizioni negli ultimi 30 giorni - in attesa di risultati",
+                        "days_window": "30 giorni",
+                        "accuracy_7d": 0.0,
+                        "accuracy_7d_pct": 0.0,
+                        "predictions_7d": 0,
+                        "correct_7d": 0,
+                        "pending_predictions_30d": len(df_pending_30d),
+                        "accuracy_lifetime": round(accuracy_lifetime, 4),
+                        "accuracy_lifetime_pct": round(accuracy_lifetime * 100, 2),
+                        "predictions_lifetime": int(total_lifetime),
+                        "correct_lifetime": int(correct_lifetime),
+                        "total_profit_lifetime": round(total_profit_lifetime, 2),
+                        "roi_lifetime_pct": round(
+                            (total_profit_lifetime / total_lifetime * 100) if total_lifetime > 0 else 0.0, 2
+                        ),
+                        "market_breakdown": {},
+                        "roi_7d_pct": 0.0,
+                        "total_profit_7d": 0.0,
+                        "vs_backtest": {
+                            "baseline": 0.395,
+                            "baseline_pct": 39.5,
+                            "difference": round(accuracy_lifetime - 0.395, 4),
+                            "difference_pct": round((accuracy_lifetime - 0.395) * 100, 2),
+                            "better": accuracy_lifetime > 0.395,
+                        },
+                        "model_info": {
+                            "primary": ("random_forest" if calculator.use_ml else "deterministic"),
+                            "fallback": "deterministic",
+                            "deployed_date": "2026-03-14",
+                        },
+                        "timestamp": datetime.now().isoformat(),
+                    }
+                )
 
         # Calcola accuracy overall
         total_predictions = len(df_7d)
