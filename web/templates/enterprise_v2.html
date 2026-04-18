@@ -4,47 +4,47 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🎯 Dashboard Enterprise - Pronostici Serie A</title>
-    
+
     <!-- Bootstrap 5.3.3 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
-    
+
     <style>
         :root {
             --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             --gradient-success: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
             --gradient-gold: linear-gradient(45deg, #ffd700, #ff6b35);
         }
-        
+
         body {
             background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
             min-height: 100vh;
             font-family: 'Segoe UI', system-ui, sans-serif;
         }
-        
+
         [data-bs-theme="light"] body {
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
         }
-        
+
         .glass-card {
             background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 20px;
             transition: all 0.3s ease;
         }
-        
+
         [data-bs-theme="light"] .glass-card {
             background: rgba(255, 255, 255, 0.95);
             border: 1px solid rgba(0, 0, 0, 0.08);
         }
-        
+
         .glass-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
         }
-        
+
         .hero-gradient {
             background: var(--gradient-gold);
             -webkit-background-clip: text;
@@ -52,7 +52,7 @@
             background-clip: text;
             font-weight: 800;
         }
-        
+
         .enterprise-badge {
             background: var(--gradient-gold);
             padding: 8px 24px;
@@ -61,71 +61,71 @@
             display: inline-block;
             animation: pulse 2s infinite;
         }
-        
+
         @keyframes pulse {
             0%, 100% { transform: scale(1); }
             50% { transform: scale(1.05); }
         }
-        
+
         .theme-toggle {
             position: fixed;
             top: 20px;
             right: 20px;
             z-index: 1000;
         }
-        
+
         .toast-container {
             position: fixed;
             top: 80px;
             right: 20px;
             z-index: 1050;
         }
-        
+
         .skeleton {
-            background: linear-gradient(90deg, 
-                rgba(255,255,255,0.1) 25%, 
-                rgba(255,255,255,0.2) 50%, 
+            background: linear-gradient(90deg,
+                rgba(255,255,255,0.1) 25%,
+                rgba(255,255,255,0.2) 50%,
                 rgba(255,255,255,0.1) 75%
             );
             background-size: 200% 100%;
             animation: loading 1.5s infinite;
             border-radius: 8px;
         }
-        
+
         @keyframes loading {
             0% { background-position: 200% 0; }
             100% { background-position: -200% 0; }
         }
-        
+
         .skeleton-text {
             height: 24px;
             margin: 12px 0;
         }
-        
+
         .form-control, .form-select {
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.2);
             color: white;
         }
-        
+
         [data-bs-theme="light"] .form-control,
         [data-bs-theme="light"] .form-select {
             background: rgba(255, 255, 255, 0.9);
             border: 1px solid rgba(0, 0, 0, 0.15);
             color: #333;
         }
-        
+
         .form-control:focus, .form-select:focus {
             background: rgba(255, 255, 255, 0.15);
             border-color: #ffd700;
             color: white;
             box-shadow: 0 0 0 0.25rem rgba(255, 215, 0, 0.25);
         }
-        
+
         .prediction-result {
             animation: fadeInUp 0.6s ease-out;
         }
-        
+
         @keyframes fadeInUp {
             from {
                 opacity: 0;
@@ -136,14 +136,14 @@
                 transform: translateY(0);
             }
         }
-        
+
         .probability-bar {
             height: 40px;
             border-radius: 10px;
             position: relative;
             overflow: hidden;
         }
-        
+
         .probability-fill {
             height: 100%;
             background: var(--gradient-success);
@@ -153,7 +153,7 @@
             justify-content: center;
             font-weight: 700;
         }
-        
+
         .value-betting-badge {
             background: linear-gradient(45deg, #00f260, #0575e6);
             padding: 4px 12px;
@@ -161,30 +161,46 @@
             font-size: 0.85rem;
             font-weight: 600;
         }
-        
+
         .nav-pills .nav-link {
             border-radius: 15px;
             font-weight: 600;
             transition: all 0.3s;
         }
-        
+
         .nav-pills .nav-link.active {
             background: var(--gradient-gold);
             transform: scale(1.05);
+        }
+
+        .btn-gradient-gold {
+            background: var(--gradient-gold);
+            font-weight: 700;
+            border: none;
+            color: white;
+        }
+
+        .btn-gradient-gold:hover {
+            opacity: 0.9;
+            color: white;
+        }
+
+        .result-container {
+            min-height: 400px;
         }
     </style>
 </head>
 <body>
     <!-- Theme Toggle -->
     <div class="theme-toggle">
-        <button class="btn btn-outline-light" id="themeToggle" onclick="toggleTheme()">
-            <i class="bi bi-moon-stars-fill" id="themeIcon"></i>
+        <button class="btn btn-outline-light" id="themeToggle" onclick="toggleTheme()" aria-label="Cambia tema">
+            <i class="bi bi-moon-stars-fill" id="themeIcon" aria-hidden="true"></i>
         </button>
     </div>
-    
+
     <!-- Toast Container -->
     <div class="toast-container"></div>
-    
+
     <div class="container py-5">
         <!-- Hero Header -->
         <div class="glass-card p-5 mb-5 text-center">
@@ -198,9 +214,9 @@
                 <i class="bi bi-shield-check"></i> ENTERPRISE EDITION
             </span>
         </div>
-        
+
         <!-- Navigation Tabs -->
-        <ul class="nav nav-pills mb-5 justify-content-center" role="tablist">
+        <ul class="nav nav-pills mb-5 justify-content-center">
             <li class="nav-item mx-2">
                 <a class="nav-link active" data-bs-toggle="pill" href="#prediction">
                     <i class="bi bi-magic"></i> Predizione
@@ -222,7 +238,7 @@
                 </a>
             </li>
         </ul>
-        
+
         <!-- Tab Content -->
         <div class="tab-content">
             <!-- Prediction Tab -->
@@ -234,13 +250,13 @@
                             <h4 class="mb-4">
                                 <i class="bi bi-activity"></i> Genera Predizione
                             </h4>
-                            
+
                             <form id="predictionForm">
                                 <div class="mb-3">
-                                    <label class="form-label fw-bold">
+                                    <label class="form-label fw-bold" for="squadraCasa">
                                         <i class="bi bi-house"></i> Squadra Casa
                                     </label>
-                                    <select class="form-select" id="squadraCasa" required>
+                                    <select class="form-select" id="squadraCasa" aria-label="Seleziona squadra casa" required>
                                         <option value="">Seleziona squadra...</option>
                                         <option value="Inter">Inter</option>
                                         <option value="Milan">Milan</option>
@@ -264,12 +280,12 @@
                                         <option value="Salernitana">Salernitana</option>
                                     </select>
                                 </div>
-                                
+
                                 <div class="mb-3">
-                                    <label class="form-label fw-bold">
+                                    <label class="form-label fw-bold" for="squadraOspite">
                                         <i class="bi bi-airplane"></i> Squadra Ospite
                                     </label>
-                                    <select class="form-select" id="squadraOspite" required>
+                                    <select class="form-select" id="squadraOspite" aria-label="Seleziona squadra ospite" required>
                                         <option value="">Seleziona squadra...</option>
                                         <option value="Inter">Inter</option>
                                         <option value="Milan">Milan</option>
@@ -293,7 +309,7 @@
                                         <option value="Salernitana">Salernitana</option>
                                     </select>
                                 </div>
-                                
+
                                 <div class="mb-4">
                                     <div class="form-check form-switch">
                                         <input class="form-check-input" type="checkbox" id="valueBetting" checked>
@@ -302,13 +318,13 @@
                                         </label>
                                     </div>
                                 </div>
-                                
-                                <button type="submit" class="btn btn-lg w-100" style="background: var(--gradient-gold); font-weight: 700;">
+
+                                <button type="submit" class="btn btn-lg w-100 btn-gradient-gold">
                                     <i class="bi bi-stars"></i> Genera Predizione
                                 </button>
                             </form>
                         </div>
-                        
+
                         <!-- Quick Stats -->
                         <div class="glass-card p-4">
                             <h5 class="mb-3">
@@ -339,10 +355,10 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- Prediction Result -->
                     <div class="col-lg-7">
-                        <div class="glass-card p-4" id="resultContainer" style="min-height: 400px;">
+                        <div class="glass-card p-4 result-container" id="resultContainer">
                             <div class="text-center py-5">
                                 <i class="bi bi-lightbulb display-1 text-warning opacity-50"></i>
                                 <p class="lead mt-3 text-muted">
@@ -353,7 +369,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Monitoring Tab -->
             <div class="tab-pane fade" id="monitoring">
                 <div class="glass-card p-4">
@@ -367,7 +383,7 @@
                     </p>
                 </div>
             </div>
-            
+
             <!-- Markets Tab -->
             <div class="tab-pane fade" id="markets">
                 <div class="glass-card p-4">
@@ -414,7 +430,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Upcoming Matches Tab -->
             <div class="tab-pane fade" id="upcoming">
                 <div class="glass-card p-4">
@@ -430,10 +446,10 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    
+
     <script>
         // Theme Management
         function loadTheme() {
@@ -441,7 +457,7 @@
             document.documentElement.setAttribute('data-bs-theme', theme);
             updateThemeIcon(theme);
         }
-        
+
         function toggleTheme() {
             const currentTheme = document.documentElement.getAttribute('data-bs-theme');
             const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
@@ -450,12 +466,12 @@
             updateThemeIcon(newTheme);
             showToast('success', `Tema ${newTheme === 'dark' ? 'scuro' : 'chiaro'} attivato`);
         }
-        
+
         function updateThemeIcon(theme) {
             const icon = document.getElementById('themeIcon');
             icon.className = theme === 'dark' ? 'bi bi-sun-fill' : 'bi bi-moon-stars-fill';
         }
-        
+
         // Toast Notifications
         function showToast(type, message) {
             const toastHtml = `
@@ -476,24 +492,24 @@
             toast.show();
             toastElement.addEventListener('hidden.bs.toast', () => toastElement.remove());
         }
-        
+
         // Form Submission
         document.getElementById('predictionForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            
+
             const casa = document.getElementById('squadraCasa').value;
             const ospite = document.getElementById('squadraOspite').value;
-            
+
             if (casa === ospite) {
                 showToast('danger', 'Errore: seleziona due squadre diverse');
                 return;
             }
-            
+
             showToast('info', 'Generazione predizione in corso...');
-            
+
             const resultContainer = document.getElementById('resultContainer');
             resultContainer.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-warning" role="status"></div><p class="mt-3">Analisi in corso...</p></div>';
-            
+
             try {
                 const response = await fetch('/api/predict_enterprise', {
                     method: 'POST',
@@ -504,16 +520,16 @@
                         include_value_betting: document.getElementById('valueBetting').checked
                     })
                 });
-                
+
                 const data = await response.json();
-                
+
                 if (data.error) {
                     throw new Error(data.error);
                 }
-                
+
                 displayPrediction(data);
                 showToast('success', 'Predizione generata con successo!');
-                
+
             } catch (error) {
                 resultContainer.innerHTML = `
                     <div class="alert alert-danger">
@@ -523,32 +539,32 @@
                 showToast('danger', 'Errore nella generazione');
             }
         });
-        
+
         function displayPrediction(data) {
             const prob = data.probabilita || {};
             const predizione = data.predizione || 'N/A';
             const confidenza = data.confidenza || 0;
-            
+
             let html = `
                 <div class="prediction-result">
                     <h4 class="mb-4">
                         <i class="bi bi-trophy"></i> ${data.squadra_casa} vs ${data.squadra_ospite}
                     </h4>
-                    
+
                     <div class="alert alert-info mb-4">
                         <h5><i class="bi bi-star-fill"></i> Predizione: <strong>${predizione}</strong></h5>
                         <p class="mb-0">Confidenza: <strong>${(confidenza * 100).toFixed(1)}%</strong></p>
                     </div>
-                    
+
                     <h5 class="mb-3">Probabilità per Esito:</h5>
             `;
-            
+
             const esiti = [
                 { nome: 'Casa', key: '1', icon: 'house', color: 'success' },
                 { nome: 'Pareggio', key: 'X', icon: 'dash-circle', color: 'warning' },
                 { nome: 'Ospite', key: '2', icon: 'airplane', color: 'danger' }
             ];
-            
+
             esiti.forEach(esito => {
                 const probValue = (prob[esito.key] || 0) * 100;
                 html += `
@@ -565,7 +581,7 @@
                     </div>
                 `;
             });
-            
+
             if (data.value_betting) {
                 const vb = data.value_betting;
                 html += `
@@ -579,11 +595,11 @@
                     </div>
                 `;
             }
-            
+
             html += '</div>';
             document.getElementById('resultContainer').innerHTML = html;
         }
-        
+
         // Initialize
         document.addEventListener('DOMContentLoaded', loadTheme);
     </script>
