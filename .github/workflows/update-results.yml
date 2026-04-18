@@ -1,0 +1,91 @@
+name: Update Match Results
+
+# Automazione giornaliera: aggiorna risultati partite completate
+# Gira dopo daily-predictions per mantenere tracking CSV aggiornato
+
+on:
+  schedule:
+    # Ogni giorno alle 22:00 UTC (00:00 Italy) - dopo che partite serali sono finite
+    - cron: '0 22 * * *'
+  
+  workflow_dispatch:  # Consenti trigger manuale
+
+jobs:
+  update-results:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: 🔄 Call update results endpoint
+        id: update
+        run: |
+          echo "🔄 Chiamata endpoint /api/update_results..."
+          
+          response=$(curl -s -X POST \
+            https://pronostici-calcio-professional.onrender.com/api/update_results)
+          
+          echo "📊 Response:"
+          echo "$response" | jq '.'
+          
+          # Parse summary
+          matches_found=$(echo "$response" | jq -r '.summary.matches_found // 0')
+          predictions_updated=$(echo "$response" | jq -r '.summary.predictions_updated // 0')
+          
+          echo "matches_found=$matches_found" >> $GITHUB_OUTPUT
+          echo "predictions_updated=$predictions_updated" >> $GITHUB_OUTPUT
+          
+          if [ "$predictions_updated" -gt 0 ]; then
+            echo "✅ Aggiornate $predictions_updated predizioni"
+          else
+            echo "ℹ️ Nessuna predizione da aggiornare"
+          fi
+      
+      - name: 📥 Download updated tracking CSV
+        if: steps.update.outputs.predictions_updated > 0
+        run: |
+          echo "📥 Scarico tracking CSV aggiornato da Render..."
+          
+          curl -s https://pronostici-calcio-professional.onrender.com/api/export_tracking_csv \
+            | jq -r '.csv_content' > tracking_predictions_live.csv
+          
+          echo "✅ CSV scaricato: $(wc -l < tracking_predictions_live.csv) righe"
+      
+      - name: 💾 Commit updated tracking
+        if: steps.update.outputs.predictions_updated > 0
+        run: |
+          git config --global user.name "GitHub Actions Bot"
+          git config --global user.email "actions@github.com"
+          
+          git add tracking_predictions_live.csv
+          
+          # Check se ci sono modifiche
+          if git diff --staged --quiet; then
+            echo "ℹ️ Nessuna modifica al tracking CSV"
+            exit 0
+          fi
+          
+          # Commit
+          git commit -m "📊 Auto-update: Risultati partite aggiornati
+
+          Predictions updated: ${{ steps.update.outputs.predictions_updated }}
+          Matches processed: ${{ steps.update.outputs.matches_found }}
+          Timestamp: $(date -u +%Y-%m-%d_%H:%M:%S_UTC)"
+          
+          git push
+          
+          echo "✅ Tracking CSV aggiornato e committato"
+      
+      - name: 📊 Summary
+        if: always()
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "📊 RESULTS UPDATE SUMMARY"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "Matches found: ${{ steps.update.outputs.matches_found }}"
+          echo "Predictions updated: ${{ steps.update.outputs.predictions_updated }}"
+          echo "Timestamp: $(date -u)"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

@@ -2571,6 +2571,107 @@ def api_export_tracking_csv():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/api/update_results", methods=["POST"])
+@limiter.limit("10 per hour")
+def api_update_results():
+    """
+    Aggiorna risultati reali per partite completate
+    
+    Workflow:
+    1. Scarica risultati ultimi 7 giorni da football-data.co.uk
+    2. Match con predizioni nel tracking CSV
+    3. Aggiorna Risultato_Reale, Corretto, Profit
+    
+    Chiamato da GitHub Actions giornalmente per mantenere tracking aggiornato
+    
+    Returns:
+        Summary: partite aggiornate, predizioni matchate, errori
+    """
+    try:
+        from integrations.football_data_results import get_results_client
+        from utils.auto_tracking import get_tracker
+        
+        logger.info("🔄 Inizio aggiornamento risultati...")
+        
+        # Scarica risultati recenti
+        results_client = get_results_client()
+        results = results_client.get_results_for_tracking(days_back=7)
+        
+        if not results:
+            return jsonify({
+                "status": "no_data",
+                "message": "Nessun risultato recente trovato",
+                "matches_found": 0
+            })
+        
+        logger.info(f"📥 Trovati {len(results)} risultati ultimi 7 giorni")
+        
+        # Aggiorna tracking CSV
+        tracker = get_tracker()
+        
+        summary = {
+            "matches_found": len(results),
+            "predictions_updated": 0,
+            "matches_processed": [],
+            "errors": []
+        }
+        
+        for result in results:
+            try:
+                casa = result['casa']
+                ospite = result['ospite']
+                data = result['data']
+                
+                # Aggiorna per ogni mercato tracciato
+                updated_1x2 = tracker.update_result(
+                    casa=casa,
+                    ospite=ospite,
+                    data=data,
+                    risultato_reale=result['1X2'],
+                    mercato='1X2'
+                )
+                
+                updated_ou25 = tracker.update_result(
+                    casa=casa,
+                    ospite=ospite,
+                    data=data,
+                    risultato_reale=result['OU25'],
+                    mercato='Over/Under 2.5'
+                )
+                
+                total_updated = updated_1x2 + updated_ou25
+                
+                if total_updated > 0:
+                    summary["predictions_updated"] += total_updated
+                    summary["matches_processed"].append({
+                        "match": f"{casa} vs {ospite}",
+                        "date": data,
+                        "result": f"{result['home_goals']}-{result['away_goals']}",
+                        "predictions_updated": total_updated
+                    })
+                    logger.info(f"✅ {casa} vs {ospite}: {total_updated} predizioni aggiornate")
+                
+            except Exception as match_err:
+                error_msg = f"{result.get('casa', '?')} vs {result.get('ospite', '?')}: {str(match_err)}"
+                summary["errors"].append(error_msg)
+                logger.error(f"❌ Errore: {error_msg}")
+        
+        response = {
+            "status": "success",
+            "timestamp": datetime.now().isoformat(),
+            "summary": summary,
+            "matches": summary["matches_processed"][:10]  # Prime 10
+        }
+        
+        logger.info(f"✅ Update completato: {summary['predictions_updated']} predizioni aggiornate")
+        
+        return jsonify(response)
+        
+    except Exception as e:
+        logger.error(f"❌ Errore update_results: {e}")
+        return jsonify({"error": f"Errore interno: {str(e)}"}), 500
+
+
 @app.route("/api/batch_generate_predictions", methods=["POST"])
 @limiter.limit("5 per minute")  # Rate limiting basso per endpoint batch
 def api_batch_generate_predictions():
