@@ -812,17 +812,34 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
+        // 🔇 Suppress browser extension errors (password managers, ad blockers, etc.)
+        // "Unchecked runtime.lastError" is caused by extensions, not our code
+        window.addEventListener('error', function(e) {
+            if (e.message && e.message.includes('message port closed')) {
+                e.preventDefault();
+                return true;
+            }
+        });
+
         // Flag lazy loading
         let completedLoaded = false;
 
-        // Carica dati al load (ottimizzato con debouncing)
+        // Carica dati al load (ottimizzato con debouncing + requestIdleCallback)
         document.addEventListener('DOMContentLoaded', function() {
-            loadStats();
+            // Use requestIdleCallback for non-critical operations to avoid blocking main thread
+            if ('requestIdleCallback' in window) {
+                // Load stats when browser is idle (better UX)
+                requestIdleCallback(() => loadStats(), { timeout: 100 });
+                
+                // Load pending bets with slightly higher priority
+                requestIdleCallback(() => loadPendingBets(), { timeout: 150 });
+            } else {
+                // Fallback for browsers without requestIdleCallback
+                setTimeout(loadStats, 10);
+                setTimeout(loadPendingBets, 50);
+            }
 
-            // Delay loadPendingBets per non bloccare rendering iniziale
-            setTimeout(loadPendingBets, 50);
-
-            // Auto-fill data odierna
+            // Auto-fill data odierna (can run immediately, minimal cost)
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('bet-data').value = today;
             document.getElementById('multipla-data').value = today;
