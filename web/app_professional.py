@@ -6358,43 +6358,53 @@ def api_metrics_summary():
 
 
 def load_bankroll_config():
-    """Carica configurazione bankroll"""
+    """Carica configurazione bankroll (graceful degradation se filesystem read-only)"""
     config_file = "config_bankroll.json"
 
+    default_config = {
+        "bankroll_iniziale": 1000.0,
+        "bankroll_corrente": 1000.0,
+        "unita_betting": 10.0,  # 1% del bankroll standard
+        "kelly_fraction": 0.25,  # Kelly conservativo (1/4)
+        "max_stake_percentage": 5.0,  # Max 5% bankroll per puntata
+        "stop_loss_percentage": 30.0,  # Stop trading a -30%
+        "take_profit_percentage": 50.0,  # Target profit +50%
+        "ultimo_aggiornamento": datetime.now().strftime("%Y-%m-%d"),
+    }
+
     if not os.path.exists(config_file):
-        # Default config se non esiste
-        default_config = {
-            "bankroll_iniziale": 1000.0,
-            "bankroll_corrente": 1000.0,
-            "unita_betting": 10.0,  # 1% del bankroll standard
-            "kelly_fraction": 0.25,  # Kelly conservativo (1/4)
-            "max_stake_percentage": 5.0,  # Max 5% bankroll per puntata
-            "stop_loss_percentage": 30.0,  # Stop trading a -30%
-            "take_profit_percentage": 50.0,  # Target profit +50%
-            "ultimo_aggiornamento": datetime.now().strftime("%Y-%m-%d"),
-        }
+        # Prova a salvare default, ma graceful fail se filesystem read-only (Render)
+        try:
+            import json
 
-        import json
-
-        with open(config_file, "w") as f:
-            json.dump(default_config, f, indent=2)
+            with open(config_file, "w") as f:
+                json.dump(default_config, f, indent=2)
+        except (OSError, IOError, PermissionError):
+            logger.warning("Cannot write bankroll config (read-only filesystem), using defaults")
 
         return default_config
 
-    import json
+    try:
+        import json
 
-    with open(config_file, "r") as f:
-        return json.load(f)
+        with open(config_file, "r") as f:
+            return json.load(f)
+    except Exception as e:
+        logger.warning(f"Error loading bankroll config: {e}, using defaults")
+        return default_config
 
 
 def save_bankroll_config(config: Dict):
-    """Salva configurazione bankroll"""
+    """Salva configurazione bankroll (graceful fail se filesystem read-only)"""
     config["ultimo_aggiornamento"] = datetime.now().strftime("%Y-%m-%d")
 
-    import json
+    try:
+        import json
 
-    with open("config_bankroll.json", "w") as f:
-        json.dump(config, f, indent=2)
+        with open("config_bankroll.json", "w") as f:
+            json.dump(config, f, indent=2)
+    except (OSError, IOError, PermissionError) as e:
+        logger.warning(f"Cannot save bankroll config (read-only filesystem): {e}")
 
 
 def calculate_kelly_stake(prob_win: float, quota: float, bankroll: float, kelly_fraction: float = 0.25) -> float:

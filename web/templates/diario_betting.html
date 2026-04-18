@@ -861,9 +861,20 @@
                 const response = await fetch('/api/diario/stats');
                 const data = await response.json();
 
+                // Check API error
+                if (!response.ok || data.error) {
+                    console.error('API error:', data.error || response.statusText);
+                    // Set default values on error
+                    document.getElementById('stat-total').textContent = '0';
+                    document.getElementById('stat-pending').textContent = '0';
+                    document.getElementById('stat-roi').textContent = '0.0%';
+                    document.getElementById('stat-wr').textContent = '0.0%';
+                    return;
+                }
+
                 // Performance stats
-                document.getElementById('stat-total').textContent = data.total;
-                document.getElementById('stat-pending').textContent = data.pending;
+                document.getElementById('stat-total').textContent = data.total || 0;
+                document.getElementById('stat-pending').textContent = data.pending || 0;
 
                 // Info puntate skipped (MONITOR non giocate)
                 const skippedInfo = document.getElementById('stat-skipped-info');
@@ -873,14 +884,15 @@
                     skippedInfo.textContent = '';
                 }
 
-                document.getElementById('stat-roi').textContent = data.roi.toFixed(1) + '%';
-                document.getElementById('stat-wr').textContent = data.win_rate.toFixed(1) + '%';
+                document.getElementById('stat-roi').textContent = (data.roi || 0).toFixed(1) + '%';
+                document.getElementById('stat-wr').textContent = (data.win_rate || 0).toFixed(1) + '%';
 
                 // Colora ROI
                 const roiCard = document.getElementById('stat-roi-card');
-                if (data.roi > 0) {
+                const roi = data.roi || 0;
+                if (roi > 0) {
                     roiCard.className = 'stat-card stat-positive';
-                } else if (data.roi < 0) {
+                } else if (roi < 0) {
                     roiCard.className = 'stat-card stat-negative';
                 } else {
                     roiCard.className = 'stat-card stat-neutral';
