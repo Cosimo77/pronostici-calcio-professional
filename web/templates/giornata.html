@@ -314,6 +314,16 @@
             </p>
         </div>
 
+        <div class="info-banner" style="background: #e3f2fd; border-left-color: #2196f3;">
+            <h3 style="color: #1565c0;">🎯 Fasi di Validazione</h3>
+            <p style="color: #1565c0;">
+                <strong>✅ FASE1:</strong> Pareggi (quote 2.8-3.5, EV 25-50%) - Backtest validato: +7.17% ROI<br>
+                <strong>✅ FASE2:</strong> Favoriti 1X2 (quote 1.5-2.2, EV 15-35%) - Rischio medio-basso<br>
+                <strong>✅ FASE3:</strong> Over/Under 2.5 (quote 1.8-2.4, EV 20-40%) - Mercato alternativo<br>
+                <em>Nessun badge = Alta varianza, usare con cautela</em>
+            </p>
+        </div>
+
         <div id="matches-container">
             <div class="loading">⏳ Caricamento partite del turno...</div>
         </div>
@@ -435,12 +445,28 @@
                                     <p style="margin: 0 0 20px 0; opacity: 0.9;">Migliori opportunità della giornata ordinate per Expected Value</p>
                                     <div style="display: grid; gap: 12px;">
                                         ${top3.map((bet, i) => {
-                                            // FASE1 Validation
+                                            // Multi-Phase Validation
                                             const isDraw = bet.bet.includes('Pareggio') || bet.bet.includes('🤝');
-                                            const isFase1Valid = isDraw && bet.odds >= 2.8 && bet.odds <= 3.5 && bet.ev >= 25 && bet.ev <= 50;
-                                            const validationBadge = isFase1Valid 
-                                                ? '<span style="background: #10b981; padding: 4px 8px; border-radius: 4px; font-size: 0.75em; margin-left: 8px;">✅ FASE1</span>'
-                                                : '<span style="background: #ef4444; padding: 4px 8px; border-radius: 4px; font-size: 0.75em; margin-left: 8px;">❌ Fuori FASE1</span>';
+                                            const isFavorite = bet.bet.includes('🏠 Casa') || bet.bet.includes('✈️ Trasferta');
+                                            const isOverUnder = bet.bet.includes('Over 2.5') || bet.bet.includes('Under 2.5');
+                                            
+                                            // FASE1: Pareggi conservativi (backtest validato +7.17% ROI)
+                                            const isFase1 = isDraw && bet.odds >= 2.8 && bet.odds <= 3.5 && bet.ev >= 25 && bet.ev <= 50;
+                                            
+                                            // FASE2: Favoriti 1X2 (quote medio-basse)
+                                            const isFase2 = isFavorite && bet.odds >= 1.5 && bet.odds <= 2.2 && bet.ev >= 15 && bet.ev <= 35;
+                                            
+                                            // FASE3: Over/Under 2.5 (mercato alternativo)
+                                            const isFase3 = isOverUnder && bet.odds >= 1.8 && bet.odds <= 2.4 && bet.ev >= 20 && bet.ev <= 40;
+                                            
+                                            let validationBadge = '';
+                                            if (isFase1) {
+                                                validationBadge = '<span style="background: #10b981; padding: 4px 8px; border-radius: 4px; font-size: 0.75em; margin-left: 8px;">✅ FASE1</span>';
+                                            } else if (isFase2) {
+                                                validationBadge = '<span style="background: #3b82f6; padding: 4px 8px; border-radius: 4px; font-size: 0.75em; margin-left: 8px;">✅ FASE2</span>';
+                                            } else if (isFase3) {
+                                                validationBadge = '<span style="background: #8b5cf6; padding: 4px 8px; border-radius: 4px; font-size: 0.75em; margin-left: 8px;">✅ FASE3</span>';
+                                            }
                                             
                                             return `
                                             <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 16px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
