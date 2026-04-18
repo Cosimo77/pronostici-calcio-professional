@@ -649,12 +649,24 @@
                                     <input type="number" class="form-control" id="bet-quota" step="0.01" min="1.01" placeholder="es. 1.45" required>
                                 </div>
                                 <div class="col-md-4 mb-3">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="use-kelly" style="cursor: pointer;">
+                                        <label class="form-check-label" for="use-kelly" style="cursor: pointer;">
+                                            🎯 Usa Kelly Criterion (Auto-Stake)
+                                        </label>
+                                    </div>
                                     <label for="bet-stake" class="form-label">Stake (€) *</label>
                                     <input type="text" class="form-control" id="bet-stake" placeholder="es. 2.00 o MONITOR" pattern="^(\d+(\.\d{1,2})?|MONITOR)$" title="Inserisci un numero (es. 2.00) o MONITOR" required>
-                                    <small class="text-muted">Numero per bet reale, 'MONITOR' per tracciamento</small>
+                                    <small class="text-muted" id="stake-label">Numero per bet reale, 'MONITOR' per tracciamento</small>
                                     <div id="stake-suggestion" style="display: none; margin-top: 8px; padding: 8px; background: #e3f2fd; border-radius: 4px; border-left: 3px solid #2196f3;">
                                         <small style="color: #1565c0;">
                                             💡 <strong>Suggerimento:</strong> <span id="stake-suggestion-text"></span>
+                                        </small>
+                                    </div>
+                                    <div id="kelly-result" style="display: none; margin-top: 8px; padding: 10px; background: #d1f2eb; border-radius: 4px; border-left: 3px solid #28a745;">
+                                        <small style="color: #155724;">
+                                            🎯 <strong>Kelly Stake:</strong> <span id="kelly-stake-value">€0.00</span><br>
+                                            📊 Edge: <span id="kelly-edge-value">0%</span> | Prob Win: <span id="kelly-prob-value">0%</span>
                                         </small>
                                     </div>
                                 </div>
@@ -664,6 +676,19 @@
                                 </div>
                             </div>
 
+                            <div class="row" id="kelly-input-row" style="display: none;">
+                                <div class="col-md-6 mb-3">
+                                    <label for="bet-prob-win" class="form-label">Probabilità Vincita (%) *</label>
+                                    <input type="number" class="form-control" id="bet-prob-win" step="0.1" min="0" max="100" placeholder="es. 45.5">
+                                    <small class="text-muted">Inserisci la tua stima di probabilità (0-100)</small>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="bet-kelly-edge" class="form-label">Edge (%) - Opzionale</label>
+                                    <input type="number" class="form-control" id="bet-kelly-edge" step="0.1" placeholder="es. 5.0">
+                                    <small class="text-muted">Vantaggio aggiuntivo (default: 0%)</small>
+                                </div>
+                            </div>
+                            
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label for="bet-ev-modello" class="form-label">EV Modello</label>
@@ -1110,9 +1135,14 @@
                                           bet.risultato === 'VOID' ? '↻ ANNULLATA' : 
                                           bet.risultato}
                                     </small>
-                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteBet(${bet.id}, 'completed')" title="Elimina puntata">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button class="btn btn-outline-warning" onclick="restoreToPending(${bet.id})" title="Riporta in attesa">
+                                            <i class="bi bi-arrow-counterclockwise"></i> Riporta
+                                        </button>
+                                        <button class="btn btn-outline-danger" onclick="deleteBet(${bet.id}, 'completed')" title="Elimina puntata">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1315,6 +1345,42 @@
                         setTimeout(() => loadCompletedBets(), 100);
                     }, 300);
                     
+                } else {
+                    alert('❌ Errore: ' + result.error);
+                }
+            } catch (error) {
+                alert('❌ Errore: ' + error.message);
+            }
+        }
+        
+        // Riporta puntata completata in "In Attesa" (resetta risultato a PENDING)
+        async function restoreToPending(betId) {
+            if (!confirm(`🔄 Riportare questa puntata in "In Attesa"?\n\nIl risultato verrà resettato e il profit azzerato.`)) return;
+            
+            try {
+                const response = await fetch('/api/diario/update', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        id: betId,
+                        risultato: 'PENDING'
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Ricarica stats
+                    loadStats();
+                    
+                    // Delay + reload entrambe le sezioni
+                    setTimeout(() => {
+                        loadPendingBets();
+                        completedLoaded = false;
+                        loadCompletedBets();
+                    }, 300);
+                    
+                    alert('✅ Puntata riportata in "In Attesa"');
                 } else {
                     alert('❌ Errore: ' + result.error);
                 }
@@ -2123,8 +2189,122 @@
                 });
         });
         
-        // Auto-calcola stake suggerito quando cambia quota
+        // Kelly Criterion Toggle
+        document.getElementById('use-kelly').addEventListener('change', function() {
+            const isKellyActive = this.checked;
+            const kellyInputRow = document.getElementById('kelly-input-row');
+            const stakeInput = document.getElementById('bet-stake');
+            const stakeLabel = document.getElementById('stake-label');
+            const stakeSuggestion = document.getElementById('stake-suggestion');
+            const kellyResult = document.getElementById('kelly-result');
+            
+            if (isKellyActive) {
+                kellyInputRow.style.display = 'flex';
+                stakeInput.readOnly = true;
+                stakeInput.placeholder = 'Calcolato automaticamente con Kelly';
+                stakeLabel.textContent = 'Stake calcolato automaticamente (Kelly Criterion)';
+                stakeSuggestion.style.display = 'none';
+                kellyResult.style.display = 'block';
+                calculateKellyStake();
+            } else {
+                kellyInputRow.style.display = 'none';
+                stakeInput.readOnly = false;
+                stakeInput.placeholder = 'es. 2.00 o MONITOR';
+                stakeInput.value = '';
+                stakeLabel.textContent = 'Numero per bet reale, \'MONITOR\' per tracciamento';
+                kellyResult.style.display = 'none';
+            }
+        });
+        
+        // Calcola Kelly Stake automaticamente
+        async function calculateKellyStake() {
+            const quota = parseFloat(document.getElementById('bet-quota').value);
+            const probWin = parseFloat(document.getElementById('bet-prob-win').value) / 100; // Convert to 0-1
+            const edgeInput = parseFloat(document.getElementById('bet-kelly-edge').value) || 0;
+            
+            if (!quota || quota < 1.01 || !probWin || probWin <= 0 || probWin >= 1) {
+                document.getElementById('bet-stake').value = '';
+                return;
+            }
+            
+            try {
+                // Fetch bankroll
+                const bankrollResp = await fetch('/api/bankroll');
+                const bankrollData = await bankrollResp.json();
+                
+                if (!bankrollData.success) return;
+                
+                const bankroll = bankrollData.bankroll.bankroll_corrente;
+                const kellyFraction = bankrollData.bankroll.kelly_fraction;
+                
+                // Aggiungi edge alla probabilità (se specificato)
+                const probWinAdjusted = Math.min(probWin + (edgeInput / 100), 0.99);
+                
+                // Kelly Formula: f = (bp - q) / b
+                // b = decimal odds - 1
+                // p = probability of winning
+                // q = probability of losing = 1 - p
+                const b = quota - 1;
+                const p = probWinAdjusted;
+                const q = 1 - p;
+                
+                const kellyPercent = (b * p - q) / b;
+                
+                // Apply Kelly fraction (conservative)
+                const kellyStake = Math.max(0, kellyPercent * kellyFraction * bankroll);
+                
+                // Cap stake al max_stake_percentage
+                const maxStake = bankroll * (bankrollData.bankroll.max_stake_percentage / 100);
+                const finalStake = Math.min(kellyStake, maxStake);
+                
+                // Update UI
+                document.getElementById('bet-stake').value = finalStake.toFixed(2);
+                document.getElementById('kelly-stake-value').textContent = '€' + finalStake.toFixed(2);
+                document.getElementById('kelly-edge-value').textContent = (edgeInput || 0).toFixed(1) + '%';
+                document.getElementById('kelly-prob-value').textContent = (probWinAdjusted * 100).toFixed(1) + '%';
+                
+                // Mostra warning se stake = 0 (Kelly negativo)
+                if (finalStake === 0) {
+                    document.getElementById('kelly-result').style.background = '#f8d7da';
+                    document.getElementById('kelly-result').style.borderLeftColor = '#dc3545';
+                    document.getElementById('kelly-stake-value').parentElement.innerHTML = 
+                        '⚠️ <strong>Kelly Negativo:</strong> Non scommettere (probabilità troppo bassa)';
+                } else {
+                    document.getElementById('kelly-result').style.background = '#d1f2eb';
+                    document.getElementById('kelly-result').style.borderLeftColor = '#28a745';
+                }
+                
+            } catch (error) {
+                console.error('Errore calcolo Kelly:', error);
+            }
+        }
+        
+        // Listener per ricalcolo Kelly quando cambiano i parametri
+        document.getElementById('bet-quota').addEventListener('input', function() {
+            if (document.getElementById('use-kelly').checked) {
+                calculateKellyStake();
+            }
+        });
+        
+        document.getElementById('bet-prob-win').addEventListener('input', function() {
+            if (document.getElementById('use-kelly').checked) {
+                calculateKellyStake();
+            }
+        });
+        
+        document.getElementById('bet-kelly-edge').addEventListener('input', function() {
+            if (document.getElementById('use-kelly').checked) {
+                calculateKellyStake();
+            }
+        });
+        
+        // Auto-calcola stake suggerito quando cambia quota (solo se Kelly NON attivo)
         document.getElementById('bet-quota').addEventListener('input', async function() {
+            // Skip se Kelly Criterion è attivo
+            if (document.getElementById('use-kelly').checked) {
+                return;
+            }
+            
             const quota = parseFloat(this.value);
             if (!quota || quota < 1.01) {
                 document.getElementById('stake-suggestion').style.display = 'none';
