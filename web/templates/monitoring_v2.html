@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="it" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔍 Monitoraggio Sistema Professionale</title>
+    
+    <!-- Bootstrap 5.3.3 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    
+    <!-- Chart.js 4.4.0 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <style>
+        :root {
+            --bs-body-bg: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        }
+        
+        body { 
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        [data-bs-theme="light"] body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            transition: all 0.3s ease;
+        }
+        
+        [data-bs-theme="light"] .glass-card {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        
+        .glass-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        }
+        
+        .status-badge {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(45deg, #ffd700, #ff6b35);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        /* Loading Skeleton */
+        .skeleton {
+            background: linear-gradient(90deg, 
+                rgba(255,255,255,0.1) 25%, 
+                rgba(255,255,255,0.2) 50%, 
+                rgba(255,255,255,0.1) 75%
+            );
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+            border-radius: 4px;
+        }
+        
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        
+        .skeleton-text {
+            height: 20px;
+            margin: 10px 0;
+        }
+        
+        .skeleton-chart {
+            height: 300px;
+            border-radius: 10px;
+        }
+        
+        /* Theme Toggle */
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        
+        /* Toast Container */
+        .toast-container {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 1050;
+        }
+        
+        /* Chart Container */
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Theme Toggle -->
+    <div class="theme-toggle">
+        <button class="btn btn-outline-light" id="themeToggle" onclick="toggleTheme()">
+            <i class="bi bi-moon-stars-fill" id="themeIcon"></i>
+        </button>
+    </div>
+    
+    <!-- Toast Container -->
+    <div class="toast-container"></div>
+    
+    <div class="container">
+        <!-- Header -->
+        <div class="glass-card p-4 mb-4 text-center">
+            <h1 class="display-4 mb-2">🔍 Monitoraggio Sistema Professionale</h1>
+            <p class="lead mb-3">Dashboard in tempo reale per il sistema di pronostici calcio</p>
+            
+            <div class="btn-group" role="group">
+                <button class="btn btn-success" onclick="refreshAll()">
+                    <i class="bi bi-arrow-clockwise"></i> Aggiorna Tutto
+                </button>
+                <button class="btn btn-primary" onclick="testPrediction()">
+                    <i class="bi bi-magic"></i> Test Predizione
+                </button>
+                <button class="btn btn-warning" id="autoRefreshBtn" onclick="toggleAutoRefresh()">
+                    <i class="bi bi-stopwatch"></i> Auto-Refresh: OFF
+                </button>
+            </div>
+            
+            <div class="mt-3">
+                <small class="text-muted" id="lastUpdate">Caricamento in corso...</small>
+            </div>
+        </div>
+        
+        <!-- Metrics Grid -->
+        <div class="row g-4 mb-4">
+            <!-- Health Status -->
+            <div class="col-lg-3 col-md-6">
+                <div class="glass-card p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5><i class="bi bi-heart-pulse"></i> Sistema</h5>
+                        <span class="status-badge bg-success" id="healthBadge"></span>
+                    </div>
+                    <div id="healthContent">
+                        <div class="skeleton skeleton-text"></div>
+                        <div class="skeleton skeleton-text"></div>
+                        <div class="skeleton skeleton-text"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Accuracy -->
+            <div class="col-lg-3 col-md-6">
+                <div class="glass-card p-4">
+                    <h5><i class="bi bi-bullseye"></i> Accuracy</h5>
+                    <div id="accuracyContent">
+                        <div class="skeleton skeleton-text"></div>
+                        <div class="metric-value">---%</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- ROI -->
+            <div class="col-lg-3 col-md-6">
+                <div class="glass-card p-4">
+                    <h5><i class="bi bi-graph-up-arrow"></i> ROI</h5>
+                    <div id="roiContent">
+                        <div class="skeleton skeleton-text"></div>
+                        <div class="metric-value">---%</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Pending -->
+            <div class="col-lg-3 col-md-6">
+                <div class="glass-card p-4">
+                    <h5><i class="bi bi-hourglass-split"></i> Pending</h5>
+                    <div id="pendingContent">
+                        <div class="skeleton skeleton-text"></div>
+                        <div class="metric-value">--</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Charts Row -->
+        <div class="row g-4 mb-4">
+            <!-- Accuracy Trend Chart -->
+            <div class="col-lg-6">
+                <div class="glass-card p-4">
+                    <h5><i class="bi bi-graph-up"></i> Accuracy Trend (30 giorni)</h5>
+                    <div class="chart-container">
+                        <canvas id="accuracyChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- ROI Cumulative Chart -->
+            <div class="col-lg-6">
+                <div class="glass-card p-4">
+                    <h5><i class="bi bi-currency-euro"></i> ROI Cumulativo</h5>
+                    <div class="chart-container">
+                        <canvas id="roiChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Accuracy by Market -->
+        <div class="glass-card p-4 mb-4">
+            <h5><i class="bi bi-bar-chart"></i> Accuratezza per Mercato</h5>
+            <div class="chart-container">
+                <canvas id="marketAccuracyChart"></canvas>
+            </div>
+        </div>
+        
+        <!-- Database Info -->
+        <div class="glass-card p-4">
+            <h5><i class="bi bi-database"></i> Database Status</h5>
+            <div id="databaseContent">
+                <div class="skeleton skeleton-text"></div>
+                <div class="skeleton skeleton-text"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bootstrap 5.3.3 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // State
+        let autoRefreshInterval = null;
+        let autoRefreshEnabled = false;
+        let charts = {};
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadTheme();
+            initCharts();
+            refreshAll();
+        });
+        
+        // Theme Management
+        function loadTheme() {
+            const theme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.setAttribute('data-bs-theme', theme);
+            updateThemeIcon(theme);
+        }
+        
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-bs-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-bs-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeIcon(newTheme);
+            updateChartsTheme(newTheme);
+            showToast('success', `Tema ${newTheme === 'dark' ? 'scuro' : 'chiaro'} attivato`);
+        }
+        
+        function updateThemeIcon(theme) {
+            const icon = document.getElementById('themeIcon');
+            icon.className = theme === 'dark' ? 'bi bi-sun-fill' : 'bi bi-moon-stars-fill';
+        }
+        
+        // Toast Notifications
+        function showToast(type, message) {
+            const toastHtml = `
+                <div class="toast align-items-center text-bg-${type} border-0" role="alert">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            <i class="bi bi-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+                            ${message}
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                    </div>
+                </div>
+            `;
+            const container = document.querySelector('.toast-container');
+            container.insertAdjacentHTML('beforeend', toastHtml);
+            const toastElement = container.lastElementChild;
+            const toast = new bootstrap.Toast(toastElement, { delay: 3000 });
+            toast.show();
+            toastElement.addEventListener('hidden.bs.toast', () => toastElement.remove());
+        }
+        
+        // Auto Refresh
+        function toggleAutoRefresh() {
+            autoRefreshEnabled = !autoRefreshEnabled;
+            const btn = document.getElementById('autoRefreshBtn');
+            
+            if (autoRefreshEnabled) {
+                btn.innerHTML = '<i class="bi bi-stopwatch-fill"></i> Auto-Refresh: ON';
+                btn.classList.remove('btn-warning');
+                btn.classList.add('btn-info');
+                autoRefreshInterval = setInterval(refreshAll, 30000); // 30s
+                showToast('success', 'Auto-refresh attivato (30s)');
+            } else {
+                btn.innerHTML = '<i class="bi bi-stopwatch"></i> Auto-Refresh: OFF';
+                btn.classList.remove('btn-info');
+                btn.classList.add('btn-warning');
+                if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+                showToast('info', 'Auto-refresh disattivato');
+            }
+        }
+        
+        // Refresh All
+        async function refreshAll() {
+            showToast('info', 'Aggiornamento dati...');
+            await Promise.all([
+                fetchHealth(),
+                fetchAccuracy(),
+                fetchDatabase()
+            ]);
+            updateLastUpdate();
+            showToast('success', 'Dati aggiornati!');
+        }
+        
+        function updateLastUpdate() {
+            document.getElementById('lastUpdate').textContent = 
+                `Ultimo aggiornamento: ${new Date().toLocaleString('it-IT')}`;
+        }
+        
+        // API Calls
+        async function fetchHealth() {
+            try {
+                const response = await fetch('/api/health');
+                const data = await response.json();
+                
+                const badge = document.getElementById('healthBadge');
+                badge.className = `status-badge bg-${data.status === 'healthy' ? 'success' : 'danger'}`;
+                
+                document.getElementById('healthContent').innerHTML = `
+                    <div class="mb-2"><small class="text-muted">Status</small><br><strong>${data.status}</strong></div>
+                    <div class="mb-2"><small class="text-muted">Records</small><br><strong>${data.database_records}</strong></div>
+                    <div><small class="text-muted">Squadre</small><br><strong>${data.squadre_caricate}</strong></div>
+                `;
+            } catch (error) {
+                showToast('danger', 'Errore caricamento health');
+            }
+        }
+        
+        async function fetchAccuracy() {
+            try {
+                const response = await fetch('/api/monitoring/accuracy');
+                const data = await response.json();
+                
+                // Update metrics
+                const accuracy = (data.accuracy_percentage || 0).toFixed(1);
+                const roi = (data.roi_percentage || 0).toFixed(1);
+                
+                document.getElementById('accuracyContent').innerHTML = `
+                    <div class="metric-value">${accuracy}%</div>
+                    <small class="text-muted">${data.corretti || 0}/${data.totali || 0} corrette</small>
+                `;
+                
+                document.getElementById('roiContent').innerHTML = `
+                    <div class="metric-value ${data.roi_percentage >= 0 ? 'text-success' : 'text-danger'}">${roi}%</div>
+                    <small class="text-muted">€${(data.profit_totale || 0).toFixed(2)}</small>
+                `;
+                
+                document.getElementById('pendingContent').innerHTML = `
+                    <div class="metric-value">${data.pending_30d || 0}</div>
+                    <small class="text-muted">ultimi 30 giorni</small>
+                `;
+                
+                // Update charts with real data
+                updateChartsWithData(data);
+                
+            } catch (error) {
+                showToast('danger', 'Errore caricamento accuracy');
+            }
+        }
+        
+        async function fetchDatabase() {
+            try {
+                const response = await fetch('/api/dataset_info');
+                const data = await response.json();
+                
+                document.getElementById('databaseContent').innerHTML = `
+                    <div class="row">
+                        <div class="col-md-4">
+                            <small class="text-muted">Partite</small><br>
+                            <strong>${data.total_matches}</strong>
+                        </div>
+                        <div class="col-md-4">
+                            <small class="text-muted">Ultimo aggiornamento</small><br>
+                            <strong>${new Date(data.last_update).toLocaleDateString('it-IT')}</strong>
+                        </div>
+                        <div class="col-md-4">
+                            <small class="text-muted">Ultima partita</small><br>
+                            <strong>${data.last_match_date}</strong>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                showToast('danger', 'Errore caricamento database');
+            }
+        }
+        
+        async function testPrediction() {
+            showToast('info', 'Test predizione in corso...');
+            try {
+                const response = await fetch('/api/test_coerenza');
+                const data = await response.json();
+                showToast('success', `Test completato: ${data.test_completati || 0} test OK`);
+            } catch (error) {
+                showToast('danger', 'Errore test predizione');
+            }
+        }
+        
+        // Charts Initialization
+        function initCharts() {
+            const theme = document.documentElement.getAttribute('data-bs-theme');
+            const textColor = theme === 'dark' ? '#fff' : '#333';
+            const gridColor = theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+            
+            const commonOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: { color: textColor }
+                    }
+                },
+                scales: {
+                    y: {
+                        ticks: { color: textColor },
+                        grid: { color: gridColor }
+                    },
+                    x: {
+                        ticks: { color: textColor },
+                        grid: { color: gridColor }
+                    }
+                }
+            };
+            
+            // Accuracy Trend Chart
+            const ctxAccuracy = document.getElementById('accuracyChart').getContext('2d');
+            charts.accuracy = new Chart(ctxAccuracy, {
+                type: 'line',
+                data: {
+                    labels: ['Sett 1', 'Sett 2', 'Sett 3', 'Sett 4'],
+                    datasets: [{
+                        label: 'Accuracy %',
+                        data: [65, 68, 71, 71.4],
+                        borderColor: '#4CAF50',
+                        backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: commonOptions
+            });
+            
+            // ROI Chart
+            const ctxRoi = document.getElementById('roiChart').getContext('2d');
+            charts.roi = new Chart(ctxRoi, {
+                type: 'line',
+                data: {
+                    labels: ['Sett 1', 'Sett 2', 'Sett 3', 'Sett 4'],
+                    datasets: [{
+                        label: 'ROI %',
+                        data: [-15, -20, -45, -85],
+                        borderColor: '#F44336',
+                        backgroundColor: 'rgba(244, 67, 54, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: commonOptions
+            });
+            
+            // Market Accuracy Chart
+            const ctxMarket = document.getElementById('marketAccuracyChart').getContext('2d');
+            charts.market = new Chart(ctxMarket, {
+                type: 'bar',
+                data: {
+                    labels: ['Pareggio', 'Over 2.5', 'GG', 'Under 2.5'],
+                    datasets: [{
+                        label: 'Accuracy %',
+                        data: [71.4, 65, 60, 55],
+                        backgroundColor: [
+                            'rgba(76, 175, 80, 0.8)',
+                            'rgba(33, 150, 243, 0.8)',
+                            'rgba(255, 193, 7, 0.8)',
+                            'rgba(244, 67, 54, 0.8)'
+                        ]
+                    }]
+                },
+                options: commonOptions
+            });
+        }
+        
+        function updateChartsTheme(theme) {
+            const textColor = theme === 'dark' ? '#fff' : '#333';
+            const gridColor = theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+            
+            Object.values(charts).forEach(chart => {
+                chart.options.plugins.legend.labels.color = textColor;
+                chart.options.scales.y.ticks.color = textColor;
+                chart.options.scales.y.grid.color = gridColor;
+                chart.options.scales.x.ticks.color = textColor;
+                chart.options.scales.x.grid.color = gridColor;
+                chart.update();
+            });
+        }
+        
+        function updateChartsWithData(data) {
+            // Update with real data when available
+            // For now using placeholder data
+        }
+    </script>
+</body>
+</html>

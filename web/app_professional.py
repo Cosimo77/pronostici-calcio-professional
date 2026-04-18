@@ -1060,10 +1060,23 @@ def favicon():
 
 @app.route("/")
 def index():
-    """Homepage unica - Sistema Enterprise ML"""
+    """Homepage unica - Sistema Enterprise ML (versione moderna)"""
     if not sistema_inizializzato:
         inizializza_sistema_professionale()
 
+    return render_template(
+        "enterprise_v2.html",
+        squadre=calculator.squadre_disponibili,
+        sistema_enterprise=True,
+    )
+
+
+@app.route("/enterprise/legacy")
+def enterprise_legacy():
+    """Dashboard enterprise legacy (vecchia versione)"""
+    if not sistema_inizializzato:
+        inizializza_sistema_professionale()
+    
     return render_template(
         "enterprise.html",
         squadre=calculator.squadre_disponibili,
@@ -1097,7 +1110,13 @@ def enterprise():
 
 @app.route("/monitoring")
 def monitoring():
-    """Dashboard di monitoraggio sistema"""
+    """Dashboard di monitoraggio sistema - Versione moderna con Chart.js"""
+    return render_template("monitoring_v2.html")
+
+
+@app.route("/monitoring/legacy")
+def monitoring_legacy():
+    """Dashboard di monitoraggio legacy (vecchia versione)"""
     return render_template("monitoring.html")
 
 
