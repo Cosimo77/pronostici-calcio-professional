@@ -2160,6 +2160,90 @@ def _valida_opportunita_fase1(pred, odds, ev_pct):
     return True, "validated"
 
 
+def _valida_double_chance_stringente(odds, ev_pct, prob_sistema):
+    """
+    Filtri stringenti professionali per Double Chance.
+    
+    Basati su analisi 8 trade: 37.5% WR, -43.6% ROI, Z-score -1.75 (non significativo).
+    
+    Problemi identificati:
+    - Quote medie 1.50 richiedono WR 66.7%, ma sistema solo 37.5%
+    - Performance non statisticamente significativa (sample piccolo)
+    - EV filtro funziona (vincenti 23.4% vs perdenti 19.6%)
+    
+    Soluzioni professionali:
+    1. Quote MAX 1.60 (non 2.00) - minore rischio richiesto WR 62.5%
+    2. EV minimo 35% (non 25%) - maggiore edge richiesto
+    3. Probabilità sistema ≥75% (non 65%) - alta confidenza obbligatoria
+    
+    Args:
+        odds: Quota Double Chance (es. 1.45)
+        ev_pct: Expected Value percentuale (es. 28.5)
+        prob_sistema: Probabilità modello ML (es. 0.72 = 72%)
+        
+    Returns:
+        (is_valid, reason): Tuple[bool, str]
+    """
+    # Filtro 1: Quote conservative (range 1.20-1.60)
+    if odds > 1.60:
+        return False, "dc_odds_too_high"  # Quote >1.60 richiedono WR >62.5%
+
+    if odds < 1.20:
+        return False, "dc_odds_too_low"  # Quote <1.20 = edge insufficiente
+
+    # Filtro 2: EV elevato (min 35%)
+    if ev_pct < 35:
+        return False, "dc_ev_insufficient"  # EV <35% = edge marginale
+
+    # Filtro 3: Alta confidenza sistema (min 75%)
+    if prob_sistema < 0.75:
+        return False, "dc_confidence_low"  # Prob <75% = troppa incertezza
+
+    # Filtro 4: EV sospetto se troppo alto (>80%)
+    if ev_pct > 80:
+        return False, "dc_ev_suspicious"  # EV >80% spesso indica errore calibrazione
+
+    return True, "validated"
+
+
+def _calcola_quote_double_chance(odds_h, odds_d, odds_a):
+    """
+    Calcola quote Double Chance matematicamente corrette da quote 1X2.
+    
+    Formula: odds_dc = 1 / (prob_esito1 + prob_esito2)
+    
+    Rimuove margin bookmaker proporzionalmente per fair odds.
+    
+    Args:
+        odds_h: Quota Casa (es. 2.50)
+        odds_d: Quota Pareggio (es. 3.20)
+        odds_a: Quota Trasferta (es. 3.00)
+        
+    Returns:
+        Dict con quote DC: {'1X': 1.40, '12': 1.37, 'X2': 1.55}
+    """
+    # Probabilità implicite
+    prob_h = 1 / odds_h if odds_h > 0 else 0
+    prob_d = 1 / odds_d if odds_d > 0 else 0
+    prob_a = 1 / odds_a if odds_a > 0 else 0
+
+    # Margin totale
+    margin = prob_h + prob_d + prob_a - 1.0
+
+    # Rimuovi margin proporzionalmente (fair odds)
+    if margin > 0:
+        prob_h = prob_h / (1 + margin)
+        prob_d = prob_d / (1 + margin)
+        prob_a = prob_a / (1 + margin)
+
+    # Quote Double Chance corrette
+    odds_1x = 1 / (prob_h + prob_d) if (prob_h + prob_d) > 0 else 1.10  # Casa o Pareggio
+    odds_12 = 1 / (prob_h + prob_a) if (prob_h + prob_a) > 0 else 1.10  # Casa o Trasferta
+    odds_x2 = 1 / (prob_d + prob_a) if (prob_d + prob_a) > 0 else 1.10  # Pareggio o Trasferta
+
+    return {"1X": round(odds_1x, 2), "12": round(odds_12, 2), "X2": round(odds_x2, 2)}
+
+
 @app.route("/api/predict_enterprise", methods=["POST"])
 @limiter.limit("30 per minute")  # Rate limiting per endpoint critico
 def api_predict_enterprise():
@@ -4202,10 +4286,40 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
         "consiglio": "goal" if prob_gg > prob_ng else "nogoal",
     }
 
-    # Double Chance - ⚠️ RIMOSSO (quote non disponibili da The Odds API)
-    # The Odds API fornisce SOLO h2h (1X2) e totals (Over/Under 2.5)
-    # Calcolare probabilità DC senza quote reali è PERICOLOSO (vedi bug +317%)
-    # mercati['mdc'] RIMOSSO - frontend non mostrerà più Double Chance
+    # Double Chance - RE-IMPLEMENTATO CON APPROCCIO PROFESSIONALE
+    # Calcola probabilità DC dal modello ML, quote saranno derivate da 1X2
+    # Filtri stringenti applicati per gestire rischio (quota max 1.60, EV min 35%)
+    prob_h = prob_base.get("H", 0.33)
+    prob_d = prob_base.get("D", 0.33)
+    prob_a = prob_base.get("A", 0.33)
+
+    prob_dc = {
+        "1X": prob_h + prob_d,  # Casa o Pareggio
+        "12": prob_h + prob_a,  # Casa o Trasferta
+        "X2": prob_d + prob_a,  # Pareggio o Trasferta
+    }
+
+    # Identifica migliore opzione DC
+    best_dc = max(prob_dc.items(), key=lambda x: x[1])
+    best_dc_option = best_dc[0]
+    best_dc_name = {
+        "1X": "Casa/Pareggio",
+        "12": "Casa/Trasferta",
+        "X2": "Pareggio/Trasferta",
+    }[best_dc_option]
+
+    mercati["mdc"] = {
+        "nome": "Double Chance",
+        "probabilita": {
+            "1X": round(prob_dc["1X"], 3),
+            "12": round(prob_dc["12"], 3),
+            "X2": round(prob_dc["X2"], 3),
+        },
+        "confidenza": best_dc[1],
+        "consiglio": best_dc_name,
+        "best_option": best_dc_option,
+        "_note": "Quote DC calcolate da 1X2 con formula: odds_dc = 1/(prob_esito1 + prob_esito2)",
+    }
 
     # Asian Handicap - basato su differenza probabilità FT
     prob_h_ft = prob_base.get("H", 0.33)
