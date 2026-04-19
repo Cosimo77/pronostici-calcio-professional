@@ -117,25 +117,25 @@
             height: 300px;
             margin-top: 20px;
         }
-        
+
         /* Altezza maggiore per chart ROI orizzontale */
         #mlRoiByMarketChart {
             min-height: 250px !important;
         }
-        
+
         /* Bordi colorati sezioni dashboard */
         .section-betting-reale {
             border-left: 5px solid #4CAF50;
         }
-        
+
         .section-ml-performance {
             border-left: 5px solid #2196F3;
         }
-        
+
         .section-sistema {
             border-left: 5px solid #FFC107;
         }
-        
+
         /* Chart containers con altezze specifiche */
         .chart-container-sm {
             height: 200px;
@@ -432,12 +432,23 @@
         let autoRefreshInterval = null;
         let autoRefreshEnabled = false;
         let charts = {};
+        let chartsInitialized = false;
 
-        // Initialize
+        // 🚀 PERFORMANCE: Initialize with priority
         document.addEventListener('DOMContentLoaded', function() {
+            // Immediate: Theme (no reflow)
             loadTheme();
-            initCharts();
-            refreshAll();
+
+            // Deferred: Charts initialization (lazy, only when visible)
+            requestAnimationFrame(() => {
+                setupLazyCharts();
+            });
+
+            // Progressive: Load critical data first, then others
+            setTimeout(() => {
+                refreshCriticalData();
+                setTimeout(() => refreshNonCriticalData(), 300);
+            }, 100);
         });
 
         // Theme Management
@@ -460,6 +471,22 @@
         function updateThemeIcon(theme) {
             const icon = document.getElementById('themeIcon');
             icon.className = theme === 'dark' ? 'bi bi-sun-fill' : 'bi bi-moon-stars-fill';
+        }
+
+        // 🚀 PERFORMANCE: Batch DOM updates to avoid forced reflow
+        function batchDOMUpdates(updates) {
+            // Collect all reads first (avoid interleaved read/write)
+            const elements = updates.map(u => ({
+                el: document.getElementById(u.id),
+                html: u.html
+            }));
+
+            // Then batch all writes using DocumentFragment when possible
+            requestAnimationFrame(() => {
+                elements.forEach(({ el, html }) => {
+                    if (el) el.innerHTML = html;
+                });
+            });
         }
 
         // Toast Notifications
@@ -515,6 +542,42 @@
             ]);
             updateLastUpdate();
             showToast('success', 'Dati aggiornati!');
+        }
+
+        // 🚀 PERFORMANCE: Progressive data loading
+        async function refreshCriticalData() {
+            // Priority 1: Health + Accuracy (user sees immediately)
+            await Promise.all([fetchHealth(), fetchAccuracy()]);
+            updateLastUpdate();
+        }
+
+        async function refreshNonCriticalData() {
+            // Priority 2: Charts data (below fold)
+            await Promise.all([
+                fetchDatabase(),
+                fetchInvestorMetrics(),
+                fetchMLPerformance()
+            ]);
+        }
+
+        // 🚀 PERFORMANCE: Lazy chart initialization with Intersection Observer
+        function setupLazyCharts() {
+            const chartContainers = document.querySelectorAll('.chart-container');
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting && !chartsInitialized) {
+                        chartsInitialized = true;
+                        // Defer to next frame to avoid blocking
+                        requestAnimationFrame(() => initCharts());
+                        observer.disconnect();
+                    }
+                });
+            }, {
+                rootMargin: '100px' // Start loading 100px before visible
+            });
+
+            chartContainers.forEach(container => observer.observe(container));
         }
 
         function updateLastUpdate() {
@@ -760,7 +823,7 @@
                 // Fetch ML Investor Metrics (theoretical performance)
                 const mlMetricsResponse = await fetch('/api/investor_metrics');
                 const mlMetricsData = await mlMetricsResponse.json();
-                
+
                 console.log('📊 ML Metrics Data:', mlMetricsData);
                 console.log('📊 ROI by Market:', mlMetricsData.roi_by_market);
 
@@ -769,14 +832,14 @@
                     const markets = Object.keys(mlMetricsData.roi_by_market);
                     const roiValues = markets.map(m => mlMetricsData.roi_by_market[m].roi_pct);
                     const colors = roiValues.map(roi => roi >= 0 ? 'rgba(76, 175, 80, 0.8)' : 'rgba(244, 67, 54, 0.8)');
-                    
+
                     console.log('📊 Chart Update:', { markets, roiValues, colors });
 
                     charts.mlRoiByMarket.data.labels = markets;
                     charts.mlRoiByMarket.data.datasets[0].data = roiValues;
                     charts.mlRoiByMarket.data.datasets[0].backgroundColor = colors;
                     charts.mlRoiByMarket.update();
-                    
+
                     console.log('✅ Chart mlRoiByMarket updated successfully');
                 } else {
                     console.warn('⚠️ Chart not updated:', {
@@ -1001,7 +1064,7 @@
                     },
                     scales: {
                         x: {
-                            ticks: { 
+                            ticks: {
                                 color: textColor,
                                 callback: function(value) {
                                     return value + '%';
@@ -1015,7 +1078,7 @@
                             }
                         },
                         y: {
-                            ticks: { 
+                            ticks: {
                                 color: textColor,
                                 font: { size: 12 }
                             },
