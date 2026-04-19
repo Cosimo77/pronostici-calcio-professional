@@ -706,32 +706,32 @@
                 const accuracyResponse = await fetch('/api/monitoring/accuracy');
                 const accuracyData = await accuracyResponse.json();
 
-                // Populate ML metrics
-                const accuracy = (accuracyData.accuracy_7d_pct || 0).toFixed(1);
-                const predictionsCount = accuracyData.predictions_count || 0;
-                const correct = accuracyData.correct_7d || 0;
-                const total7d = accuracyData.predictions_7d || 0;
-                const pending = accuracyData.pending_predictions || 0;
-                const period = accuracyData.status_message?.includes('30 giorni') ? '30gg' : '7gg';
+                // Populate ML metrics usando i campi CORRETTI dall'API
+                const accuracy = (accuracyData.accuracy_lifetime_pct || 0).toFixed(1);
+                const predictionsCount = accuracyData.predictions_lifetime || 0;
+                const correct = accuracyData.correct_lifetime || 0;
+                const totalLifetime = accuracyData.predictions_lifetime || 0;
+                const pending = accuracyData.pending_predictions_30d || 0;
+                const period = accuracyData.days_window || '7gg';
 
                 document.getElementById('mlAccuracyContent').innerHTML = `
                     <div class="metric-value">${accuracy}%</div>
-                    <small class="text-muted">${correct}/${total7d} corrette</small>
+                    <small class="text-muted">${correct}/${totalLifetime} corrette</small>
                 `;
 
                 document.getElementById('mlPredictionsContent').innerHTML = `
                     <div class="metric-value">${predictionsCount}</div>
-                    <small class="text-muted">predizioni totali</small>
+                    <small class="text-muted">predizioni validate</small>
                 `;
 
                 document.getElementById('mlPendingContent').innerHTML = `
                     <div class="metric-value">${pending}</div>
-                    <small class="text-muted">in attesa</small>
+                    <small class="text-muted">in attesa (30gg)</small>
                 `;
 
                 document.getElementById('mlPeriodContent').innerHTML = `
                     <div class="metric-value">${period}</div>
-                    <small class="text-muted">${accuracyData.status_message || 'N/A'}</small>
+                    <small class="text-muted">${accuracyData.status_message || 'Nessuna predizione recente'}</small>
                 `;
 
                 // Fetch ML Investor Metrics (theoretical performance)
