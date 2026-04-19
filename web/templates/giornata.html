@@ -1055,6 +1055,28 @@
                                         </div>
                                     </div>
 
+                                    ${match.odds_totals && (evOverUnder.over > 5 || evOverUnder.under > 5) ? `
+                                    <div class="odds-banner" style="margin-top: 15px; border-top: 2px solid rgba(139, 92, 246, 0.3);">
+                                        <div style="grid-column: 1 / -1; text-align: center; font-weight: 600; color: #8b5cf6; margin-bottom: 10px;">
+                                            ⚽ Over/Under 2.5 Goals
+                                        </div>
+                                        <div>
+                                            <h4>📈 Over 2.5</h4>
+                                            <div class="price">${match.odds_totals.over_25?.toFixed(2) || '-'}</div>
+                                            <div class="ev-display ${evOverUnder.over > 5 ? 'ev-positive' : (evOverUnder.over > 0 ? 'ev-neutral' : 'ev-negative')}">
+                                                EV: ${evOverUnder.over > 0 ? '+' : ''}${evOverUnder.over?.toFixed(1) || 0}%
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <h4>📉 Under 2.5</h4>
+                                            <div class="price">${match.odds_totals.under_25?.toFixed(2) || '-'}</div>
+                                            <div class="ev-display ${evOverUnder.under > 5 ? 'ev-positive' : (evOverUnder.under > 0 ? 'ev-neutral' : 'ev-negative')}">
+                                                EV: ${evOverUnder.under > 0 ? '+' : ''}${evOverUnder.under?.toFixed(1) || 0}%
+                                            </div>
+                                        </div>
+                                    </div>
+                                    ` : ''}
+
                                     <details class="details-technical">
                                         <summary class="summary-technical">
                                             📊 Dettagli Tecnici e Predizione ML
