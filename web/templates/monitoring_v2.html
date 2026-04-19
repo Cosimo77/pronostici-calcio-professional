@@ -435,8 +435,7 @@
                     <small class="text-muted">in attesa</small>
                 `;
 
-                // Update charts with real data (if needed - may need adjustment)
-                // updateChartsWithData(data);
+                // Charts will be updated by fetchInvestorMetrics with real time-series data
 
             } catch (error) {
                 console.error('Errore fetchAccuracy:', error);
@@ -530,6 +529,54 @@
                     charts.roiByMarket.data.datasets[0].backgroundColor = colors;
                     charts.roiByMarket.update();
                 }
+
+                // 4. Update Accuracy Trend Chart (Win Rate over time)
+                if (charts.accuracy && data.monthly_performance && data.monthly_performance.length > 0) {
+                    const sortedMonths = [...data.monthly_performance].sort((a, b) => a.month.localeCompare(b.month));
+                    const labels = sortedMonths.map(m => m.month.substring(5, 7) + '/' + m.month.substring(2, 4)); // MM/YY
+                    const winRates = sortedMonths.map(m => m.win_rate_pct);
+
+                    charts.accuracy.data.labels = labels;
+                    charts.accuracy.data.datasets[0].data = winRates;
+                    charts.accuracy.update();
+                }
+
+                // 5. Update ROI Cumulative Chart (Profit progression)
+                if (charts.roi && data.monthly_performance && data.monthly_performance.length > 0) {
+                    const sortedMonths = [...data.monthly_performance].sort((a, b) => a.month.localeCompare(b.month));
+                    const labels = sortedMonths.map(m => m.month.substring(5, 7) + '/' + m.month.substring(2, 4));
+
+                    // Calculate cumulative profit
+                    let cumulativeProfit = 0;
+                    const cumulativeProfits = sortedMonths.map(m => {
+                        cumulativeProfit += m.profit;
+                        return parseFloat(cumulativeProfit.toFixed(2));
+                    });
+
+                    charts.roi.data.labels = labels;
+                    charts.roi.data.datasets[0].data = cumulativeProfits;
+                    charts.roi.update();
+                }
+
+                // 6. Update Market Accuracy Chart (Win Rate by market)
+                if (charts.market && data.roi_by_market) {
+                    const markets = Object.keys(data.roi_by_market);
+                    const winRates = markets.map(m => data.roi_by_market[m].win_rate_pct || 0);
+
+                    // Dynamic colors based on win rate
+                    const colors = winRates.map(wr => {
+                        if (wr >= 60) return 'rgba(76, 175, 80, 0.8)';      // Green
+                        if (wr >= 50) return 'rgba(255, 193, 7, 0.8)';      // Yellow
+                        if (wr >= 40) return 'rgba(255, 152, 0, 0.8)';      // Orange
+                        return 'rgba(244, 67, 54, 0.8)';                    // Red
+                    });
+
+                    charts.market.data.labels = markets;
+                    charts.market.data.datasets[0].data = winRates;
+                    charts.market.data.datasets[0].backgroundColor = colors;
+                    charts.market.update();
+                }
+
             } catch (error) {
                 console.error('Errore caricamento investor metrics:', error);
                 showToast('danger', 'Errore caricamento metriche investitore');
