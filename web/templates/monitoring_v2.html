@@ -117,6 +117,29 @@
             height: 300px;
             margin-top: 20px;
         }
+        
+        /* Altezza maggiore per chart ROI orizzontale */
+        #mlRoiByMarketChart {
+            min-height: 250px !important;
+        }
+        
+        /* Bordi colorati sezioni dashboard */
+        .section-betting-reale {
+            border-left: 5px solid #4CAF50;
+        }
+        
+        .section-ml-performance {
+            border-left: 5px solid #2196F3;
+        }
+        
+        .section-sistema {
+            border-left: 5px solid #FFC107;
+        }
+        
+        /* Chart containers con altezze specifiche */
+        .chart-container-sm {
+            height: 200px;
+        }
     </style>
 </head>
 <body>
@@ -156,7 +179,7 @@
         <!-- ============================================ -->
         <!-- SEZIONE 1: PERFORMANCE BETTING REALE 💰 -->
         <!-- ============================================ -->
-        <div class="glass-card p-4 mb-4" style="border-left: 5px solid #4CAF50;">
+        <div class="glass-card p-4 mb-4 section-betting-reale">
             <h3 class="mb-2">
                 <i class="bi bi-wallet2"></i> Performance Betting Reale
                 <span class="badge bg-success">Live</span>
@@ -283,7 +306,7 @@
         <!-- ============================================ -->
         <!-- SEZIONE 2: PERFORMANCE MODELLO ML 🤖 -->
         <!-- ============================================ -->
-        <div class="glass-card p-4 mb-4" style="border-left: 5px solid #2196F3;">
+        <div class="glass-card p-4 mb-4 section-ml-performance">
             <h3 class="mb-2">
                 <i class="bi bi-robot"></i> Performance Modello ML
                 <span class="badge bg-info">Teorico</span>
@@ -354,7 +377,7 @@
         <!-- ============================================ -->
         <!-- SEZIONE 3: SISTEMA & DATABASE ⚙️ -->
         <!-- ============================================ -->
-        <div class="glass-card p-4 mb-4" style="border-left: 5px solid #FFC107;">
+        <div class="glass-card p-4 mb-4 section-sistema">
             <h3 class="mb-2">
                 <i class="bi bi-gear-fill"></i> Sistema & Database
                 <span class="badge bg-warning text-dark">Status</span>
@@ -392,7 +415,7 @@
                 <div class="col-lg-4">
                     <div class="glass-card p-4">
                         <h5><i class="bi bi-pie-chart"></i> ROI Mercati</h5>
-                        <div class="chart-container" style="height: 200px;">
+                        <div class="chart-container chart-container-sm">
                             <canvas id="roiByMarketChart"></canvas>
                         </div>
                     </div>
@@ -737,17 +760,29 @@
                 // Fetch ML Investor Metrics (theoretical performance)
                 const mlMetricsResponse = await fetch('/api/investor_metrics');
                 const mlMetricsData = await mlMetricsResponse.json();
+                
+                console.log('📊 ML Metrics Data:', mlMetricsData);
+                console.log('📊 ROI by Market:', mlMetricsData.roi_by_market);
 
                 // Populate ML ROI by Market Chart
                 if (charts.mlRoiByMarket && mlMetricsData.roi_by_market) {
                     const markets = Object.keys(mlMetricsData.roi_by_market);
                     const roiValues = markets.map(m => mlMetricsData.roi_by_market[m].roi_pct);
                     const colors = roiValues.map(roi => roi >= 0 ? 'rgba(76, 175, 80, 0.8)' : 'rgba(244, 67, 54, 0.8)');
+                    
+                    console.log('📊 Chart Update:', { markets, roiValues, colors });
 
                     charts.mlRoiByMarket.data.labels = markets;
                     charts.mlRoiByMarket.data.datasets[0].data = roiValues;
                     charts.mlRoiByMarket.data.datasets[0].backgroundColor = colors;
                     charts.mlRoiByMarket.update();
+                    
+                    console.log('✅ Chart mlRoiByMarket updated successfully');
+                } else {
+                    console.warn('⚠️ Chart not updated:', {
+                        chartExists: !!charts.mlRoiByMarket,
+                        dataExists: !!mlMetricsData.roi_by_market
+                    });
                 }
 
             } catch (error) {
@@ -947,13 +982,43 @@
                 options: {
                     ...commonOptions,
                     indexAxis: 'y', // Horizontal bar chart
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        ...commonOptions.plugins,
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    label += context.parsed.x.toFixed(1) + '%';
+                                    return label;
+                                }
+                            }
+                        }
+                    },
                     scales: {
                         x: {
-                            ticks: { color: textColor },
-                            grid: { color: gridColor }
+                            ticks: { 
+                                color: textColor,
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            },
+                            grid: { color: gridColor },
+                            title: {
+                                display: true,
+                                text: 'ROI %',
+                                color: textColor
+                            }
                         },
                         y: {
-                            ticks: { color: textColor },
+                            ticks: { 
+                                color: textColor,
+                                font: { size: 12 }
+                            },
                             grid: { display: false }
                         }
                     }
