@@ -409,33 +409,38 @@
 
         async function fetchAccuracy() {
             try {
-                const response = await fetch('/api/monitoring/accuracy');
+                // ✅ NEW: Use REAL betting data from Neon database instead of theoretical predictions
+                const response = await fetch('/api/diario/stats');
                 const data = await response.json();
 
-                // Update metrics - Fix: use correct API field names
-                const accuracy = (data.accuracy_lifetime_pct || 0).toFixed(1);
-                const roi = (data.roi_lifetime_pct || 0).toFixed(1);
+                // Calculate metrics from REAL bets
+                const winRate = (data.win_rate || 0).toFixed(1);
+                const roi = (data.roi || 0).toFixed(1);
+                const completed = data.completed || 0;
+                const total = data.total || 0;
+                const wins = Math.round((completed * data.win_rate) / 100);
 
                 document.getElementById('accuracyContent').innerHTML = `
-                    <div class="metric-value">${accuracy}%</div>
-                    <small class="text-muted">${data.correct_lifetime || 0}/${data.predictions_lifetime || 0} corrette</small>
+                    <div class="metric-value">${winRate}%</div>
+                    <small class="text-muted">${wins}/${completed} vinte</small>
                 `;
 
                 document.getElementById('roiContent').innerHTML = `
-                    <div class="metric-value ${data.roi_lifetime_pct >= 0 ? 'text-success' : 'text-danger'}">${roi}%</div>
-                    <small class="text-muted">€${(data.total_profit_lifetime || 0).toFixed(2)}</small>
+                    <div class="metric-value ${data.roi >= 0 ? 'text-success' : 'text-danger'}">${roi}%</div>
+                    <small class="text-muted">€${(data.profit || 0).toFixed(2)}</small>
                 `;
 
                 document.getElementById('pendingContent').innerHTML = `
-                    <div class="metric-value">${data.pending_predictions_30d || 0}</div>
-                    <small class="text-muted">ultimi 30 giorni</small>
+                    <div class="metric-value">${data.pending || 0}</div>
+                    <small class="text-muted">in attesa</small>
                 `;
 
-                // Update charts with real data
-                updateChartsWithData(data);
+                // Update charts with real data (if needed - may need adjustment)
+                // updateChartsWithData(data);
 
             } catch (error) {
-                showToast('danger', 'Errore caricamento accuracy');
+                console.error('Errore fetchAccuracy:', error);
+                showToast('danger', 'Errore caricamento statistiche betting');
             }
         }
 
