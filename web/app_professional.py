@@ -2921,6 +2921,14 @@ def api_upcoming_matches():
 
         logger.info(f"✅ {len(upcoming)} partite FUTURE ricevute da The Odds API")
 
+        # Whitelist Serie A 2025-26 (20 squadre)
+        SERIE_A_2025_26 = {
+            "Atalanta", "Bologna", "Cagliari", "Como", "Cremonese",
+            "Fiorentina", "Genoa", "Inter", "Juventus", "Lazio",
+            "Lecce", "Milan", "Napoli", "Parma", "Pisa",
+            "Roma", "Sassuolo", "Torino", "Udinese", "Verona"
+        }
+
         # Processa partite con predizioni
         matches_with_predictions = []
 
@@ -2933,6 +2941,13 @@ def api_upcoming_matches():
                 away = normalize_team_name(away_display)
 
                 logger.info(f"🔄 Normalizzazione: '{home_display}' → '{home}', '{away_display}' → '{away}'")
+
+                # 🚨 FILTRO SERIE A: Verifica che entrambe le squadre siano in Serie A 2025-26
+                if home not in SERIE_A_2025_26 or away not in SERIE_A_2025_26:
+                    logger.warning(
+                        f"⚠️ SKIP: {home} vs {away} - Una o entrambe le squadre NON in Serie A 2025-26"
+                    )
+                    continue
 
                 # Estrai quote REALI (già processate come medie da OddsAPIClient)
                 odds_home = match.get("odds_home")
