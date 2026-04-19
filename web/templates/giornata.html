@@ -650,6 +650,28 @@
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
         }
+        .btn-add-inline {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            border: none;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 11px;
+            transition: all 0.2s;
+            display: inline-block;
+            width: 100%;
+            max-width: 120px;
+        }
+        .btn-add-inline:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        }
+        .btn-add-inline:active {
+            transform: scale(0.98);
+        }
     </style>
 </head>
 <body>
@@ -1038,6 +1060,19 @@
                                             <div class="ev-display ${evs.home > 5 ? 'ev-positive' : (evs.home > 0 ? 'ev-neutral' : 'ev-negative')}">
                                                 EV: ${evs.home > 0 ? '+' : ''}${evs.home?.toFixed(1) || 0}%
                                             </div>
+                                            ${evs.home > 5 ? `
+                                                <button onclick='addToDiario(${JSON.stringify({
+                                                    partita: `${match.home_team} vs ${match.away_team}`,
+                                                    mercato: 'Casa',
+                                                    quota: parseFloat(odds.home.toFixed(2)),
+                                                    ev: evs.home.toFixed(1),
+                                                    data: match.commence_time.split('T')[0],
+                                                    fase: odds.home >= 1.5 && odds.home <= 2.2 && evs.home >= 15 && evs.home <= 35 ? 'FASE2' : 'CUSTOM',
+                                                    note: `1X2 - EV +${evs.home.toFixed(1)}%`
+                                                })})' class="btn btn-xs btn-add-inline" style="margin-top: 5px; font-size: 11px; padding: 3px 8px;">
+                                                    ➕ Aggiungi
+                                                </button>
+                                            ` : ''}
                                         </div>
                                         <div>
                                             <h4>🤝 Pareggio</h4>
@@ -1045,6 +1080,19 @@
                                             <div class="ev-display ${evs.draw > 5 ? 'ev-positive' : (evs.draw > 0 ? 'ev-neutral' : 'ev-negative')}">
                                                 EV: ${evs.draw > 0 ? '+' : ''}${evs.draw?.toFixed(1) || 0}%
                                             </div>
+                                            ${evs.draw > 5 ? `
+                                                <button onclick='addToDiario(${JSON.stringify({
+                                                    partita: `${match.home_team} vs ${match.away_team}`,
+                                                    mercato: 'Pareggio',
+                                                    quota: parseFloat(odds.draw.toFixed(2)),
+                                                    ev: evs.draw.toFixed(1),
+                                                    data: match.commence_time.split('T')[0],
+                                                    fase: odds.draw >= 2.8 && odds.draw <= 3.5 && evs.draw >= 25 && evs.draw <= 50 ? 'FASE1' : 'CUSTOM',
+                                                    note: `1X2 - EV +${evs.draw.toFixed(1)}%`
+                                                })})' class="btn btn-xs btn-add-inline" style="margin-top: 5px; font-size: 11px; padding: 3px 8px;">
+                                                    ➕ Aggiungi
+                                                </button>
+                                            ` : ''}
                                         </div>
                                         <div>
                                             <h4>✈️ Trasferta</h4>
@@ -1052,6 +1100,19 @@
                                             <div class="ev-display ${evs.away > 5 ? 'ev-positive' : (evs.away > 0 ? 'ev-neutral' : 'ev-negative')}">
                                                 EV: ${evs.away > 0 ? '+' : ''}${evs.away?.toFixed(1) || 0}%
                                             </div>
+                                            ${evs.away > 5 ? `
+                                                <button onclick='addToDiario(${JSON.stringify({
+                                                    partita: `${match.home_team} vs ${match.away_team}`,
+                                                    mercato: 'Trasferta',
+                                                    quota: parseFloat(odds.away.toFixed(2)),
+                                                    ev: evs.away.toFixed(1),
+                                                    data: match.commence_time.split('T')[0],
+                                                    fase: odds.away >= 1.5 && odds.away <= 2.2 && evs.away >= 15 && evs.away <= 35 ? 'FASE2' : 'CUSTOM',
+                                                    note: `1X2 - EV +${evs.away.toFixed(1)}%`
+                                                })})' class="btn btn-xs btn-add-inline" style="margin-top: 5px; font-size: 11px; padding: 3px 8px;">
+                                                    ➕ Aggiungi
+                                                </button>
+                                            ` : ''}
                                         </div>
                                     </div>
 
@@ -1066,6 +1127,19 @@
                                             <div class="ev-display ${evOverUnder.over > 5 ? 'ev-positive' : (evOverUnder.over > 0 ? 'ev-neutral' : 'ev-negative')}">
                                                 EV: ${evOverUnder.over > 0 ? '+' : ''}${evOverUnder.over?.toFixed(1) || 0}%
                                             </div>
+                                            ${evOverUnder.over > 5 ? `
+                                                <button onclick='addToDiario(${JSON.stringify({
+                                                    partita: `${match.home_team} vs ${match.away_team}`,
+                                                    mercato: 'Over 2.5',
+                                                    quota: parseFloat(match.odds_totals.over_25.toFixed(2)),
+                                                    ev: evOverUnder.over.toFixed(1),
+                                                    data: match.commence_time.split('T')[0],
+                                                    fase: match.odds_totals.over_25 >= 1.8 && match.odds_totals.over_25 <= 2.4 && evOverUnder.over >= 20 && evOverUnder.over <= 40 ? 'FASE3' : 'CUSTOM',
+                                                    note: `O/U 2.5 - EV +${evOverUnder.over.toFixed(1)}%`
+                                                })})' class="btn btn-xs btn-add-inline" style="margin-top: 5px; font-size: 11px; padding: 3px 8px;">
+                                                    ➕ Aggiungi
+                                                </button>
+                                            ` : ''}
                                         </div>
                                         <div>
                                             <h4>📉 Under 2.5</h4>
@@ -1073,6 +1147,19 @@
                                             <div class="ev-display ${evOverUnder.under > 5 ? 'ev-positive' : (evOverUnder.under > 0 ? 'ev-neutral' : 'ev-negative')}">
                                                 EV: ${evOverUnder.under > 0 ? '+' : ''}${evOverUnder.under?.toFixed(1) || 0}%
                                             </div>
+                                            ${evOverUnder.under > 5 ? `
+                                                <button onclick='addToDiario(${JSON.stringify({
+                                                    partita: `${match.home_team} vs ${match.away_team}`,
+                                                    mercato: 'Under 2.5',
+                                                    quota: parseFloat(match.odds_totals.under_25.toFixed(2)),
+                                                    ev: evOverUnder.under.toFixed(1),
+                                                    data: match.commence_time.split('T')[0],
+                                                    fase: match.odds_totals.under_25 >= 1.8 && match.odds_totals.under_25 <= 2.4 && evOverUnder.under >= 20 && evOverUnder.under <= 40 ? 'FASE3' : 'CUSTOM',
+                                                    note: `O/U 2.5 - EV +${evOverUnder.under.toFixed(1)}%`
+                                                })})' class="btn btn-xs btn-add-inline" style="margin-top: 5px; font-size: 11px; padding: 3px 8px;">
+                                                    ➕ Aggiungi
+                                                </button>
+                                            ` : ''}
                                         </div>
                                     </div>
                                     ` : ''}
@@ -1146,22 +1233,6 @@
                                         ` : ''}
                                         </div>
                                     </details>
-
-                                    ${isBet ? `
-                                    <div class="diario-button-container">
-                                        <button onclick='addToDiario(${JSON.stringify({
-                                            partita: `${match.home_team} vs ${match.away_team}`,
-                                            mercato: bestOutcome,
-                                            quota: parseFloat(bestOdds.toFixed(2)),
-                                            ev: maxEv.toFixed(1),
-                                            data: match.commence_time.split('T')[0],
-                                            fase: isFase1 ? 'FASE1' : (isFase2 ? 'FASE2' : (isFase3 ? 'FASE3' : 'CUSTOM')),
-                                            note: `${bestMarket} - EV +${maxEv.toFixed(1)}%`
-                                        })})' class="btn btn-sm btn-add-to-diario">
-                                            📝 Aggiungi al Diario
-                                        </button>
-                                    </div>
-                                    ` : ''}
                                 </div>
                             `;
                         }).join('');
