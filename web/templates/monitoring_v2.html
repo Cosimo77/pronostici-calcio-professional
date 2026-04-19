@@ -209,7 +209,7 @@
             <!-- Accuracy Trend Chart -->
             <div class="col-lg-6">
                 <div class="glass-card p-4">
-                    <h5><i class="bi bi-graph-up"></i> Accuracy Trend (30 giorni)</h5>
+                    <h5><i class="bi bi-graph-up"></i> Win Rate Mensile</h5>
                     <div class="chart-container">
                         <canvas id="accuracyChart"></canvas>
                     </div>
@@ -627,7 +627,7 @@
                 data: {
                     labels: ['Sett 1', 'Sett 2', 'Sett 3', 'Sett 4'],
                     datasets: [{
-                        label: 'Accuracy %',
+                        label: 'Win Rate %',
                         data: [65, 68, 71, 71.4],
                         borderColor: '#4CAF50',
                         backgroundColor: 'rgba(76, 175, 80, 0.1)',
@@ -635,7 +635,33 @@
                         fill: true
                     }]
                 },
-                options: commonOptions
+                options: {
+                    ...commonOptions,
+                    plugins: {
+                        ...commonOptions.plugins,
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.parsed.y.toFixed(1) + '%';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        ...commonOptions.scales,
+                        y: {
+                            ...commonOptions.scales.y,
+                            min: 0,
+                            max: 100,
+                            ticks: {
+                                ...commonOptions.scales.y.ticks,
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    }
+                }
             });
 
             // ROI Chart
@@ -645,7 +671,7 @@
                 data: {
                     labels: ['Sett 1', 'Sett 2', 'Sett 3', 'Sett 4'],
                     datasets: [{
-                        label: 'ROI %',
+                        label: 'Profit Cumulativo €',
                         data: [-15, -20, -45, -85],
                         borderColor: '#F44336',
                         backgroundColor: 'rgba(244, 67, 54, 0.1)',
@@ -653,7 +679,36 @@
                         fill: true
                     }]
                 },
-                options: commonOptions
+                options: {
+                    ...commonOptions,
+                    plugins: {
+                        ...commonOptions.plugins,
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    label += '€' + context.parsed.y.toFixed(2);
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        ...commonOptions.scales,
+                        y: {
+                            ...commonOptions.scales.y,
+                            ticks: {
+                                ...commonOptions.scales.y.ticks,
+                                callback: function(value) {
+                                    return '€' + value.toFixed(0);
+                                }
+                            }
+                        }
+                    }
+                }
             });
 
             // Market Accuracy Chart
