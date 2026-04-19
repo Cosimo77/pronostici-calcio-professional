@@ -954,6 +954,30 @@
                             const isFase2 = isFavorite && bestOdds >= 1.5 && bestOdds <= 2.2 && maxEv >= 15 && maxEv <= 35;
                             const isFase3 = isOverUnder && bestOdds >= 1.8 && bestOdds <= 2.4 && maxEv >= 20 && maxEv <= 40;
 
+                            // 🔍 Check if ANY opportunity (not just best outcome) is validated
+                            let hasAnyValidated = isFase1 || isFase2 || isFase3;
+                            
+                            // Check ALL 1X2 opportunities
+                            if (!hasAnyValidated && odds.draw && evs.draw > 5) {
+                                const drawFase1 = odds.draw >= 2.8 && odds.draw <= 3.5 && evs.draw >= 25 && evs.draw <= 50;
+                                if (drawFase1) hasAnyValidated = true;
+                            }
+                            if (!hasAnyValidated && odds.home && evs.home > 5) {
+                                const homeFase2 = odds.home >= 1.5 && odds.home <= 2.2 && evs.home >= 15 && evs.home <= 35;
+                                if (homeFase2) hasAnyValidated = true;
+                            }
+                            if (!hasAnyValidated && odds.away && evs.away > 5) {
+                                const awayFase2 = odds.away >= 1.5 && odds.away <= 2.2 && evs.away >= 15 && evs.away <= 35;
+                                if (awayFase2) hasAnyValidated = true;
+                            }
+                            
+                            // Check Over/Under opportunities
+                            if (!hasAnyValidated && match.odds_totals) {
+                                const overFase3 = match.odds_totals.over_25 >= 1.8 && match.odds_totals.over_25 <= 2.4 && evOverUnder.over >= 20 && evOverUnder.over <= 40;
+                                const underFase3 = match.odds_totals.under_25 >= 1.8 && match.odds_totals.under_25 <= 2.4 && evOverUnder.under >= 20 && evOverUnder.under <= 40;
+                                if (overFase3 || underFase3) hasAnyValidated = true;
+                            }
+
                             let phaseBadge = '';
                             let borderColor = 'rgba(0,0,0,0.1)';
                             let cardClass = 'match-card';
@@ -972,7 +996,7 @@
                                 cardClass = 'match-card validated-fase3';
                             }
 
-                            const isValidated = isFase1 || isFase2 || isFase3;
+                            const isValidated = hasAnyValidated;
 
                             return `
                                 <div class="${cardClass} ${isValidated ? 'match-card-border-validated' : ''}" data-validated="${isValidated}" style="border-left: 4px solid ${borderColor};">
