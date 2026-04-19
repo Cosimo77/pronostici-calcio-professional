@@ -153,140 +153,250 @@
             </div>
         </div>
 
-        <!-- Metrics Grid -->
-        <div class="row g-4 mb-4">
-            <!-- Health Status -->
-            <div class="col-lg-3 col-md-6">
-                <div class="glass-card p-4">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5><i class="bi bi-heart-pulse"></i> Sistema</h5>
-                        <span class="status-badge bg-success" id="healthBadge"></span>
+        <!-- ============================================ -->
+        <!-- SEZIONE 1: PERFORMANCE BETTING REALE 💰 -->
+        <!-- ============================================ -->
+        <div class="glass-card p-4 mb-4" style="border-left: 5px solid #4CAF50;">
+            <h3 class="mb-2">
+                <i class="bi bi-wallet2"></i> Performance Betting Reale
+                <span class="badge bg-success">Live</span>
+            </h3>
+            <p class="text-muted mb-4">Scommesse effettivamente piazzate • Database Neon</p>
+
+            <!-- Metrics Grid Betting Reale -->
+            <div class="row g-4 mb-4">
+                <!-- Win Rate -->
+                <div class="col-lg-3 col-md-6">
+                    <div class="glass-card p-4">
+                        <h5><i class="bi bi-bullseye"></i> Win Rate</h5>
+                        <div id="accuracyContent">
+                            <div class="skeleton skeleton-text"></div>
+                            <div class="metric-value">---%</div>
+                        </div>
                     </div>
-                    <div id="healthContent">
-                        <div class="skeleton skeleton-text"></div>
-                        <div class="skeleton skeleton-text"></div>
-                        <div class="skeleton skeleton-text"></div>
+                </div>
+
+                <!-- ROI -->
+                <div class="col-lg-3 col-md-6">
+                    <div class="glass-card p-4">
+                        <h5><i class="bi bi-graph-up-arrow"></i> ROI</h5>
+                        <div id="roiContent">
+                            <div class="skeleton skeleton-text"></div>
+                            <div class="metric-value">---%</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Profit -->
+                <div class="col-lg-3 col-md-6">
+                    <div class="glass-card p-4">
+                        <h5><i class="bi bi-currency-euro"></i> Profit</h5>
+                        <div id="profitContent">
+                            <div class="skeleton skeleton-text"></div>
+                            <div class="metric-value">€--</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pending -->
+                <div class="col-lg-3 col-md-6">
+                    <div class="glass-card p-4">
+                        <h5><i class="bi bi-hourglass-split"></i> Pending</h5>
+                        <div id="pendingContent">
+                            <div class="skeleton skeleton-text"></div>
+                            <div class="metric-value">--</div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Accuracy -->
-            <div class="col-lg-3 col-md-6">
-                <div class="glass-card p-4">
-                    <h5><i class="bi bi-bullseye"></i> Accuracy</h5>
-                    <div id="accuracyContent">
-                        <div class="skeleton skeleton-text"></div>
-                        <div class="metric-value">---%</div>
+            <!-- Charts Row - Betting Reale -->
+            <div class="row g-4 mb-4">
+                <!-- Accuracy Trend Chart -->
+                <div class="col-lg-6">
+                    <div class="glass-card p-4">
+                        <h5><i class="bi bi-graph-up"></i> Win Rate Mensile</h5>
+                        <div class="chart-container">
+                            <canvas id="accuracyChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ROI Cumulative Chart -->
+                <div class="col-lg-6">
+                    <div class="glass-card p-4">
+                        <h5><i class="bi bi-currency-euro"></i> ROI Cumulativo</h5>
+                        <div class="chart-container">
+                            <canvas id="roiChart"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- ROI -->
-            <div class="col-lg-3 col-md-6">
-                <div class="glass-card p-4">
-                    <h5><i class="bi bi-graph-up-arrow"></i> ROI</h5>
-                    <div id="roiContent">
-                        <div class="skeleton skeleton-text"></div>
-                        <div class="metric-value">---%</div>
-                    </div>
+            <!-- Accuracy by Market -->
+            <div class="glass-card p-4 mb-4">
+                <h5><i class="bi bi-bar-chart"></i> Accuratezza per Mercato</h5>
+                <div class="chart-container">
+                    <canvas id="marketAccuracyChart"></canvas>
                 </div>
             </div>
 
-            <!-- Pending -->
-            <div class="col-lg-3 col-md-6">
-                <div class="glass-card p-4">
-                    <h5><i class="bi bi-hourglass-split"></i> Pending</h5>
-                    <div id="pendingContent">
-                        <div class="skeleton skeleton-text"></div>
-                        <div class="metric-value">--</div>
+            <!-- Investor Metrics Tables - Betting Reale -->
+            <div class="row g-4 mb-0">
+                <!-- Monthly Performance Table -->
+                <div class="col-lg-6">
+                    <div class="glass-card p-4">
+                        <h5><i class="bi bi-calendar3"></i> Performance Mensile</h5>
+                        <div class="table-responsive">
+                            <table class="table table-sm" id="monthlyPerformanceTable">
+                                <thead>
+                                    <tr>
+                                        <th>Mese</th>
+                                        <th class="text-end">Trade</th>
+                                        <th class="text-end">WR%</th>
+                                        <th class="text-end">ROI%</th>
+                                        <th class="text-end">Profit</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="monthlyPerformanceBody">
+                                    <tr><td colspan="5" class="text-center">Caricamento...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Drawdown Metrics -->
+                <div class="col-lg-6">
+                    <div class="glass-card p-4">
+                        <h5><i class="bi bi-arrow-down-circle"></i> Drawdown Analysis</h5>
+                        <div id="drawdownMetrics">
+                            <div class="skeleton skeleton-text"></div>
+                            <div class="skeleton skeleton-text"></div>
+                            <div class="skeleton skeleton-text"></div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Charts Row -->
-        <div class="row g-4 mb-4">
-            <!-- Accuracy Trend Chart -->
-            <div class="col-lg-6">
-                <div class="glass-card p-4">
-                    <h5><i class="bi bi-graph-up"></i> Win Rate Mensile</h5>
-                    <div class="chart-container">
-                        <canvas id="accuracyChart"></canvas>
+        <!-- ============================================ -->
+        <!-- SEZIONE 2: PERFORMANCE MODELLO ML 🤖 -->
+        <!-- ============================================ -->
+        <div class="glass-card p-4 mb-4" style="border-left: 5px solid #2196F3;">
+            <h3 class="mb-2">
+                <i class="bi bi-robot"></i> Performance Modello ML
+                <span class="badge bg-info">Teorico</span>
+            </h3>
+            <p class="text-muted mb-4">Tutte le predizioni generate dal sistema • Tracking CSV</p>
+
+            <!-- Metrics Grid Modello ML -->
+            <div class="row g-4 mb-4">
+                <!-- Accuracy ML -->
+                <div class="col-lg-3 col-md-6">
+                    <div class="glass-card p-4">
+                        <h5><i class="bi bi-cpu"></i> Accuracy ML</h5>
+                        <div id="mlAccuracyContent">
+                            <div class="skeleton skeleton-text"></div>
+                            <div class="metric-value">---%</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Predizioni Totali -->
+                <div class="col-lg-3 col-md-6">
+                    <div class="glass-card p-4">
+                        <h5><i class="bi bi-file-earmark-text"></i> Predizioni</h5>
+                        <div id="mlPredictionsContent">
+                            <div class="skeleton skeleton-text"></div>
+                            <div class="metric-value">--</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pending Predictions -->
+                <div class="col-lg-3 col-md-6">
+                    <div class="glass-card p-4">
+                        <h5><i class="bi bi-clock-history"></i> Pending ML</h5>
+                        <div id="mlPendingContent">
+                            <div class="skeleton skeleton-text"></div>
+                            <div class="metric-value">--</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Periodo -->
+                <div class="col-lg-3 col-md-6">
+                    <div class="glass-card p-4">
+                        <h5><i class="bi bi-calendar-range"></i> Periodo</h5>
+                        <div id="mlPeriodContent">
+                            <div class="skeleton skeleton-text"></div>
+                            <div class="metric-value">--</div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- ROI Cumulative Chart -->
-            <div class="col-lg-6">
-                <div class="glass-card p-4">
-                    <h5><i class="bi bi-currency-euro"></i> ROI Cumulativo</h5>
-                    <div class="chart-container">
-                        <canvas id="roiChart"></canvas>
+            <!-- ML Performance Tables -->
+            <div class="row g-4 mb-0">
+                <!-- ROI by Market ML -->
+                <div class="col-lg-12">
+                    <div class="glass-card p-4">
+                        <h5><i class="bi bi-pie-chart"></i> ROI per Mercato (Teorico)</h5>
+                        <div class="chart-container">
+                            <canvas id="mlRoiByMarketChart"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Accuracy by Market -->
-        <div class="glass-card p-4 mb-4">
-            <h5><i class="bi bi-bar-chart"></i> Accuratezza per Mercato</h5>
-            <div class="chart-container">
-                <canvas id="marketAccuracyChart"></canvas>
-            </div>
-        </div>
+        <!-- ============================================ -->
+        <!-- SEZIONE 3: SISTEMA & DATABASE ⚙️ -->
+        <!-- ============================================ -->
+        <div class="glass-card p-4 mb-4" style="border-left: 5px solid #FFC107;">
+            <h3 class="mb-2">
+                <i class="bi bi-gear-fill"></i> Sistema & Database
+                <span class="badge bg-warning text-dark">Status</span>
+            </h3>
+            <p class="text-muted mb-4">Health check, database info, automation status</p>
 
-        <!-- Investor Metrics Section -->
-        <div class="row g-4 mb-4">
-            <!-- Monthly Performance Table -->
-            <div class="col-lg-6">
-                <div class="glass-card p-4">
-                    <h5><i class="bi bi-calendar3"></i> Performance Mensile</h5>
-                    <div class="table-responsive">
-                        <table class="table table-sm" id="monthlyPerformanceTable">
-                            <thead>
-                                <tr>
-                                    <th>Mese</th>
-                                    <th class="text-end">Trade</th>
-                                    <th class="text-end">WR%</th>
-                                    <th class="text-end">ROI%</th>
-                                    <th class="text-end">Profit</th>
-                                </tr>
-                            </thead>
-                            <tbody id="monthlyPerformanceBody">
-                                <tr><td colspan="5" class="text-center">Caricamento...</td></tr>
-                            </tbody>
-                        </table>
+            <div class="row g-4">
+                <!-- Health Status -->
+                <div class="col-lg-4">
+                    <div class="glass-card p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5><i class="bi bi-heart-pulse"></i> Health</h5>
+                            <span class="status-badge bg-success" id="healthBadge"></span>
+                        </div>
+                        <div id="healthContent">
+                            <div class="skeleton skeleton-text"></div>
+                            <div class="skeleton skeleton-text"></div>
+                            <div class="skeleton skeleton-text"></div>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Drawdown Metrics -->
-            <div class="col-lg-6">
-                <div class="glass-card p-4">
-                    <h5><i class="bi bi-arrow-down-circle"></i> Drawdown Analysis</h5>
-                    <div id="drawdownMetrics">
-                        <div class="skeleton skeleton-text"></div>
-                        <div class="skeleton skeleton-text"></div>
-                        <div class="skeleton skeleton-text"></div>
+                <!-- Database Info -->
+                <div class="col-lg-4">
+                    <div class="glass-card p-4">
+                        <h5><i class="bi bi-database"></i> Database</h5>
+                        <div id="databaseContent">
+                            <div class="skeleton skeleton-text"></div>
+                            <div class="skeleton skeleton-text"></div>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </div>
 
-        <!-- ROI by Market Chart -->
-        <div class="glass-card p-4 mb-4">
-            <h5><i class="bi bi-pie-chart"></i> ROI per Mercato</h5>
-            <div class="chart-container">
-                <canvas id="roiByMarketChart"></canvas>
-            </div>
-        </div>
-
-        <!-- Database Info -->
-        <div class="glass-card p-4">
-            <h5><i class="bi bi-database"></i> Database Status</h5>
-            <div id="databaseContent">
-                <div class="skeleton skeleton-text"></div>
-                <div class="skeleton skeleton-text"></div>
+                <!-- ROI by Market (Betting Reale) -->
+                <div class="col-lg-4">
+                    <div class="glass-card p-4">
+                        <h5><i class="bi bi-pie-chart"></i> ROI Mercati</h5>
+                        <div class="chart-container" style="height: 200px;">
+                            <canvas id="roiByMarketChart"></canvas>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -377,7 +487,8 @@
                 fetchHealth(),
                 fetchAccuracy(),
                 fetchDatabase(),
-                fetchInvestorMetrics()
+                fetchInvestorMetrics(),
+                fetchMLPerformance()
             ]);
             updateLastUpdate();
             showToast('success', 'Dati aggiornati!');
@@ -419,6 +530,7 @@
                 const completed = data.completed || 0;
                 const total = data.total || 0;
                 const wins = Math.round((completed * data.win_rate) / 100);
+                const profit = data.profit || 0;
 
                 document.getElementById('accuracyContent').innerHTML = `
                     <div class="metric-value">${winRate}%</div>
@@ -427,7 +539,12 @@
 
                 document.getElementById('roiContent').innerHTML = `
                     <div class="metric-value ${data.roi >= 0 ? 'text-success' : 'text-danger'}">${roi}%</div>
-                    <small class="text-muted">€${(data.profit || 0).toFixed(2)}</small>
+                    <small class="text-muted">${completed} trade</small>
+                `;
+
+                document.getElementById('profitContent').innerHTML = `
+                    <div class="metric-value ${profit >= 0 ? 'text-success' : 'text-danger'}">€${profit.toFixed(2)}</div>
+                    <small class="text-muted">profitto totale</small>
                 `;
 
                 document.getElementById('pendingContent').innerHTML = `
@@ -580,6 +697,62 @@
             } catch (error) {
                 console.error('Errore caricamento investor metrics:', error);
                 showToast('danger', 'Errore caricamento metriche investitore');
+            }
+        }
+
+        async function fetchMLPerformance() {
+            try {
+                // Fetch ML Accuracy from tracking_predictions_live.csv
+                const accuracyResponse = await fetch('/api/monitoring/accuracy');
+                const accuracyData = await accuracyResponse.json();
+
+                // Populate ML metrics
+                const accuracy = (accuracyData.accuracy_7d_pct || 0).toFixed(1);
+                const predictionsCount = accuracyData.predictions_count || 0;
+                const correct = accuracyData.correct_7d || 0;
+                const total7d = accuracyData.predictions_7d || 0;
+                const pending = accuracyData.pending_predictions || 0;
+                const period = accuracyData.status_message?.includes('30 giorni') ? '30gg' : '7gg';
+
+                document.getElementById('mlAccuracyContent').innerHTML = `
+                    <div class="metric-value">${accuracy}%</div>
+                    <small class="text-muted">${correct}/${total7d} corrette</small>
+                `;
+
+                document.getElementById('mlPredictionsContent').innerHTML = `
+                    <div class="metric-value">${predictionsCount}</div>
+                    <small class="text-muted">predizioni totali</small>
+                `;
+
+                document.getElementById('mlPendingContent').innerHTML = `
+                    <div class="metric-value">${pending}</div>
+                    <small class="text-muted">in attesa</small>
+                `;
+
+                document.getElementById('mlPeriodContent').innerHTML = `
+                    <div class="metric-value">${period}</div>
+                    <small class="text-muted">${accuracyData.status_message || 'N/A'}</small>
+                `;
+
+                // Fetch ML Investor Metrics (theoretical performance)
+                const mlMetricsResponse = await fetch('/api/investor_metrics');
+                const mlMetricsData = await mlMetricsResponse.json();
+
+                // Populate ML ROI by Market Chart
+                if (charts.mlRoiByMarket && mlMetricsData.roi_by_market) {
+                    const markets = Object.keys(mlMetricsData.roi_by_market);
+                    const roiValues = markets.map(m => mlMetricsData.roi_by_market[m].roi_pct);
+                    const colors = roiValues.map(roi => roi >= 0 ? 'rgba(76, 175, 80, 0.8)' : 'rgba(244, 67, 54, 0.8)');
+
+                    charts.mlRoiByMarket.data.labels = markets;
+                    charts.mlRoiByMarket.data.datasets[0].data = roiValues;
+                    charts.mlRoiByMarket.data.datasets[0].backgroundColor = colors;
+                    charts.mlRoiByMarket.update();
+                }
+
+            } catch (error) {
+                console.error('Errore caricamento ML performance:', error);
+                showToast('danger', 'Errore caricamento performance modello ML');
             }
         }
 
@@ -739,6 +912,34 @@
                     labels: [],
                     datasets: [{
                         label: 'ROI %',
+                        data: [],
+                        backgroundColor: []
+                    }]
+                },
+                options: {
+                    ...commonOptions,
+                    indexAxis: 'y', // Horizontal bar chart
+                    scales: {
+                        x: {
+                            ticks: { color: textColor },
+                            grid: { color: gridColor }
+                        },
+                        y: {
+                            ticks: { color: textColor },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+
+            // ML ROI by Market Chart (Theoretical)
+            const ctxMlRoiByMarket = document.getElementById('mlRoiByMarketChart').getContext('2d');
+            charts.mlRoiByMarket = new Chart(ctxMlRoiByMarket, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'ROI % (Teorico)',
                         data: [],
                         backgroundColor: []
                     }]
