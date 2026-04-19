@@ -58,6 +58,7 @@ def run_update():
     
     steps = [
         ('scripts/aggiorna_stagione_corrente.py', 'Aggiornamento dati stagione'),
+        ('scripts/aggiorna_risultati_pending.py', 'Aggiornamento risultati predizioni pending'),
         ('scripts/analizza_dati.py', 'Creazione dataset pulito'),
         ('scripts/feature_engineering.py', 'Generazione features')
     ]
@@ -111,7 +112,7 @@ def main():
     try:
         if should_update():
             success = run_update()
-            if success >= 3:  # Almeno i 3 step base
+            if success >= 4:  # Almeno i 4 step base (era 3)
                 logging.info("🎉 Aggiornamento automatico completato con successo!")
             else:
                 logging.warning(f"⚠️  Aggiornamento parziale: {success} step completati")
