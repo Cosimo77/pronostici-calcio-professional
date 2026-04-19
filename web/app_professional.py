@@ -5132,6 +5132,9 @@ def api_monitoring_accuracy():
         # Converti Date SUBITO (prima di filtrare) per evitare errori confronto stringhe vs datetime
         df["Data"] = pd.to_datetime(df["Data"], errors="coerce")
 
+        # ESCLUDI predizioni FILTERED_OUT (non validate dal sistema)
+        df = df[~df['Note'].str.contains('FILTERED_OUT', na=False)]
+
         # Filtra solo righe con risultato reale disponibile
         df_risultati = df[df["Risultato_Reale"].notna() & (df["Risultato_Reale"] != "")]
 
