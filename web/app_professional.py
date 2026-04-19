@@ -6657,6 +6657,149 @@ def api_diario_stats():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/api/diario/investor_metrics", methods=["GET"])
+@limiter.limit("30 per minute")
+def api_diario_investor_metrics():
+    """Metriche investitore da database Neon: ROI per mercato, performance mensile, drawdown"""
+    try:
+        from datetime import datetime
+
+        # Carica bets dal database Neon (NON da CSV)
+        all_bets = DiarioStorage.get_all_bets()
+
+        # Filtra solo bet completati (WIN, LOSS) - escludi PENDING, VOID, SKIP
+        completed_bets = [b for b in all_bets if b.get("risultato") in ["WIN", "LOSS"]]
+
+        if len(completed_bets) == 0:
+            return jsonify(
+                {
+                    "monthly_performance": [],
+                    "roi_by_market": {},
+                    "drawdown_metrics": {
+                        "max_drawdown": 0,
+                        "max_drawdown_pct": 0,
+                        "current_drawdown": 0,
+                        "current_drawdown_pct": 0,
+                        "peak_profit": 0,
+                        "current_profit": 0,
+                    },
+                    "overall": {
+                        "total_trades": 0,
+                        "total_wins": 0,
+                        "win_rate_pct": 0,
+                        "roi_pct": 0,
+                        "total_profit": 0,
+                    },
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
+
+        # Converti in DataFrame per raggruppamenti
+        df = pd.DataFrame(completed_bets)
+        df["data"] = pd.to_datetime(df["data"], errors="coerce")
+        df["YearMonth"] = df["data"].dt.to_period("M").astype(str)
+        df["profit"] = df["profit"].astype(float)
+        df["stake"] = df["stake"].astype(float)
+
+        # 1. PERFORMANCE MENSILE
+        monthly_perf = []
+        for month in df["YearMonth"].unique():
+            df_month = df[df["YearMonth"] == month]
+            trades = len(df_month)
+            wins = (df_month["risultato"] == "WIN").sum()
+            profit = df_month["profit"].sum()
+            total_stake = df_month["stake"].sum()
+            roi = (profit / total_stake * 100) if total_stake > 0 else 0
+
+            monthly_perf.append(
+                {
+                    "month": month,
+                    "trades": int(trades),
+                    "wins": int(wins),
+                    "win_rate_pct": round((wins / trades) * 100, 1) if trades > 0 else 0,
+                    "roi_pct": round(roi, 2),
+                    "profit": round(profit, 2),
+                }
+            )
+
+        monthly_performance = sorted(monthly_perf, key=lambda x: x["month"], reverse=True)
+
+        # 2. ROI PER MERCATO
+        roi_by_market = {}
+        for market in df["mercato"].unique():
+            if pd.isna(market):
+                continue
+
+            df_market = df[df["mercato"] == market]
+            trades = len(df_market)
+            wins = (df_market["risultato"] == "WIN").sum()
+            profit = df_market["profit"].sum()
+            total_stake = df_market["stake"].sum()
+            roi = (profit / total_stake * 100) if total_stake > 0 else 0
+
+            roi_by_market[market] = {
+                "trades": int(trades),
+                "wins": int(wins),
+                "win_rate_pct": round((wins / trades) * 100, 1) if trades > 0 else 0,
+                "roi_pct": round(roi, 2),
+                "profit": round(profit, 2),
+            }
+
+        # 3. DRAWDOWN ANALYSIS
+        df_sorted = df.sort_values("data")
+        cumulative_profit = df_sorted["profit"].cumsum()
+
+        # Calcola drawdown
+        running_max = cumulative_profit.cummax()
+        drawdown = cumulative_profit - running_max
+        max_drawdown = drawdown.min()
+        max_drawdown_pct = (max_drawdown / running_max.max()) * 100 if running_max.max() > 0 else 0
+
+        # Current drawdown
+        current_profit = cumulative_profit.iloc[-1]
+        peak = running_max.iloc[-1]
+        current_drawdown = current_profit - peak
+        current_drawdown_pct = (current_drawdown / peak) * 100 if peak > 0 else 0
+
+        drawdown_metrics = {
+            "max_drawdown": round(max_drawdown, 2),
+            "max_drawdown_pct": round(max_drawdown_pct, 2),
+            "current_drawdown": round(current_drawdown, 2),
+            "current_drawdown_pct": round(current_drawdown_pct, 2),
+            "peak_profit": round(peak, 2),
+            "current_profit": round(current_profit, 2),
+        }
+
+        # 4. OVERALL STATS
+        total_trades = len(df)
+        total_wins = (df["risultato"] == "WIN").sum()
+        total_profit = df["profit"].sum()
+        total_stake = df["stake"].sum()
+        overall_roi = (total_profit / total_stake * 100) if total_stake > 0 else 0
+
+        response = {
+            "monthly_performance": monthly_performance,
+            "roi_by_market": roi_by_market,
+            "drawdown_metrics": drawdown_metrics,
+            "overall": {
+                "total_trades": int(total_trades),
+                "total_wins": int(total_wins),
+                "win_rate_pct": round((total_wins / total_trades) * 100, 1) if total_trades > 0 else 0,
+                "roi_pct": round(overall_roi, 2),
+                "total_profit": round(total_profit, 2),
+            },
+            "timestamp": datetime.now().isoformat(),
+            "source": "neon_database",  # Marker per debug
+        }
+
+        logger.info("✅ Investor metrics generated from Neon database")
+        return jsonify(response)
+
+    except Exception as e:
+        logger.error(f"❌ Errore diario investor metrics: {e}")
+        return jsonify({"error": f"Errore interno: {str(e)}"}), 500
+
+
 @app.route("/api/diario/pending", methods=["GET"])
 @limiter.limit("60 per minute")
 def api_diario_pending():

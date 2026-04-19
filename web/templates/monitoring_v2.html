@@ -467,7 +467,8 @@
 
         async function fetchInvestorMetrics() {
             try {
-                const response = await fetch('/api/investor_metrics');
+                // ✅ NEW: Usa dati REALI dal database Neon, NON predizioni teoriche da CSV
+                const response = await fetch('/api/diario/investor_metrics');
                 const data = await response.json();
 
                 // 1. Populate Monthly Performance Table
