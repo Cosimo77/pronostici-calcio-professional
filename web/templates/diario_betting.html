@@ -812,14 +812,29 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        // 🔇 Suppress browser extension errors (password managers, ad blockers, etc.)
-        // "Unchecked runtime.lastError" is caused by extensions, not our code
-        window.addEventListener('error', function(e) {
-            if (e.message && e.message.includes('message port closed')) {
-                e.preventDefault();
-                return true;
-            }
-        });
+        // 🔇 AGGRESSIVE: Override console to filter extension warnings
+        // "Unchecked runtime.lastError" comes from Chrome extensions, not our code
+        (function() {
+            const originalError = console.error;
+            console.error = function(...args) {
+                const msg = args.join(' ');
+                // Filter out browser extension errors
+                if (msg.includes('Unchecked runtime.lastError') || 
+                    msg.includes('message port closed') ||
+                    msg.includes('Extension context invalidated')) {
+                    return; // Silently ignore
+                }
+                originalError.apply(console, args);
+            };
+            
+            // Also suppress unhandled promise rejections from extensions
+            window.addEventListener('unhandledrejection', function(e) {
+                const msg = e.reason?.message || String(e.reason);
+                if (msg.includes('Extension context') || msg.includes('message port')) {
+                    e.preventDefault();
+                }
+            });
+        })();
 
         // Flag lazy loading
         let completedLoaded = false;
