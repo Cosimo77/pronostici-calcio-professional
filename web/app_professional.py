@@ -1071,29 +1071,12 @@ def index():
     )
 
 
-@app.route("/enterprise/legacy")
-def enterprise_legacy():
-    """Dashboard enterprise legacy (vecchia versione)"""
-    if not sistema_inizializzato:
-        inizializza_sistema_professionale()
-
-    return render_template(
-        "enterprise.html",
-        squadre=calculator.squadre_disponibili,
-        sistema_enterprise=True,
-    )
-
-
 @app.route("/value-betting")
-def value_betting_page():
-    """Pagina Analisi Predittiva - Confronto Modello vs Mercato"""
-    return render_template("value_betting.html")
-
-
 @app.route("/analysis")
-def analysis_page():
-    """Alias per analisi predittiva"""
-    return value_betting_page()
+def value_betting_redirect():
+    """Redirect a giornata - funzionalità integrate"""
+    from flask import redirect, url_for
+    return redirect(url_for('giornata_page'))
 
 
 @app.route("/giornata")
@@ -1114,17 +1097,12 @@ def monitoring():
     return render_template("monitoring_v2.html")
 
 
-@app.route("/monitoring/legacy")
-def monitoring_legacy():
-    """Dashboard di monitoraggio legacy (vecchia versione)"""
-    return render_template("monitoring.html")
-
-
 @app.route("/upcoming")
-@app.route("/upcoming_matches")  # Alias per compatibilità
-def upcoming_matches_page():
-    """Pagina partite prossime con quote reali e opportunità FASE 2"""
-    return render_template("upcoming_matches.html")
+@app.route("/upcoming_matches")
+def upcoming_redirect():
+    """Redirect a giornata - funzionalità duplicate"""
+    from flask import redirect, url_for
+    return redirect(url_for('giornata_page'))
 
 
 @app.route("/automation")
@@ -1138,9 +1116,10 @@ def automation_page():
 
 
 @app.route("/tracking")
-def tracking_fase2_page():
-    """Dashboard tracking performance FASE 2"""
-    return render_template("tracking_fase2.html")
+def tracking_redirect():
+    """Redirect a monitoring - funzionalità in sezione Performance Betting Reale"""
+    from flask import redirect, url_for
+    return redirect(url_for('monitoring'))
 
 
 @app.route("/api/debug/odds_api_test")
