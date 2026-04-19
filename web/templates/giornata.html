@@ -1274,13 +1274,13 @@
         // Aggiungi opportunità al diario professionale
         async function addToDiario(oppData) {
             try {
-                // Mappa mercato al formato corretto
+                // Mappa mercato al formato corretto (compatibile con menu a tendina diario)
                 const marketMap = {
                     'Casa': '1',
                     'Pareggio': 'X',
                     'Trasferta': '2',
-                    'Over 2.5': 'Over 2.5',
-                    'Under 2.5': 'Under 2.5'
+                    'Over 2.5': 'OVER_25',
+                    'Under 2.5': 'UNDER_25'
                 };
 
                 const mercatoFormattato = marketMap[oppData.mercato] || oppData.mercato;

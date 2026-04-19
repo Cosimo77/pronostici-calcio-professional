@@ -500,21 +500,21 @@
             const prob = data.probabilita_ensemble || data.probabilita || {};
             const predizione = data.predizione_enterprise || data.predizione || 'N/A';
             const confidenza = data.confidenza || 0;
-            
+
             let html = `
                 <div class="prediction-result">
                     <h4 class="mb-4">
                         <i class="bi bi-trophy"></i> ${data.squadra_casa} vs ${data.squadra_ospite}
                     </h4>
-                    
+
                     <div class="alert alert-info mb-4">
                         <h5><i class="bi bi-star-fill"></i> Predizione: <strong>${predizione}</strong></h5>
                         <p class="mb-0">Confidenza: <strong>${(confidenza * 100).toFixed(1)}%</strong></p>
                     </div>
-                    
+
                     <h5 class="mb-3">Probabilità per Esito:</h5>
             `;
-            
+
             // Fix: Map H/D/A a Casa/Pareggio/Ospite
             const esiti = [
                 { nome: 'Casa', key: 'H', icon: 'house', color: 'success' },
@@ -542,11 +542,11 @@
             if (data.value_betting) {
                 const vb = data.value_betting;
                 const rec = vb.recommendation || {};
-                
+
                 // Determina se c'è value dalla raccomandazione
                 const hasValue = rec.fase1_validated || false;
                 const evPct = rec.roi_expected_pct || 0;
-                
+
                 html += `
                     <hr class="my-4">
                     <h5 class="mb-3">
@@ -561,7 +561,7 @@
                         </div>
                         ${rec.reason ? `<div class="mt-2"><small>${rec.reason}</small></div>` : ''}
                     </div>
-                    
+
                     ${vb.odds ? `
                         <div class="mt-3">
                             <h6>Quote Bookmaker:</h6>
@@ -594,7 +594,7 @@
                     'mah': { nome: 'Asian Handicap', icon: 'bar-chart' },
                     'mcs': { nome: 'Clean Sheet', icon: 'shield-check' }
                 };
-                
+
                 html += `
                     <hr class="my-4">
                     <h5 class="mb-3">
@@ -602,13 +602,13 @@
                     </h5>
                     <div class="row">
                 `;
-                
+
                 for (const [key, info] of Object.entries(mercatiPrincipali)) {
                     const mercato = data.mercati[key];
                     if (mercato) {
                         const conf = (mercato.confidenza * 100).toFixed(1);
                         const consiglio = mercato.consiglio || 'N/A';
-                        
+
                         html += `
                             <div class="col-md-6 mb-3">
                                 <div class="card bg-opacity-10 bg-light">
@@ -626,7 +626,7 @@
                         `;
                     }
                 }
-                
+
                 html += `
                     </div>
                     <div class="text-center mt-2">

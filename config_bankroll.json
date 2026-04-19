@@ -1,11 +1,11 @@
 {
   "bankroll_iniziale": 100.0,
-  "bankroll_corrente": 100.0,
-  "unita_betting": 1.0,
+  "bankroll_corrente": 135.6,
+  "unita_betting": 1.3559999999999999,
   "kelly_fraction": 0.25,
   "max_stake_percentage": 5.0,
   "stop_loss_percentage": 30.0,
   "take_profit_percentage": 50.0,
   "note": "Configurazione bankroll management professionale",
-  "ultimo_aggiornamento": "2026-02-14"
+  "ultimo_aggiornamento": "2026-04-19"
 }
