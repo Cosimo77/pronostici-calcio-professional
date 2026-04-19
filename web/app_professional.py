@@ -973,6 +973,50 @@ def normalize_team_name(team_name: str) -> str:
     return TEAM_NAME_MAPPING.get(team_name, team_name)
 
 
+def normalize_market_name(market: str) -> str:
+    """
+    Normalizza nomi mercati per visualizzazione chiara e consistente
+    
+    Args:
+        market: Nome mercato raw dal CSV (es. "GGNG", "OU25", "Over/Under 2.5 - Over 2.5")
+    
+    Returns:
+        Nome mercato normalizzato (es. "Goal/No Goal", "Over/Under 2.5", etc.)
+    """
+    if pd.isna(market):
+        return "Altro"
+    
+    market_str = str(market).strip()
+    
+    # Mapping chiaro e consistente
+    market_mapping = {
+        # Goal/No Goal
+        "GGNG": "Goal/No Goal",
+        "GG/NG": "Goal/No Goal",
+        "GG": "Goal/No Goal",
+        
+        # Over/Under 2.5
+        "OU25": "Over/Under 2.5",
+        "Over/Under 2.5 - Over 2.5": "Over/Under 2.5",
+        "Over/Under 2.5 - Under 2.5": "Over/Under 2.5",
+        
+        # Double Chance
+        "Double Chance - 1X": "Double Chance",
+        "Double Chance - 12": "Double Chance",
+        "Double Chance - X2": "Double Chance",
+        
+        # 1X2 e sottocategorie
+        "Pareggio": "1X2",  # Consolida sotto 1X2
+        
+        # Singole opzioni Double Chance (da consolidare)
+        "1X": "Double Chance",
+        "12": "Double Chance", 
+        "X2": "Double Chance",
+    }
+    
+    return market_mapping.get(market_str, market_str)
+
+
 def inizializza_sistema_professionale():
     """Inizializzazione robusta del sistema"""
     global sistema_inizializzato
@@ -5486,19 +5530,38 @@ def api_investor_metrics():
                 if pd.isna(market):
                     continue
 
+                # Normalizza nome mercato per visualizzazione chiara
+                market_normalized = normalize_market_name(market)
+
                 df_market = df_risultati[df_risultati["Mercato"] == market]
                 trades = len(df_market)
                 wins = df_market["Corretto"].sum()
                 profit = df_market["Profit"].sum()
                 roi = (profit / trades) * 100 if trades > 0 else 0
 
-                roi_by_market[market] = {
-                    "trades": int(trades),
-                    "wins": int(wins),
-                    "win_rate_pct": round((wins / trades) * 100, 1) if trades > 0 else 0,
-                    "roi_pct": round(roi, 2),
-                    "profit": round(profit, 2),
-                }
+                # Aggrega mercati normalizzati (es. OU25 + Over/Under 2.5)
+                if market_normalized in roi_by_market:
+                    roi_by_market[market_normalized]["trades"] += int(trades)
+                    roi_by_market[market_normalized]["wins"] += int(wins)
+                    roi_by_market[market_normalized]["profit"] += float(profit)
+                    # Ricalcola ROI e Win Rate aggregati
+                    total_trades = roi_by_market[market_normalized]["trades"]
+                    total_wins = roi_by_market[market_normalized]["wins"]
+                    total_profit = roi_by_market[market_normalized]["profit"]
+                    roi_by_market[market_normalized]["roi_pct"] = round(
+                        (total_profit / total_trades) * 100, 2
+                    ) if total_trades > 0 else 0
+                    roi_by_market[market_normalized]["win_rate_pct"] = round(
+                        (total_wins / total_trades) * 100, 1
+                    ) if total_trades > 0 else 0
+                else:
+                    roi_by_market[market_normalized] = {
+                        "trades": int(trades),
+                        "wins": int(wins),
+                        "win_rate_pct": round((wins / trades) * 100, 1) if trades > 0 else 0,
+                        "roi_pct": round(roi, 2),
+                        "profit": round(profit, 2),
+                    }
 
         # 3. DRAWDOWN ANALYSIS
         if len(df_risultati) > 0:
@@ -6712,6 +6775,9 @@ def api_diario_investor_metrics():
             if pd.isna(market):
                 continue
 
+            # Normalizza nome mercato per visualizzazione chiara
+            market_normalized = normalize_market_name(market)
+
             df_market = df[df["mercato"] == market]
             trades = len(df_market)
             wins = (df_market["risultato"] == "WIN").sum()
@@ -6719,12 +6785,31 @@ def api_diario_investor_metrics():
             total_stake = df_market["stake"].sum()
             roi = (profit / total_stake * 100) if total_stake > 0 else 0
 
-            roi_by_market[market] = {
-                "trades": int(trades),
-                "wins": int(wins),
-                "win_rate_pct": round((wins / trades) * 100, 1) if trades > 0 else 0,
-                "roi_pct": round(roi, 2),
-                "profit": round(profit, 2),
+            # Aggrega mercati normalizzati (es. OU25 + Over/Under 2.5)
+            if market_normalized in roi_by_market:
+                roi_by_market[market_normalized]["trades"] += int(trades)
+                roi_by_market[market_normalized]["wins"] += int(wins)
+                roi_by_market[market_normalized]["profit"] += float(profit)
+                total_stake_agg = roi_by_market[market_normalized].get("total_stake", 0) + float(total_stake)
+                roi_by_market[market_normalized]["total_stake"] = total_stake_agg
+                # Ricalcola ROI e Win Rate aggregati
+                total_trades = roi_by_market[market_normalized]["trades"]
+                total_wins = roi_by_market[market_normalized]["wins"]
+                total_profit = roi_by_market[market_normalized]["profit"]
+                roi_by_market[market_normalized]["roi_pct"] = round(
+                    (total_profit / total_stake_agg) * 100, 2
+                ) if total_stake_agg > 0 else 0
+                roi_by_market[market_normalized]["win_rate_pct"] = round(
+                    (total_wins / total_trades) * 100, 1
+                ) if total_trades > 0 else 0
+            else:
+                roi_by_market[market_normalized] = {
+                    "trades": int(trades),
+                    "wins": int(wins),
+                    "win_rate_pct": round((wins / trades) * 100, 1) if trades > 0 else 0,
+                    "roi_pct": round(roi, 2),
+                    "profit": round(profit, 2),
+                    "total_stake": float(total_stake),  # Salva per ricalcoli
             }
 
         # 3. DRAWDOWN ANALYSIS
