@@ -5537,7 +5537,9 @@ def api_investor_metrics():
                 trades = len(df_market)
                 wins = df_market["Corretto"].sum()
                 profit = df_market["Profit"].sum()
-                roi = (profit / trades) * 100 if trades > 0 else 0
+                # Stake fisso 10€ per trade in tracking_predictions_live.csv
+                total_stake = trades * 10
+                roi = (profit / total_stake) * 100 if total_stake > 0 else 0
 
                 # Aggrega mercati normalizzati (es. OU25 + Over/Under 2.5)
                 if market_normalized in roi_by_market:
@@ -5548,9 +5550,10 @@ def api_investor_metrics():
                     total_trades = roi_by_market[market_normalized]["trades"]
                     total_wins = roi_by_market[market_normalized]["wins"]
                     total_profit = roi_by_market[market_normalized]["profit"]
+                    total_stake_agg = total_trades * 10  # Stake fisso 10€
                     roi_by_market[market_normalized]["roi_pct"] = round(
-                        (total_profit / total_trades) * 100, 2
-                    ) if total_trades > 0 else 0
+                        (total_profit / total_stake_agg) * 100, 2
+                    ) if total_stake_agg > 0 else 0
                     roi_by_market[market_normalized]["win_rate_pct"] = round(
                         (total_wins / total_trades) * 100, 1
                     ) if total_trades > 0 else 0
