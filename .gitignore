@@ -75,3 +75,4 @@ models/enterprise/**/*.pkl
 models/backup*/**/*.pkl
 models/**/backup/**/*.pkl
 data/dataset_features_enhanced.csv
+.env

@@ -976,44 +976,40 @@ def normalize_team_name(team_name: str) -> str:
 def normalize_market_name(market: str) -> str:
     """
     Normalizza nomi mercati per visualizzazione chiara e consistente
-    
+
     Args:
         market: Nome mercato raw dal CSV (es. "GGNG", "OU25", "Over/Under 2.5 - Over 2.5")
-    
+
     Returns:
         Nome mercato normalizzato (es. "Goal/No Goal", "Over/Under 2.5", etc.)
     """
     if pd.isna(market):
         return "Altro"
-    
+
     market_str = str(market).strip()
-    
+
     # Mapping chiaro e consistente
     market_mapping = {
         # Goal/No Goal
         "GGNG": "Goal/No Goal",
         "GG/NG": "Goal/No Goal",
         "GG": "Goal/No Goal",
-        
         # Over/Under 2.5
         "OU25": "Over/Under 2.5",
         "Over/Under 2.5 - Over 2.5": "Over/Under 2.5",
         "Over/Under 2.5 - Under 2.5": "Over/Under 2.5",
-        
         # Double Chance
         "Double Chance - 1X": "Double Chance",
         "Double Chance - 12": "Double Chance",
         "Double Chance - X2": "Double Chance",
-        
         # 1X2 e sottocategorie
         "Pareggio": "1X2",  # Consolida sotto 1X2
-        
         # Singole opzioni Double Chance (da consolidare)
         "1X": "Double Chance",
-        "12": "Double Chance", 
+        "12": "Double Chance",
         "X2": "Double Chance",
     }
-    
+
     return market_mapping.get(market_str, market_str)
 
 
@@ -1120,7 +1116,8 @@ def index():
 def value_betting_redirect():
     """Redirect a giornata - funzionalità integrate"""
     from flask import redirect, url_for
-    return redirect(url_for('giornata_page'))
+
+    return redirect(url_for("giornata_page"))
 
 
 @app.route("/giornata")
@@ -1146,7 +1143,8 @@ def monitoring():
 def upcoming_redirect():
     """Redirect a giornata - funzionalità duplicate"""
     from flask import redirect, url_for
-    return redirect(url_for('giornata_page'))
+
+    return redirect(url_for("giornata_page"))
 
 
 @app.route("/automation")
@@ -1163,7 +1161,8 @@ def automation_page():
 def tracking_redirect():
     """Redirect a monitoring - funzionalità in sezione Performance Betting Reale"""
     from flask import redirect, url_for
-    return redirect(url_for('monitoring'))
+
+    return redirect(url_for("monitoring"))
 
 
 @app.route("/api/debug/odds_api_test")
@@ -2163,24 +2162,24 @@ def _valida_opportunita_fase1(pred, odds, ev_pct):
 def _valida_double_chance_stringente(odds, ev_pct, prob_sistema):
     """
     Filtri stringenti professionali per Double Chance.
-    
+
     Basati su analisi 8 trade: 37.5% WR, -43.6% ROI, Z-score -1.75 (non significativo).
-    
+
     Problemi identificati:
     - Quote medie 1.50 richiedono WR 66.7%, ma sistema solo 37.5%
     - Performance non statisticamente significativa (sample piccolo)
     - EV filtro funziona (vincenti 23.4% vs perdenti 19.6%)
-    
+
     Soluzioni professionali:
     1. Quote MAX 1.60 (non 2.00) - minore rischio richiesto WR 62.5%
     2. EV minimo 35% (non 25%) - maggiore edge richiesto
     3. Probabilità sistema ≥75% (non 65%) - alta confidenza obbligatoria
-    
+
     Args:
         odds: Quota Double Chance (es. 1.45)
         ev_pct: Expected Value percentuale (es. 28.5)
         prob_sistema: Probabilità modello ML (es. 0.72 = 72%)
-        
+
     Returns:
         (is_valid, reason): Tuple[bool, str]
     """
@@ -2209,16 +2208,16 @@ def _valida_double_chance_stringente(odds, ev_pct, prob_sistema):
 def _calcola_quote_double_chance(odds_h, odds_d, odds_a):
     """
     Calcola quote Double Chance matematicamente corrette da quote 1X2.
-    
+
     Formula: odds_dc = 1 / (prob_esito1 + prob_esito2)
-    
+
     Rimuove margin bookmaker proporzionalmente per fair odds.
-    
+
     Args:
         odds_h: Quota Casa (es. 2.50)
         odds_d: Quota Pareggio (es. 3.20)
         odds_a: Quota Trasferta (es. 3.00)
-        
+
     Returns:
         Dict con quote DC: {'1X': 1.40, '12': 1.37, 'X2': 1.55}
     """
@@ -3030,10 +3029,26 @@ def api_upcoming_matches():
 
         # Whitelist Serie A 2025-26 (20 squadre)
         SERIE_A_2025_26 = {
-            "Atalanta", "Bologna", "Cagliari", "Como", "Cremonese",
-            "Fiorentina", "Genoa", "Inter", "Juventus", "Lazio",
-            "Lecce", "Milan", "Napoli", "Parma", "Pisa",
-            "Roma", "Sassuolo", "Torino", "Udinese", "Verona"
+            "Atalanta",
+            "Bologna",
+            "Cagliari",
+            "Como",
+            "Cremonese",
+            "Fiorentina",
+            "Genoa",
+            "Inter",
+            "Juventus",
+            "Lazio",
+            "Lecce",
+            "Milan",
+            "Napoli",
+            "Parma",
+            "Pisa",
+            "Roma",
+            "Sassuolo",
+            "Torino",
+            "Udinese",
+            "Verona",
         }
 
         # Processa partite con predizioni
@@ -3051,9 +3066,7 @@ def api_upcoming_matches():
 
                 # 🚨 FILTRO SERIE A: Verifica che entrambe le squadre siano in Serie A 2025-26
                 if home not in SERIE_A_2025_26 or away not in SERIE_A_2025_26:
-                    logger.warning(
-                        f"⚠️ SKIP: {home} vs {away} - Una o entrambe le squadre NON in Serie A 2025-26"
-                    )
+                    logger.warning(f"⚠️ SKIP: {home} vs {away} - Una o entrambe le squadre NON in Serie A 2025-26")
                     continue
 
                 # Estrai quote REALI (già processate come medie da OddsAPIClient)
@@ -5291,7 +5304,7 @@ def api_monitoring_accuracy():
         df["Data"] = pd.to_datetime(df["Data"], errors="coerce")
 
         # ESCLUDI predizioni FILTERED_OUT (non validate dal sistema)
-        df = df[~df['Note'].str.contains('FILTERED_OUT', na=False)]
+        df = df[~df["Note"].str.contains("FILTERED_OUT", na=False)]
 
         # Filtra solo righe con risultato reale disponibile
         df_risultati = df[df["Risultato_Reale"].notna() & (df["Risultato_Reale"] != "")]
@@ -5665,12 +5678,12 @@ def api_investor_metrics():
                     total_wins = roi_by_market[market_normalized]["wins"]
                     total_profit = roi_by_market[market_normalized]["profit"]
                     total_stake_agg = total_trades * 10  # Stake fisso 10€
-                    roi_by_market[market_normalized]["roi_pct"] = round(
-                        (total_profit / total_stake_agg) * 100, 2
-                    ) if total_stake_agg > 0 else 0
-                    roi_by_market[market_normalized]["win_rate_pct"] = round(
-                        (total_wins / total_trades) * 100, 1
-                    ) if total_trades > 0 else 0
+                    roi_by_market[market_normalized]["roi_pct"] = (
+                        round((total_profit / total_stake_agg) * 100, 2) if total_stake_agg > 0 else 0
+                    )
+                    roi_by_market[market_normalized]["win_rate_pct"] = (
+                        round((total_wins / total_trades) * 100, 1) if total_trades > 0 else 0
+                    )
                 else:
                     roi_by_market[market_normalized] = {
                         "trades": int(trades),
@@ -6425,6 +6438,60 @@ def api_force_retrain():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/api/trigger_deploy", methods=["POST"])
+@limiter.limit("5 per hour")  # Max 5 deploy/ora per evitare abuse
+def api_trigger_deploy():
+    """Trigger manual deploy su Render via Deploy Hook"""
+    try:
+        import requests
+        
+        # Get Deploy Hook URL from environment variable
+        deploy_hook_url = os.getenv("RENDER_DEPLOY_HOOK_URL")
+        
+        if not deploy_hook_url:
+            return jsonify({
+                "success": False,
+                "error": "Deploy Hook URL non configurato",
+                "hint": "Configura RENDER_DEPLOY_HOOK_URL in .env o Render environment variables"
+            }), 500
+        
+        logger.info("🚀 Triggering Render deploy via webhook...")
+        
+        # Call Render Deploy Hook (POST request)
+        response = requests.post(deploy_hook_url, timeout=10)
+        
+        if response.status_code == 200:
+            logger.info("✅ Deploy triggered successfully")
+            return jsonify({
+                "success": True,
+                "message": "Deploy triggered su Render",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "status": "Deploy in corso (~8-9 minuti)",
+                "deploy_url": "https://dashboard.render.com/"
+            })
+        else:
+            logger.error(f"❌ Deploy trigger failed: {response.status_code}")
+            return jsonify({
+                "success": False,
+                "error": f"Deploy Hook returned status {response.status_code}",
+                "response": response.text[:200]
+            }), 500
+            
+    except requests.exceptions.Timeout:
+        logger.error("⏱️ Deploy Hook timeout (>10s)")
+        return jsonify({
+            "success": False,
+            "error": "Timeout chiamando Deploy Hook",
+            "hint": "Il deploy potrebbe essere già stato triggerato. Controlla Render Dashboard."
+        }), 504
+    except Exception as e:
+        logger.error(f"❌ Errore trigger deploy: {e}", exc_info=True)
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
 @app.route("/api/metrics")
 @limiter.limit("30 per minute")
 def api_metrics():
@@ -6913,12 +6980,12 @@ def api_diario_investor_metrics():
                 total_trades = roi_by_market[market_normalized]["trades"]
                 total_wins = roi_by_market[market_normalized]["wins"]
                 total_profit = roi_by_market[market_normalized]["profit"]
-                roi_by_market[market_normalized]["roi_pct"] = round(
-                    (total_profit / total_stake_agg) * 100, 2
-                ) if total_stake_agg > 0 else 0
-                roi_by_market[market_normalized]["win_rate_pct"] = round(
-                    (total_wins / total_trades) * 100, 1
-                ) if total_trades > 0 else 0
+                roi_by_market[market_normalized]["roi_pct"] = (
+                    round((total_profit / total_stake_agg) * 100, 2) if total_stake_agg > 0 else 0
+                )
+                roi_by_market[market_normalized]["win_rate_pct"] = (
+                    round((total_wins / total_trades) * 100, 1) if total_trades > 0 else 0
+                )
             else:
                 roi_by_market[market_normalized] = {
                     "trades": int(trades),
@@ -6927,7 +6994,7 @@ def api_diario_investor_metrics():
                     "roi_pct": round(roi, 2),
                     "profit": round(profit, 2),
                     "total_stake": float(total_stake),  # Salva per ricalcoli
-            }
+                }
 
         # 3. DRAWDOWN ANALYSIS
         df_sorted = df.sort_values("data")

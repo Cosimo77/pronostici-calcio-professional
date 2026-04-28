@@ -232,6 +232,63 @@
         .time-ago {
             color: #718096;
         }
+        
+        .deploy-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            margin-left: 15px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .deploy-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+        
+        .deploy-btn:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+        }
+        
+        .deploy-status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: 600;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .deploy-status.success {
+            background: #c6f6d5;
+            color: #22543d;
+            border: 2px solid #48bb78;
+        }
+        
+        .deploy-status.error {
+            background: #fed7d7;
+            color: #742a2a;
+            border: 2px solid #f56565;
+        }
+        
+        .deploy-status.loading {
+            background: #bee3f8;
+            color: #2c5282;
+            border: 2px solid #4299e1;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
 <body>
@@ -318,7 +375,11 @@
         
         <div class="actions-container">
             <button class="refresh-btn" onclick="loadStatus()">🔄 Aggiorna Stato</button>
+            <button class="deploy-btn" onclick="triggerDeploy()" id="deploy-btn">
+                🚀 Deploy to Render
+            </button>
             <p class="auto-refresh">⏱️ Aggiornamento automatico ogni 30 secondi</p>
+            <div id="deploy-status" class="deploy-status" style="display: none;"></div>
         </div>
     </div>
     
@@ -449,6 +510,72 @@
         
         // Auto-refresh ogni 30 secondi
         setInterval(loadStatus, 30000);
+        
+        // === DEPLOY TO RENDER FUNCTIONALITY ===
+        async function triggerDeploy() {
+            const btn = document.getElementById('deploy-btn');
+            const statusDiv = document.getElementById('deploy-status');
+            
+            // Conferma azione
+            if (!confirm('🚀 Vuoi triggerare il deploy su Render?\\n\\nDurata: ~8-9 minuti\\nCosto: ~8-9 build minutes')) {
+                return;
+            }
+            
+            // Disabilita button e mostra loading
+            btn.disabled = true;
+            btn.textContent = '⏳ Triggering deploy...';
+            statusDiv.className = 'deploy-status loading';
+            statusDiv.style.display = 'block';
+            statusDiv.textContent = '🔄 Chiamando Render Deploy Hook...';
+            
+            try {
+                const response = await fetch('/api/trigger_deploy', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    // Success
+                    statusDiv.className = 'deploy-status success';
+                    statusDiv.innerHTML = `
+                        ✅ <strong>Deploy Triggered!</strong><br>
+                        Status: ${data.status}<br>
+                        Timestamp: ${new Date(data.timestamp).toLocaleString('it-IT')}<br>
+                        <a href="${data.deploy_url}" target="_blank" style="color: #22543d; text-decoration: underline;">📊 Monitora su Render Dashboard</a>
+                    `;
+                    
+                    // Re-enable button dopo 60 secondi
+                    setTimeout(() => {
+                        btn.disabled = false;
+                        btn.textContent = '🚀 Deploy to Render';
+                    }, 60000);
+                } else {
+                    // Error
+                    statusDiv.className = 'deploy-status error';
+                    statusDiv.innerHTML = `
+                        ❌ <strong>Deploy Failed</strong><br>
+                        Error: ${data.error || 'Unknown error'}<br>
+                        ${data.hint ? `<small>${data.hint}</small>` : ''}
+                    `;
+                    btn.disabled = false;
+                    btn.textContent = '🚀 Deploy to Render';
+                }
+            } catch (error) {
+                // Network error
+                statusDiv.className = 'deploy-status error';
+                statusDiv.innerHTML = `
+                    ❌ <strong>Network Error</strong><br>
+                    ${error.message}<br>
+                    <small>Controlla la connessione internet</small>
+                `;
+                btn.disabled = false;
+                btn.textContent = '🚀 Deploy to Render';
+            }
+        }
     </script>
 </body>
 </html>
