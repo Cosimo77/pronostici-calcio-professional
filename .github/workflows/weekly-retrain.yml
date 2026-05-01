@@ -27,6 +27,23 @@ jobs:
           pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Rigenera dataset completo
+        run: |
+          echo "🔄 Rigenerazione dataset prima del retrain..."
+
+          # Consolida tutti gli I1_*.csv → dataset_pulito.csv
+          if [ -f "scripts/analizza_dati.py" ]; then
+            python3 scripts/analizza_dati.py
+            echo "✅ Dataset consolidato"
+          fi
+
+          # Genera features → dataset_features.csv
+          if [ -f "scripts/feature_engineering.py" ]; then
+            python3 scripts/feature_engineering.py
+            echo "✅ Features generate"
+          fi
+        continue-on-error: false
+
       - name: Verifica dataset disponibile
         run: |
           if [ ! -f "data/dataset_features.csv" ]; then

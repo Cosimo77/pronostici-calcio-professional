@@ -8,77 +8,88 @@ on:
 jobs:
   update-data:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
           cache: 'pip'
-      
+
       - name: Install dependencies
         run: |
           pip install --upgrade pip
           pip install pandas numpy requests scikit-learn
-      
+
       - name: Download nuovi dati Serie A
         run: |
           python3 scripts/auto_download_data.py
         continue-on-error: false
-      
+
+      - name: Consolida dataset completo
+        run: |
+          if [ -f "scripts/analizza_dati.py" ]; then
+            python3 scripts/analizza_dati.py
+            echo "✅ Dataset consolidato (tutti gli I1_*.csv → dataset_pulito.csv)"
+          else
+            echo "⚠️ analizza_dati.py non trovato, skip"
+          fi
+        continue-on-error: true
+
       - name: Genera dataset features
         run: |
           if [ -f "scripts/feature_engineering.py" ]; then
             python3 scripts/feature_engineering.py
+            echo "✅ Features generate (dataset_pulito.csv → dataset_features.csv)"
           else
             echo "⚠️ feature_engineering.py non trovato, skip"
           fi
         continue-on-error: true
-      
+
       - name: Check for updates
         id: check_updates
         run: |
           ADDED=$(cat update_info.txt 2>/dev/null || echo "0")
           echo "new_matches=$ADDED" >> $GITHUB_OUTPUT
           echo "📊 Nuove partite da committare: $ADDED"
-      
+
       - name: Commit e push nuovi dati
         if: steps.check_updates.outputs.new_matches > 0
         run: |
           git config user.name "GitHub Actions Bot"
           git config user.email "actions@github.com"
-          
+
           ADDED=${{ steps.check_updates.outputs.new_matches }}
-          
+
           git add data/*.csv
           git commit -m "chore: Auto-update Serie A data (+${ADDED} partite) [skip ci]" || echo "Nessun file modificato"
           git push || echo "Nessun push necessario"
-      
+
       - name: Notifica Render (force reload)
         if: steps.check_updates.outputs.new_matches > 0
         run: |
           curl -X POST -s -o /dev/null -w "Status: %{http_code}\n" \
             https://pronostici-calcio-pro.onrender.com/api/reload_dataset || echo "⚠️ Render reload fallito (non critico)"
         continue-on-error: true
-      
+
       - name: Summary
         if: always()
         run: |
           echo "## 📊 Aggiornamento Automatico Completato" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           ADDED=${{ steps.check_updates.outputs.new_matches }}
-          
+
           if [ "$ADDED" -gt 0 ]; then
             echo "✅ **$ADDED nuove partite** aggiunte al dataset" >> $GITHUB_STEP_SUMMARY
           else
             echo "ℹ️ Nessuna nuova partita da aggiornare" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "🕐 Timestamp: $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
