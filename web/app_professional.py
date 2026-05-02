@@ -348,10 +348,17 @@ def log_request_info():
 @app.after_request
 def log_response_info(response):
     """Log structured delle risposte"""
+    # Gestisce send_file() e altri response stream
+    try:
+        response_size = len(response.get_data())
+    except RuntimeError:
+        # Response in passthrough mode (send_file)
+        response_size = 0
+
     logger.info(
         "Request completed",
         status_code=response.status_code,
-        response_size=len(response.get_data()),
+        response_size=response_size,
         timestamp=time.time(),
     )
     return response
@@ -5611,13 +5618,42 @@ def api_investor_metrics():
         import numpy as np
         import pandas as pd
 
-        tracking_file = Path("tracking_predictions_live.csv")
+        # Prova prima con database Neon, fallback su CSV
+        try:
+            from database import BetModel, is_db_available
+
+            if is_db_available():
+                # TODO: Query database Neon per betting reali
+                logger.info("📊 Database disponibile ma non implementato, fallback su CSV")
+        except Exception as db_error:
+            logger.debug(f"Database non disponibile: {db_error}")
+
+        # Fallback su CSV tracking
+        tracking_file = Path(__file__).parent.parent / "data" / "tracking_predictions_live.csv"
 
         if not tracking_file.exists():
-            return jsonify({"error": "File tracking non trovato"}), 404
+            # Fallback secondario su root
+            tracking_file_root = Path(__file__).parent.parent / "tracking_predictions_live.csv"
+            if tracking_file_root.exists():
+                tracking_file = tracking_file_root
+            else:
+                return jsonify({"error": "File tracking non trovato"}), 404
 
         # Carica tracking predictions
         df = pd.read_csv(tracking_file)
+
+        # Gestisci schema CSV (verifica colonne essenziali)
+        required_cols = ["Data", "Mercato", "Corretto", "Profit"]
+        missing_cols = [col for col in required_cols if col not in df.columns]
+        if missing_cols:
+            return jsonify({"error": f"Colonne mancanti nel tracking: {missing_cols}"}), 500
+
+        # Gestisci nomi colonne legacy
+        if "Risultato_Reale" not in df.columns:
+            # Se manca, considera tutte le righe con Profit definito come validate
+            df["Risultato_Reale"] = df["Profit"].apply(
+                lambda x: "W" if pd.notna(x) and x > 0 else ("L" if pd.notna(x) else "")
+            )
 
         # Filtra solo predizioni con risultati (esclude pending)
         df_risultati = df[df["Risultato_Reale"].notna() & (df["Risultato_Reale"] != "")].copy()
@@ -6444,52 +6480,115 @@ def api_trigger_deploy():
     """Trigger manual deploy su Render via Deploy Hook"""
     try:
         import requests
-        
+
         # Get Deploy Hook URL from environment variable
         deploy_hook_url = os.getenv("RENDER_DEPLOY_HOOK_URL")
-        
+
         if not deploy_hook_url:
-            return jsonify({
-                "success": False,
-                "error": "Deploy Hook URL non configurato",
-                "hint": "Configura RENDER_DEPLOY_HOOK_URL in .env o Render environment variables"
-            }), 500
-        
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "Deploy Hook URL non configurato",
+                        "hint": "Configura RENDER_DEPLOY_HOOK_URL in .env o Render environment variables",
+                    }
+                ),
+                500,
+            )
+
         logger.info("🚀 Triggering Render deploy via webhook...")
-        
+
         # Call Render Deploy Hook (POST request)
         response = requests.post(deploy_hook_url, timeout=10)
-        
+
         if response.status_code == 200:
             logger.info("✅ Deploy triggered successfully")
-            return jsonify({
-                "success": True,
-                "message": "Deploy triggered su Render",
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-                "status": "Deploy in corso (~8-9 minuti)",
-                "deploy_url": "https://dashboard.render.com/"
-            })
+            return jsonify(
+                {
+                    "success": True,
+                    "message": "Deploy triggered su Render",
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "status": "Deploy in corso (~8-9 minuti)",
+                    "deploy_url": "https://dashboard.render.com/",
+                }
+            )
         else:
             logger.error(f"❌ Deploy trigger failed: {response.status_code}")
-            return jsonify({
-                "success": False,
-                "error": f"Deploy Hook returned status {response.status_code}",
-                "response": response.text[:200]
-            }), 500
-            
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "error": f"Deploy Hook returned status {response.status_code}",
+                        "response": response.text[:200],
+                    }
+                ),
+                500,
+            )
+
     except requests.exceptions.Timeout:
         logger.error("⏱️ Deploy Hook timeout (>10s)")
-        return jsonify({
-            "success": False,
-            "error": "Timeout chiamando Deploy Hook",
-            "hint": "Il deploy potrebbe essere già stato triggerato. Controlla Render Dashboard."
-        }), 504
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": "Timeout chiamando Deploy Hook",
+                    "hint": "Il deploy potrebbe essere già stato triggerato. Controlla Render Dashboard.",
+                }
+            ),
+            504,
+        )
     except Exception as e:
         logger.error(f"❌ Errore trigger deploy: {e}", exc_info=True)
-        return jsonify({
-            "success": False,
-            "error": str(e)
-        }), 500
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/download_tracking", methods=["GET"])
+@limiter.limit("30 per minute")
+def api_download_tracking():
+    """
+    Endpoint per scaricare tracking_predictions_live.csv
+    Usato da GitHub Actions per sincronizzare tracking file
+    """
+    from pathlib import Path
+
+    from flask import send_file
+
+    try:
+        # Cerca file tracking in ordine di preferenza
+        tracking_paths = [
+            Path(__file__).parent.parent / "data" / "tracking_predictions_live.csv",
+            Path(__file__).parent.parent / "tracking_predictions_live.csv",
+        ]
+
+        tracking_file = None
+        for path in tracking_paths:
+            if path.exists():
+                tracking_file = path
+                break
+
+        if not tracking_file:
+            return (
+                jsonify({"error": "Tracking file non trovato", "searched_paths": [str(p) for p in tracking_paths]}),
+                404,
+            )
+
+        # Verifica che sia un CSV valido (header corretto)
+        with open(tracking_file, "r", encoding="utf-8") as f:
+            first_line = f.readline().strip()
+            if not first_line.startswith("Data,"):
+                return (
+                    jsonify({"error": "Tracking file corrotto (header mancante)", "file_path": str(tracking_file)}),
+                    500,
+                )
+
+        logger.info(f"📥 Tracking file scaricato: {tracking_file}")
+        return send_file(
+            tracking_file, mimetype="text/csv", as_attachment=True, download_name="tracking_predictions_live.csv"
+        )
+
+    except Exception as e:
+        logger.error(f"❌ Errore download tracking: {e}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/metrics")

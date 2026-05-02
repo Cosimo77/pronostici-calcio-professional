@@ -4,7 +4,7 @@ on:
   # Automazione giornaliera: 08:00 UTC (10:00 Italia) - prima delle partite
   schedule:
     - cron: '0 8 * * *'
-  
+
   # Trigger manuale per test immediate
   workflow_dispatch:
     inputs:
@@ -17,46 +17,46 @@ jobs:
   generate-predictions:
     name: "Genera Predizioni Giornaliere"
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: "📥 Checkout repository"
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: "🔧 Setup Git Config"
         run: |
           git config --global user.name "GitHub Actions Bot"
           git config --global user.email "actions@github.com"
-      
+
       - name: "📊 Chiama Batch Generate Predictions API"
         id: generate
         run: |
           echo "::group::🎯 Generazione Predizioni"
-          
+
           # Call batch endpoint su produzione Render
           RESPONSE=$(curl -s -X POST \
             -H "Content-Type: application/json" \
             https://pronostici-calcio-professional.onrender.com/api/batch_generate_predictions)
-          
+
           echo "Response completa:"
           echo "$RESPONSE" | python3 -m json.tool || echo "$RESPONSE"
-          
+
           # Estrai metriche
           STATUS=$(echo "$RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin).get('status', 'unknown'))" 2>/dev/null || echo "error")
           GENERATED=$(echo "$RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('summary', {}).get('predictions_generated', 0))" 2>/dev/null || echo 0)
           TRACKED=$(echo "$RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('summary', {}).get('tracked_fase1', 0))" 2>/dev/null || echo 0)
           FILTERED=$(echo "$RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('summary', {}).get('filtered_out', 0))" 2>/dev/null || echo 0)
-          
+
           echo "status=$STATUS" >> $GITHUB_OUTPUT
           echo "generated=$GENERATED" >> $GITHUB_OUTPUT
           echo "tracked=$TRACKED" >> $GITHUB_OUTPUT
           echo "filtered=$FILTERED" >> $GITHUB_OUTPUT
-          
+
           echo "::endgroup::"
-          
+
           echo "::notice::✅ Predizioni generate: $GENERATED (Tracked: $TRACKED, Filtered: $FILTERED)"
-          
+
           # Exit code based on status
           if [ "$STATUS" = "success" ]; then
             exit 0
@@ -67,68 +67,50 @@ jobs:
             echo "::error::API call fallita: $STATUS"
             exit 1
           fi
-      
-      - name: "📄 Pull Tracking File Aggiornato"
+
+      - name: "� Verifica Modifiche Tracking File"
+        id: check_changes
         if: steps.generate.outputs.tracked > 0
         run: |
-          echo "::group::📥 Download tracking aggiornato"
-          
-          # Download tracking_predictions_live.csv aggiornato da Render
-          # Nota: Questo step funziona solo se Render espone il file
-          # Alternativa: commita direttamente nel batch endpoint
-          
-          curl -s -o tracking_predictions_live.csv \
-            https://pronostici-calcio-professional.onrender.com/tracking_predictions_live.csv \
-            || echo "⚠️ Impossibile scaricare tracking file (endpoint non esposto)"
-          
-          echo "::endgroup::"
-      
-      - name: "📊 Verifica Modifiche"
-        id: check_changes
-        run: |
-          if [ -f tracking_predictions_live.csv ]; then
-            # Check se ci sono modifiche
-            git diff --quiet tracking_predictions_live.csv && CHANGED="false" || CHANGED="true"
-            echo "changed=$CHANGED" >> $GITHUB_OUTPUT
-            
-            if [ "$CHANGED" = "true" ]; then
-              echo "::notice::✅ Tracking file aggiornato con nuove predizioni"
-            else
-              echo "::warning::Nessuna modifica al tracking file"
-            fi
-          else
+          # Il batch endpoint dovrebbe aver già aggiornato il tracking file interno
+          # Verifichiamo se ci sono modifiche committabili
+
+          if git diff --quiet data/tracking_predictions_live.csv tracking_predictions_live.csv 2>/dev/null; then
             echo "changed=false" >> $GITHUB_OUTPUT
-            echo "::warning::Tracking file non trovato"
+            echo "::warning::Nessuna modifica ai tracking files"
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "::notice::✅ Tracking files aggiornati con nuove predizioni"
           fi
-      
+
       - name: "💾 Commit Tracking Aggiornato"
         if: steps.check_changes.outputs.changed == 'true'
         run: |
           git add tracking_predictions_live.csv
-          
+
           git commit -m "🤖 Auto-prediction: ${TRACKED} nuove predizioni tracked (${GENERATED} generate)
 
           📊 Batch Generation Summary
           - Predizioni generate: ${GENERATED}
           - Tracked (FASE1): ${TRACKED}
           - Filtered out: ${FILTERED}
-          
+
           Timestamp: $(date -u +"%Y-%m-%d %H:%M UTC")
           Triggered by: Daily workflow" \
             --author="GitHub Actions <actions@github.com>"
-          
+
           echo "✅ Commit creato"
         env:
           GENERATED: ${{ steps.generate.outputs.generated }}
           TRACKED: ${{ steps.generate.outputs.tracked }}
           FILTERED: ${{ steps.generate.outputs.filtered }}
-      
+
       - name: "🚀 Push Changes"
         if: steps.check_changes.outputs.changed == 'true'
         run: |
           git push origin main
           echo "✅ Tracking file pushato su main → Render auto-deploy triggered"
-      
+
       - name: "📋 Summary Report"
         if: always()
         run: |
@@ -139,7 +121,7 @@ jobs:
           echo "**Tracked (FASE1)**: ${{ steps.generate.outputs.tracked }}" >> $GITHUB_STEP_SUMMARY
           echo "**Filtered Out**: ${{ steps.generate.outputs.filtered }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           if [ "${{ steps.check_changes.outputs.changed }}" = "true" ]; then
             echo "✅ **Tracking file aggiornato e committato**" >> $GITHUB_STEP_SUMMARY
           else
