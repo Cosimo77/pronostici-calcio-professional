@@ -1023,10 +1023,13 @@
                 },
                 options: commonOptions
             });
+            }
 
-            // ROI by Market Chart
-            const ctxRoiByMarket = document.getElementById('roiByMarketChart').getContext('2d');
-            charts.roiByMarket = new Chart(ctxRoiByMarket, {
+            // ROI by Market Chart (only if element exists)
+            const roiByMarketCanvas = document.getElementById('roiByMarketChart');
+            if (roiByMarketCanvas) {
+                const ctxRoiByMarket = roiByMarketCanvas.getContext('2d');
+                charts.roiByMarket = new Chart(ctxRoiByMarket, {
                 type: 'bar',
                 data: {
                     labels: [],
@@ -1051,10 +1054,13 @@
                     }
                 }
             });
+            }
 
-            // ML ROI by Market Chart (Theoretical)
-            const ctxMlRoiByMarket = document.getElementById('mlRoiByMarketChart').getContext('2d');
-            charts.mlRoiByMarket = new Chart(ctxMlRoiByMarket, {
+            // ML ROI by Market Chart (Theoretical, only if element exists)
+            const mlRoiByMarketCanvas = document.getElementById('mlRoiByMarketChart');
+            if (mlRoiByMarketCanvas) {
+                const ctxMlRoiByMarket = mlRoiByMarketCanvas.getContext('2d');
+                charts.mlRoiByMarket = new Chart(ctxMlRoiByMarket, {
                 type: 'bar',
                 data: {
                     labels: [],
