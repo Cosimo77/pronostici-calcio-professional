@@ -610,25 +610,37 @@
                 const wins = Math.round((completed * data.win_rate) / 100);
                 const profit = data.profit || 0;
 
-                document.getElementById('accuracyContent').innerHTML = `
-                    <div class="metric-value">${winRate}%</div>
-                    <small class="text-muted">${wins}/${completed} vinte</small>
-                `;
+                const accuracyEl = document.getElementById('accuracyContent');
+                if (accuracyEl) {
+                    accuracyEl.innerHTML = `
+                        <div class="metric-value">${winRate}%</div>
+                        <small class="text-muted">${wins}/${completed} vinte</small>
+                    `;
+                }
 
-                document.getElementById('roiContent').innerHTML = `
-                    <div class="metric-value ${data.roi >= 0 ? 'text-success' : 'text-danger'}">${roi}%</div>
-                    <small class="text-muted">${completed} trade</small>
-                `;
+                const roiEl = document.getElementById('roiContent');
+                if (roiEl) {
+                    roiEl.innerHTML = `
+                        <div class="metric-value ${data.roi >= 0 ? 'text-success' : 'text-danger'}">${roi}%</div>
+                        <small class="text-muted">${completed} trade</small>
+                    `;
+                }
 
-                document.getElementById('profitContent').innerHTML = `
-                    <div class="metric-value ${profit >= 0 ? 'text-success' : 'text-danger'}">€${profit.toFixed(2)}</div>
-                    <small class="text-muted">profitto totale</small>
-                `;
+                const profitEl = document.getElementById('profitContent');
+                if (profitEl) {
+                    profitEl.innerHTML = `
+                        <div class="metric-value ${profit >= 0 ? 'text-success' : 'text-danger'}">€${profit.toFixed(2)}</div>
+                        <small class="text-muted">profitto totale</small>
+                    `;
+                }
 
-                document.getElementById('pendingContent').innerHTML = `
-                    <div class="metric-value">${data.pending || 0}</div>
-                    <small class="text-muted">in attesa</small>
-                `;
+                const pendingEl = document.getElementById('pendingContent');
+                if (pendingEl) {
+                    pendingEl.innerHTML = `
+                        <div class="metric-value">${data.pending || 0}</div>
+                        <small class="text-muted">in attesa</small>
+                    `;
+                }
 
                 // Charts will be updated by fetchInvestorMetrics with real time-series data
 
@@ -670,9 +682,9 @@
                 const response = await fetch('/api/diario/investor_metrics');
                 const data = await response.json();
 
-                // 1. Populate Monthly Performance Table
+                // 1. Populate Monthly Performance Table (only if element exists)
                 const tbody = document.getElementById('monthlyPerformanceBody');
-                if (data.monthly_performance && data.monthly_performance.length > 0) {
+                if (tbody && data.monthly_performance && data.monthly_performance.length > 0) {
                     tbody.innerHTML = data.monthly_performance.map(month => {
                         const roiClass = month.roi_pct >= 0 ? 'text-success' : 'text-danger';
                         const profitClass = month.profit >= 0 ? 'text-success' : 'text-danger';
@@ -690,9 +702,11 @@
                     tbody.innerHTML = '<tr><td colspan="5" class="text-center">Nessun dato disponibile</td></tr>';
                 }
 
-                // 2. Populate Drawdown Metrics
+                // 2. Populate Drawdown Metrics (only if element exists)
                 const dd = data.drawdown_metrics;
-                document.getElementById('drawdownMetrics').innerHTML = `
+                const drawdownEl = document.getElementById('drawdownMetrics');
+                if (drawdownEl) {
+                    drawdownEl.innerHTML = `
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <small class="text-muted">Max Drawdown</small><br>
@@ -712,6 +726,7 @@
                         </div>
                     </div>
                 `;
+                }
 
                 // 3. Update ROI by Market Chart
                 if (charts.roiByMarket && data.roi_by_market) {
@@ -883,9 +898,11 @@
                 }
             };
 
-            // Accuracy Trend Chart
-            const ctxAccuracy = document.getElementById('accuracyChart').getContext('2d');
-            charts.accuracy = new Chart(ctxAccuracy, {
+            // Accuracy Trend Chart (only if element exists)
+            const accuracyCanvas = document.getElementById('accuracyChart');
+            if (accuracyCanvas) {
+                const ctxAccuracy = accuracyCanvas.getContext('2d');
+                charts.accuracy = new Chart(ctxAccuracy, {
                 type: 'line',
                 data: {
                     labels: ['Sett 1', 'Sett 2', 'Sett 3', 'Sett 4'],
@@ -926,9 +943,12 @@
                     }
                 }
             });
+            }
 
-            // ROI Chart
-            const ctxRoi = document.getElementById('roiChart').getContext('2d');
+            // ROI Chart (only if element exists)
+            const roiCanvas = document.getElementById('roiChart');
+            if (roiCanvas) {
+                const ctxRoi = roiCanvas.getContext('2d');
             charts.roi = new Chart(ctxRoi, {
                 type: 'line',
                 data: {
@@ -973,10 +993,13 @@
                     }
                 }
             });
+            }
 
-            // Market Accuracy Chart
-            const ctxMarket = document.getElementById('marketAccuracyChart').getContext('2d');
-            charts.market = new Chart(ctxMarket, {
+            // Market Accuracy Chart (only if element exists)
+            const marketCanvas = document.getElementById('marketAccuracyChart');
+            if (marketCanvas) {
+                const ctxMarket = marketCanvas.getContext('2d');
+                charts.market = new Chart(ctxMarket, {
                 type: 'bar',
                 data: {
                     labels: ['Pareggio', 'Over 2.5', 'GG', 'Under 2.5'],
@@ -1079,6 +1102,7 @@
                     }
                 }
             });
+            }
         }
 
         function updateChartsTheme(theme) {
