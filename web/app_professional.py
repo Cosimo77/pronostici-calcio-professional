@@ -2137,33 +2137,80 @@ def calcola_shrinkage_adattivo():
         return 0.35  # Fallback sicuro
 
 
-def _valida_opportunita_fase1(pred, odds, ev_pct):
+def _valida_opportunita_fase1(pred, odds, ev_pct, market=None, prob_sistema=None):
     """
-    Filtri FASE 1 validati su 510 trade:
-    - Solo PAREGGI
-    - Quote: 2.8-3.5 (no >3.5, alta varianza)
-    - EV: ≥25% (sweet spot, no >50%)
-
+    Filtri FASE 1 professionali per TUTTI i mercati.
+    
+    FASE 1 Pareggi validata su 510 trade: ROI +7.17%
+    Altri mercati: Criteri conservativi basati su analisi tracking
+    
+    Args:
+        pred: Predizione (es. "D" per pareggio, "Over 2.5", "GG")
+        odds: Quota bookmaker
+        ev_pct: Expected Value percentuale
+        market: Mercato (es. "1X2", "Over/Under 2.5", "GGNG", "Double Chance")
+        prob_sistema: Probabilità modello ML (opzionale, richiesto per alcuni mercati)
+    
     Returns: (is_valid, reason)
     """
-    # Solo pareggi
-    if pred != "D":
-        return False, "not_draw"
-
-    # Quote range validato
-    if odds < 2.8:
-        return False, "odds_too_low"
-    if odds > 3.5:
-        return False, "odds_too_high"  # Quote >3.5: WR 20.8%, ROI -24%
-
-    # EV minimo (controintuitivo: EV <25% ha ROI +19%)
-    if ev_pct < 25:
-        return False, "ev_too_low"
-
-    # EV troppo alto spesso = quote alte = imprevedibile
-    # Ma non filtriamo il max (test su range 25-50% migliore)
-
-    return True, "validated"
+    # PAREGGI 1X2 - FASE1 validata
+    if market == "1X2" and pred == "D":
+        # Quote range validato su 510 trade
+        if odds < 2.8:
+            return False, "odds_too_low"
+        if odds > 3.5:
+            return False, "odds_too_high"  # Quote >3.5: WR 20.8%, ROI -24%
+        
+        # EV minimo
+        if ev_pct < 25:
+            return False, "ev_too_low"
+        
+        return True, "validated"
+    
+    # 1X2 Casa/Trasferta - Criteri stringenti
+    if market == "1X2" and pred in ["H", "A"]:
+        # Quote range ragionevole
+        if odds < 1.50 or odds > 3.50:
+            return False, "1x2_odds_out_of_range"
+        
+        # EV minimo più alto per non-pareggi
+        if ev_pct < 30:
+            return False, "1x2_ev_insufficient"
+        
+        return True, "validated"
+    
+    # OVER/UNDER 2.5
+    if market in ["Over/Under 2.5", "OU25"]:
+        if prob_sistema is None:
+            return False, "missing_prob_sistema"
+        
+        # Determina se Over o Under
+        is_over = "Over" in str(pred) or (isinstance(pred, str) and "Over" in pred)
+        prob_over = prob_sistema if is_over else (1 - prob_sistema)
+        
+        return _valida_over_under_25(odds, ev_pct, prob_over)
+    
+    # GOAL/NO GOAL
+    if market in ["GGNG", "GG/NG", "Goal/No Goal"]:
+        if prob_sistema is None:
+            return False, "missing_prob_sistema"
+        
+        # prob_sistema dovrebbe essere probabilità GG
+        return _valida_gg_ng(odds, ev_pct, prob_sistema)
+    
+    # DOUBLE CHANCE
+    if market == "Double Chance":
+        if prob_sistema is None:
+            return False, "missing_prob_sistema"
+        
+        return _valida_double_chance_stringente(odds, ev_pct, prob_sistema)
+    
+    # Mercati non supportati o predizioni non-pareggio senza market specificato
+    if market is None and pred != "D":
+        return False, "market_not_specified"
+    
+    # Default: non validato
+    return False, "not_validated"
 
 
 def _valida_double_chance_stringente(odds, ev_pct, prob_sistema):
@@ -2209,6 +2256,98 @@ def _valida_double_chance_stringente(odds, ev_pct, prob_sistema):
     if ev_pct > 80:
         return False, "dc_ev_suspicious"  # EV >80% spesso indica errore calibrazione
 
+    return True, "validated"
+
+
+def _valida_over_under_25(odds, ev_pct, prob_over):
+    """
+    Filtri professionali per Over/Under 2.5.
+    
+    Basati su analisi tracking: 2 trade reali (0/2), ROI -100%.
+    Sample insufficiente ma criteri conservativi applicati.
+    
+    Problemi identificati:
+    - EV troppo basso (17.7%) su scommesse perdenti
+    - Probabilità sistema borderline (53.2%)
+    - Quote in range corretto ma edge insufficiente
+    
+    Criteri professionali:
+    1. EV minimo 30% (higher edge required)
+    2. Probabilità sistema 60-75% (confidence zone)
+    3. Quote range 1.75-2.25 (optimal risk/reward)
+    
+    Args:
+        odds: Quota Over/Under (es. 2.10)
+        ev_pct: Expected Value percentuale (es. 30.5)
+        prob_over: Probabilità sistema per Over 2.5 (es. 0.65)
+    
+    Returns:
+        (is_valid, reason): Tuple[bool, str]
+    """
+    # Filtro 1: Quote range ottimale
+    if odds < 1.75:
+        return False, "ou_odds_too_low"  # Edge insufficiente
+    
+    if odds > 2.25:
+        return False, "ou_odds_too_high"  # Troppa varianza
+    
+    # Filtro 2: EV minimo elevato
+    if ev_pct < 30:
+        return False, "ou_ev_insufficient"  # Serve edge significativo
+    
+    # Filtro 3: Probabilità sistema confidence zone
+    if prob_over < 0.60:
+        return False, "ou_confidence_low"  # Troppa incertezza
+    
+    if prob_over > 0.75:
+        return False, "ou_confidence_too_high"  # Probabilmente overconfident
+    
+    # Filtro 4: EV sospetto se eccessivo
+    if ev_pct > 60:
+        return False, "ou_ev_suspicious"  # Possibile miscalibrazione
+    
+    return True, "validated"
+
+
+def _valida_gg_ng(odds, ev_pct, prob_gg):
+    """
+    Filtri professionali per Goal/No Goal (GG/NG).
+    
+    Basati su analisi tracking: 1 trade reale (1/1), ROI +90%.
+    Sample molto piccolo ma criterio EV basso (4.5%) preoccupante.
+    
+    Criteri professionali:
+    1. EV minimo 35% (avoid lucky wins)
+    2. Probabilità GG ≥65% (strong confidence)
+    3. Quote max 2.00 (reasonable value)
+    
+    Args:
+        odds: Quota GG o NG (es. 1.90)
+        ev_pct: Expected Value percentuale (es. 35.0)
+        prob_gg: Probabilità sistema per GG (es. 0.70)
+    
+    Returns:
+        (is_valid, reason): Tuple[bool, str]
+    """
+    # Filtro 1: Quote massime conservative
+    if odds > 2.00:
+        return False, "gg_odds_too_high"  # Richiede WR >50%
+    
+    if odds < 1.50:
+        return False, "gg_odds_too_low"  # Edge insufficiente
+    
+    # Filtro 2: EV minimo elevato (avoid flukes)
+    if ev_pct < 35:
+        return False, "gg_ev_insufficient"  # Serve edge significativo
+    
+    # Filtro 3: Alta confidenza sistema
+    if prob_gg < 0.65:
+        return False, "gg_confidence_low"  # Serve forte convinzione
+    
+    # Filtro 4: EV sospetto se eccessivo
+    if ev_pct > 70:
+        return False, "gg_ev_suspicious"  # Probabilmente overconfident
+    
     return True, "validated"
 
 
@@ -2459,8 +2598,10 @@ def api_predict_enterprise():
         # Range ROI attesi realistici: 3-15% annuo (non 75%!)
         # ============================================
 
-        # Valida opportunità con filtri FASE 1
-        is_valid_fase1, validation_reason = _valida_opportunita_fase1(predizione, pred_odds, roi_expected * 100)
+        # Valida opportunità con filtri FASE 1 (passa market e probabilità)
+        is_valid_fase1, validation_reason = _valida_opportunita_fase1(
+            predizione, pred_odds, roi_expected * 100, market="1X2", prob_sistema=pred_prob
+        )
 
         # Raccomandazione (con validazione FASE 1)
         outcome_names = {"H": "Casa", "D": "Pareggio", "A": "Trasferta"}
@@ -3764,8 +3905,10 @@ def api_export_predizioni():
 
                 kelly_stake = kelly_fraction * 500.0  # Bankroll default €500
 
-                # Valida FASE1
-                is_valid_fase1, _ = _valida_opportunita_fase1(predizione, pred_odds, best_ev * 100)
+                # Valida FASE1 (passa market e probabilità)
+                is_valid_fase1, _ = _valida_opportunita_fase1(
+                    predizione, pred_odds, best_ev * 100, market="1X2", prob_sistema=pred_prob
+                )
 
                 # Row CSV
                 csv_rows.append(
