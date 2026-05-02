@@ -689,22 +689,24 @@
 
                 // 1. Populate Monthly Performance Table (only if element exists)
                 const tbody = document.getElementById('monthlyPerformanceBody');
-                if (tbody && data.monthly_performance && data.monthly_performance.length > 0) {
-                    tbody.innerHTML = data.monthly_performance.map(month => {
-                        const roiClass = month.roi_pct >= 0 ? 'text-success' : 'text-danger';
-                        const profitClass = month.profit >= 0 ? 'text-success' : 'text-danger';
-                        return `
-                            <tr>
-                                <td>${month.month}</td>
-                                <td class="text-end">${month.trades}</td>
-                                <td class="text-end">${month.win_rate_pct}%</td>
-                                <td class="text-end ${roiClass}">${month.roi_pct > 0 ? '+' : ''}${month.roi_pct}%</td>
-                                <td class="text-end ${profitClass}">€${month.profit}</td>
-                            </tr>
-                        `;
-                    }).join('');
-                } else {
-                    tbody.innerHTML = '<tr><td colspan="5" class="text-center">Nessun dato disponibile</td></tr>';
+                if (tbody) {
+                    if (data.monthly_performance && data.monthly_performance.length > 0) {
+                        tbody.innerHTML = data.monthly_performance.map(month => {
+                            const roiClass = month.roi_pct >= 0 ? 'text-success' : 'text-danger';
+                            const profitClass = month.profit >= 0 ? 'text-success' : 'text-danger';
+                            return `
+                                <tr>
+                                    <td>${month.month}</td>
+                                    <td class="text-end">${month.trades}</td>
+                                    <td class="text-end">${month.win_rate_pct}%</td>
+                                    <td class="text-end ${roiClass}">${month.roi_pct > 0 ? '+' : ''}${month.roi_pct}%</td>
+                                    <td class="text-end ${profitClass}">€${month.profit}</td>
+                                </tr>
+                            `;
+                        }).join('');
+                    } else {
+                        tbody.innerHTML = '<tr><td colspan="5" class="text-center">Nessun dato disponibile</td></tr>';
+                    }
                 }
 
                 // 2. Populate Drawdown Metrics (only if element exists and data available)
