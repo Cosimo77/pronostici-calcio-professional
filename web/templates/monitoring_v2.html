@@ -597,6 +597,11 @@
         }
 
         async function fetchAccuracy() {
+            // ⚠️ DISABLED: Sezione Performance Betting Reale commentata
+            // Gli elementi accuracyContent, roiContent, profitContent, pendingContent non esistono
+            // Dati ora visibili in Performance Modello ML
+            return;
+            
             try {
                 // ✅ NEW: Use REAL betting data from Neon database instead of theoretical predictions
                 const response = await fetch('/api/diario/stats');
@@ -678,8 +683,8 @@
 
         async function fetchInvestorMetrics() {
             try {
-                // ✅ NEW: Usa dati REALI dal database Neon, NON predizioni teoriche da CSV
-                const response = await fetch('/api/diario/investor_metrics');
+                // ✅ Usa API investor_metrics (tracking_predictions_live.csv)
+                const response = await fetch('/api/investor_metrics');
                 const data = await response.json();
 
                 // 1. Populate Monthly Performance Table (only if element exists)
@@ -702,10 +707,10 @@
                     tbody.innerHTML = '<tr><td colspan="5" class="text-center">Nessun dato disponibile</td></tr>';
                 }
 
-                // 2. Populate Drawdown Metrics (only if element exists)
-                const dd = data.drawdown_metrics;
+                // 2. Populate Drawdown Metrics (only if element exists and data available)
                 const drawdownEl = document.getElementById('drawdownMetrics');
-                if (drawdownEl) {
+                if (drawdownEl && data.drawdown_metrics) {
+                    const dd = data.drawdown_metrics;
                     drawdownEl.innerHTML = `
                     <div class="row">
                         <div class="col-md-6 mb-3">
