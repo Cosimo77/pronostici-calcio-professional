@@ -695,7 +695,7 @@
             <p class="text-blue-dark">
                 <strong>✅ FASE1:</strong> Pareggi (quote 2.8-3.5, EV 25-50%) - Backtest validato: +7.17% ROI<br>
                 <strong>✅ FASE2:</strong> Favoriti 1X2 (quote 1.5-2.2, EV 15-35%) - Rischio medio-basso<br>
-                <strong>✅ FASE3:</strong> Over/Under 2.5 (quote 1.8-2.4, EV 20-40%) - Mercato alternativo<br>
+                <strong>✅ FASE3:</strong> Over/Under 2.5 (quote 1.75-2.25, EV 30-60%) - Filtri professionali<br>
                 <em>Nessun badge = Alta varianza, usare con cautela</em>
             </p>
         </div>
@@ -840,7 +840,7 @@
 
                             const isFase1 = isDraw && bet.odds >= 2.8 && bet.odds <= 3.5 && bet.ev >= 25 && bet.ev <= 50;
                             const isFase2 = isFavorite && bet.odds >= 1.5 && bet.odds <= 2.2 && bet.ev >= 15 && bet.ev <= 35;
-                            const isFase3 = isOverUnder && bet.odds >= 1.8 && bet.odds <= 2.4 && bet.ev >= 20 && bet.ev <= 40;
+                            const isFase3 = isOverUnder && bet.odds >= 1.75 && bet.odds <= 2.25 && bet.ev >= 30 && bet.ev <= 60;
 
                             return isFase1 || isFase2 || isFase3;
                         });
@@ -875,8 +875,8 @@
                                             // FASE2: Favoriti 1X2 (quote medio-basse)
                                             const isFase2 = isFavorite && bet.odds >= 1.5 && bet.odds <= 2.2 && bet.ev >= 15 && bet.ev <= 35;
 
-                                            // FASE3: Over/Under 2.5 (mercato alternativo)
-                                            const isFase3 = isOverUnder && bet.odds >= 1.8 && bet.odds <= 2.4 && bet.ev >= 20 && bet.ev <= 40;
+                                            // FASE3: Over/Under 2.5 (criteri professionali aggiornati)
+                                            const isFase3 = isOverUnder && bet.odds >= 1.75 && bet.odds <= 2.25 && bet.ev >= 30 && bet.ev <= 60;
 
                                             let validationBadge = '';
                                             if (isFase1) {
@@ -974,7 +974,7 @@
 
                             const isFase1 = isDraw && bestOdds >= 2.8 && bestOdds <= 3.5 && maxEv >= 25 && maxEv <= 50;
                             const isFase2 = isFavorite && bestOdds >= 1.5 && bestOdds <= 2.2 && maxEv >= 15 && maxEv <= 35;
-                            const isFase3 = isOverUnder && bestOdds >= 1.8 && bestOdds <= 2.4 && maxEv >= 20 && maxEv <= 40;
+                            const isFase3 = isOverUnder && bestOdds >= 1.75 && bestOdds <= 2.25 && maxEv >= 30 && maxEv <= 60;
 
                             // 🔍 Check if ANY opportunity (not just best outcome) is validated
                             let hasAnyValidated = isFase1 || isFase2 || isFase3;
@@ -995,8 +995,8 @@
                             
                             // Check Over/Under opportunities
                             if (!hasAnyValidated && match.odds_totals) {
-                                const overFase3 = match.odds_totals.over_25 >= 1.8 && match.odds_totals.over_25 <= 2.4 && evOverUnder.over >= 20 && evOverUnder.over <= 40;
-                                const underFase3 = match.odds_totals.under_25 >= 1.8 && match.odds_totals.under_25 <= 2.4 && evOverUnder.under >= 20 && evOverUnder.under <= 40;
+                                const overFase3 = match.odds_totals.over_25 >= 1.75 && match.odds_totals.over_25 <= 2.25 && evOverUnder.over >= 30 && evOverUnder.over <= 60;
+                                const underFase3 = match.odds_totals.under_25 >= 1.75 && match.odds_totals.under_25 <= 2.25 && evOverUnder.under >= 30 && evOverUnder.under <= 60;
                                 if (overFase3 || underFase3) hasAnyValidated = true;
                             }
 
