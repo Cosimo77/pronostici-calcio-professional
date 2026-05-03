@@ -419,6 +419,20 @@
             font-size: 0.75em;
             margin-left: 8px;
         }
+        .badge-fase4 {
+            background: #f59e0b;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75em;
+            margin-left: 8px;
+        }
+        .badge-fase5 {
+            background: #ec4899;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75em;
+            margin-left: 8px;
+        }
         .no-validated-warning {
             background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
             padding: 20px;
@@ -466,6 +480,14 @@
         }
         .badge-fase3-inline {
             background: #8b5cf6;
+            margin-left: 8px;
+        }
+        .badge-fase4-inline {
+            background: #f59e0b;
+            margin-left: 8px;
+        }
+        .badge-fase5-inline {
+            background: #ec4899;
             margin-left: 8px;
         }
         .match-card-border-validated {
@@ -696,6 +718,8 @@
                 <strong>✅ FASE1:</strong> Pareggi (quote 2.8-3.5, EV 25-50%) - Backtest validato: +7.17% ROI<br>
                 <strong>✅ FASE2:</strong> Favoriti 1X2 (quote 1.5-2.2, EV 15-35%) - Rischio medio-basso<br>
                 <strong>✅ FASE3:</strong> Over/Under 2.5 (quote 1.75-2.25, EV 30-60%) - Filtri professionali<br>
+                <strong>✅ FASE4:</strong> Goal/No Goal (quote max 2.0, EV 35-70%, prob GG ≥65%) - Alta confidenza<br>
+                <strong>✅ FASE5:</strong> Double Chance (quote max 1.6, EV 35-70%, prob ≥75%) - Rischio minimo<br>
                 <em>Nessun badge = Alta varianza, usare con cautela</em>
             </p>
         </div>
@@ -832,17 +856,21 @@
                             }
                         });
 
-                        // Filtra opportunità VALIDATE (FASE1/2/3)
+                        // Filtra opportunità VALIDATE (FASE1/2/3/4/5)
                         const validatedBets = allBets.filter(bet => {
                             const isDraw = bet.bet.includes('Pareggio') || bet.bet.includes('🤝');
                             const isFavorite = bet.bet.includes('🏠 Casa') || bet.bet.includes('✈️ Trasferta');
                             const isOverUnder = bet.bet.includes('Over 2.5') || bet.bet.includes('Under 2.5');
+                            const isGGNG = bet.bet.includes('GG') || bet.bet.includes('NG') || bet.bet.includes('Goal');
+                            const isDoubleChance = bet.bet.includes('1X') || bet.bet.includes('12') || bet.bet.includes('X2');
 
                             const isFase1 = isDraw && bet.odds >= 2.8 && bet.odds <= 3.5 && bet.ev >= 25 && bet.ev <= 50;
                             const isFase2 = isFavorite && bet.odds >= 1.5 && bet.odds <= 2.2 && bet.ev >= 15 && bet.ev <= 35;
                             const isFase3 = isOverUnder && bet.odds >= 1.75 && bet.odds <= 2.25 && bet.ev >= 30 && bet.ev <= 60;
+                            const isFase4 = isGGNG && bet.odds <= 2.0 && bet.ev >= 35 && bet.ev <= 70;
+                            const isFase5 = isDoubleChance && bet.odds <= 1.6 && bet.ev >= 35 && bet.ev <= 70;
 
-                            return isFase1 || isFase2 || isFase3;
+                            return isFase1 || isFase2 || isFase3 || isFase4 || isFase5;
                         });
 
                         // Ordina per EV decrescente
@@ -868,6 +896,8 @@
                                             const isDraw = bet.bet.includes('Pareggio') || bet.bet.includes('🤝');
                                             const isFavorite = bet.bet.includes('🏠 Casa') || bet.bet.includes('✈️ Trasferta');
                                             const isOverUnder = bet.bet.includes('Over 2.5') || bet.bet.includes('Under 2.5');
+                                            const isGGNG = bet.bet.includes('GG') || bet.bet.includes('NG') || bet.bet.includes('Goal');
+                                            const isDoubleChance = bet.bet.includes('1X') || bet.bet.includes('12') || bet.bet.includes('X2');
 
                                             // FASE1: Pareggi conservativi (backtest validato +7.17% ROI)
                                             const isFase1 = isDraw && bet.odds >= 2.8 && bet.odds <= 3.5 && bet.ev >= 25 && bet.ev <= 50;
@@ -878,6 +908,12 @@
                                             // FASE3: Over/Under 2.5 (criteri professionali aggiornati)
                                             const isFase3 = isOverUnder && bet.odds >= 1.75 && bet.odds <= 2.25 && bet.ev >= 30 && bet.ev <= 60;
 
+                                            // FASE4: Goal/No Goal (alta confidenza richiesta)
+                                            const isFase4 = isGGNG && bet.odds <= 2.0 && bet.ev >= 35 && bet.ev <= 70;
+
+                                            // FASE5: Double Chance (rischio minimo)
+                                            const isFase5 = isDoubleChance && bet.odds <= 1.6 && bet.ev >= 35 && bet.ev <= 70;
+
                                             let validationBadge = '';
                                             if (isFase1) {
                                                 validationBadge = '<span class="badge-fase1">✅ FASE1</span>';
@@ -885,6 +921,10 @@
                                                 validationBadge = '<span class="badge-fase2">✅ FASE2</span>';
                                             } else if (isFase3) {
                                                 validationBadge = '<span class="badge-fase3">✅ FASE3</span>';
+                                            } else if (isFase4) {
+                                                validationBadge = '<span class="badge-fase4">✅ FASE4</span>';
+                                            } else if (isFase5) {
+                                                validationBadge = '<span class="badge-fase5">✅ FASE5</span>';
                                             }
 
                                             return `
@@ -971,13 +1011,17 @@
                             const isDraw = bestOutcome === 'Pareggio';
                             const isFavorite = bestOutcome === 'Casa' || bestOutcome === 'Trasferta';
                             const isOverUnder = bestOutcome === 'Over 2.5' || bestOutcome === 'Under 2.5';
+                            const isGGNG = bestOutcome.includes('GG') || bestOutcome.includes('NG') || bestOutcome.includes('Goal');
+                            const isDoubleChance = bestOutcome.includes('1X') || bestOutcome.includes('12') || bestOutcome.includes('X2');
 
                             const isFase1 = isDraw && bestOdds >= 2.8 && bestOdds <= 3.5 && maxEv >= 25 && maxEv <= 50;
                             const isFase2 = isFavorite && bestOdds >= 1.5 && bestOdds <= 2.2 && maxEv >= 15 && maxEv <= 35;
                             const isFase3 = isOverUnder && bestOdds >= 1.75 && bestOdds <= 2.25 && maxEv >= 30 && maxEv <= 60;
+                            const isFase4 = isGGNG && bestOdds <= 2.0 && maxEv >= 35 && maxEv <= 70;
+                            const isFase5 = isDoubleChance && bestOdds <= 1.6 && maxEv >= 35 && maxEv <= 70;
 
                             // 🔍 Check if ANY opportunity (not just best outcome) is validated
-                            let hasAnyValidated = isFase1 || isFase2 || isFase3;
+                            let hasAnyValidated = isFase1 || isFase2 || isFase3 || isFase4 || isFase5;
                             
                             // Check ALL 1X2 opportunities
                             if (!hasAnyValidated && odds.draw && evs.draw > 5) {
@@ -1016,6 +1060,14 @@
                                 phaseBadge = '<span class="badge badge-fase3-inline">✅ FASE3</span>';
                                 borderColor = '#8b5cf6';
                                 cardClass = 'match-card validated-fase3';
+                            } else if (isFase4) {
+                                phaseBadge = '<span class="badge badge-fase4-inline">✅ FASE4</span>';
+                                borderColor = '#f59e0b';
+                                cardClass = 'match-card validated-fase4';
+                            } else if (isFase5) {
+                                phaseBadge = '<span class="badge badge-fase5-inline">✅ FASE5</span>';
+                                borderColor = '#ec4899';
+                                cardClass = 'match-card validated-fase5';
                             }
 
                             const isValidated = hasAnyValidated;
