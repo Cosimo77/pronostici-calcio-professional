@@ -17,6 +17,12 @@ jobs:
   generate-predictions:
     name: "Genera Predizioni Giornaliere"
     runs-on: ubuntu-latest
+    timeout-minutes: 15  # Timeout massimo per job
+
+    # Retry automatico su fallimenti infrastrutturali
+    strategy:
+      fail-fast: false
+      max-parallel: 1
 
     steps:
       - name: "📥 Checkout repository"
@@ -31,13 +37,40 @@ jobs:
 
       - name: "📊 Chiama Batch Generate Predictions API"
         id: generate
+        timeout-minutes: 10  # Timeout specifico per questo step
+        continue-on-error: false  # Fallisce job se API non risponde
         run: |
           echo "::group::🎯 Generazione Predizioni"
 
-          # Call batch endpoint su produzione Render
-          RESPONSE=$(curl -s -X POST \
-            -H "Content-Type: application/json" \
-            https://pronostici-calcio-professional.onrender.com/api/batch_generate_predictions)
+          # Retry logic: 3 tentativi con backoff esponenziale
+          MAX_RETRIES=3
+          RETRY_DELAY=30
+
+          for i in $(seq 1 $MAX_RETRIES); do
+            echo "Tentativo $i/$MAX_RETRIES..."
+
+            # Call batch endpoint con timeout curl (120s)
+            RESPONSE=$(curl -s -X POST \
+              --max-time 120 \
+              --connect-timeout 30 \
+              -H "Content-Type: application/json" \
+              https://pronostici-calcio-professional.onrender.com/api/batch_generate_predictions)
+
+            # Verifica risposta valida
+            if echo "$RESPONSE" | python3 -c "import sys,json; json.load(sys.stdin)" 2>/dev/null; then
+              echo "✅ API call riuscita al tentativo $i"
+              break
+            else
+              echo "⚠️ Tentativo $i fallito, attendo ${RETRY_DELAY}s prima di riprovare..."
+              if [ $i -lt $MAX_RETRIES ]; then
+                sleep $RETRY_DELAY
+                RETRY_DELAY=$((RETRY_DELAY * 2))  # Backoff esponenziale
+              else
+                echo "::error::❌ Tutti i tentativi falliti"
+                exit 1
+              fi
+            fi
+          done
 
           echo "Response completa:"
           echo "$RESPONSE" | python3 -m json.tool || echo "$RESPONSE"
