@@ -1,11 +1,11 @@
 <!-- Navbar Professionale Unificata -->
-<nav class="navbar navbar-expand-lg navbar-dark sticky-top mb-4" style="background: rgba(30, 60, 114, 0.95); backdrop-filter: blur(10px); box-shadow: 0 4px 20px rgba(0,0,0,0.3); z-index: 1030;">
+<nav class="navbar navbar-expand-lg navbar-dark sticky-top mb-4 navbar-professional">
     <div class="container-fluid px-4">
         <!-- Logo e Brand -->
-        <a class="navbar-brand d-flex align-items-center" href="/" style="font-weight: 700; font-size: 1.3rem;">
-            <span style="background: linear-gradient(45deg, #ffd700, #ff6b35); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">⚽ Pronostici</span>
-            <span class="ms-2" style="color: #ffffff;">Serie A</span>
-            <span class="badge ms-2 px-2 py-1" style="background: linear-gradient(45deg, #ffd700, #ff6b35); font-size: 0.7rem; font-weight: 600;">PRO</span>
+        <a class="navbar-brand d-flex align-items-center navbar-brand-pro" href="/">
+            <span class="navbar-brand-gradient">⚽ Pronostici</span>
+            <span class="ms-2 navbar-brand-text">Serie A</span>
+            <span class="badge ms-2 px-2 py-1 navbar-brand-badge">PRO</span>
         </a>
 
         <!-- Toggle per mobile -->
@@ -42,7 +42,7 @@
                     <a class="nav-link dropdown-toggle px-3 py-2 rounded-3 mx-1" href="#" id="navbarDropdownMonitoring" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="bi bi-graph-up me-2"></i>Analisi
                     </a>
-                    <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="navbarDropdownMonitoring" style="background: rgba(30, 60, 114, 0.98); border: 1px solid rgba(255,255,255,0.1);">
+                    <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-professional" aria-labelledby="navbarDropdownMonitoring">
                         <li><a class="dropdown-item rounded-2 mx-2 my-1" href="/monitoring"><i class="bi bi-bar-chart me-2"></i>Monitoraggio</a></li>
                         <li><a class="dropdown-item rounded-2 mx-2 my-1" href="/automation"><i class="bi bi-gear me-2"></i>Automazione</a></li>
                     </ul>
@@ -51,13 +51,13 @@
 
             <!-- Quick Stats (opzionali - visibili solo su schermi grandi) -->
             <div class="d-none d-lg-flex align-items-center ms-3">
-                <div class="px-3 py-2 rounded-3" style="background: rgba(255,255,255,0.1); font-size: 0.85rem;">
+                <div class="px-3 py-2 rounded-3 navbar-quick-stats">
                     <span class="text-light-emphasis">Aggiornato: <span id="navbar-last-update">--</span></span>
                 </div>
             </div>
 
             <!-- Theme Toggle -->
-            <button class="btn btn-sm btn-outline-light rounded-circle ms-3" id="navbar-theme-toggle" title="Cambia tema" style="width: 40px; height: 40px;">
+            <button class="btn btn-sm btn-outline-light rounded-circle ms-3 navbar-theme-btn" id="navbar-theme-toggle" title="Cambia tema">
                 <i class="bi bi-moon-stars" id="theme-icon"></i>
             </button>
         </div>
@@ -125,6 +125,54 @@
 </script>
 
 <style>
+    /* Navbar principale */
+    .navbar-professional {
+        background: rgba(30, 60, 114, 0.95);
+        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        z-index: 1030;
+    }
+
+    /* Brand styles */
+    .navbar-brand-pro {
+        font-weight: 700;
+        font-size: 1.3rem;
+    }
+
+    .navbar-brand-gradient {
+        background: linear-gradient(45deg, #ffd700, #ff6b35);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .navbar-brand-text {
+        color: #ffffff;
+    }
+
+    .navbar-brand-badge {
+        background: linear-gradient(45deg, #ffd700, #ff6b35);
+        font-size: 0.7rem;
+        font-weight: 600;
+    }
+
+    /* Dropdown menu */
+    .dropdown-menu-professional {
+        background: rgba(30, 60, 114, 0.98);
+        border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    /* Quick stats */
+    .navbar-quick-stats {
+        background: rgba(255,255,255,0.1);
+        font-size: 0.85rem;
+    }
+
+    /* Theme toggle button */
+    .navbar-theme-btn {
+        width: 40px;
+        height: 40px;
+    }
+
     /* Stili hover per i nav-link */
     .navbar-nav .nav-link:hover {
         background: rgba(255, 255, 255, 0.15) !important;
