@@ -1,0 +1,157 @@
+<!-- Navbar Professionale Unificata -->
+<nav class="navbar navbar-expand-lg navbar-dark sticky-top mb-4" style="background: rgba(30, 60, 114, 0.95); backdrop-filter: blur(10px); box-shadow: 0 4px 20px rgba(0,0,0,0.3); z-index: 1030;">
+    <div class="container-fluid px-4">
+        <!-- Logo e Brand -->
+        <a class="navbar-brand d-flex align-items-center" href="/" style="font-weight: 700; font-size: 1.3rem;">
+            <span style="background: linear-gradient(45deg, #ffd700, #ff6b35); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">⚽ Pronostici</span>
+            <span class="ms-2" style="color: #ffffff;">Serie A</span>
+            <span class="badge ms-2 px-2 py-1" style="background: linear-gradient(45deg, #ffd700, #ff6b35); font-size: 0.7rem; font-weight: 600;">PRO</span>
+        </a>
+
+        <!-- Toggle per mobile -->
+        <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <!-- Menu Items -->
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav mx-auto">
+                <!-- Dashboard -->
+                <li class="nav-item">
+                    <a class="nav-link px-3 py-2 rounded-3 mx-1" href="/" id="nav-home">
+                        <i class="bi bi-speedometer2 me-2"></i>Dashboard
+                    </a>
+                </li>
+
+                <!-- Giornata -->
+                <li class="nav-item">
+                    <a class="nav-link px-3 py-2 rounded-3 mx-1" href="/giornata" id="nav-giornata">
+                        <i class="bi bi-calendar3 me-2"></i>Giornata
+                    </a>
+                </li>
+
+                <!-- Diario -->
+                <li class="nav-item">
+                    <a class="nav-link px-3 py-2 rounded-3 mx-1" href="/diario" id="nav-diario">
+                        <i class="bi bi-journal-text me-2"></i>Diario
+                    </a>
+                </li>
+
+                <!-- Monitoring -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle px-3 py-2 rounded-3 mx-1" href="#" id="navbarDropdownMonitoring" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-graph-up me-2"></i>Analisi
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="navbarDropdownMonitoring" style="background: rgba(30, 60, 114, 0.98); border: 1px solid rgba(255,255,255,0.1);">
+                        <li><a class="dropdown-item rounded-2 mx-2 my-1" href="/monitoring"><i class="bi bi-bar-chart me-2"></i>Monitoraggio</a></li>
+                        <li><a class="dropdown-item rounded-2 mx-2 my-1" href="/automation"><i class="bi bi-gear me-2"></i>Automazione</a></li>
+                    </ul>
+                </li>
+            </ul>
+
+            <!-- Quick Stats (opzionali - visibili solo su schermi grandi) -->
+            <div class="d-none d-lg-flex align-items-center ms-3">
+                <div class="px-3 py-2 rounded-3" style="background: rgba(255,255,255,0.1); font-size: 0.85rem;">
+                    <span class="text-light-emphasis">Aggiornato: <span id="navbar-last-update">--</span></span>
+                </div>
+            </div>
+
+            <!-- Theme Toggle -->
+            <button class="btn btn-sm btn-outline-light rounded-circle ms-3" id="navbar-theme-toggle" title="Cambia tema" style="width: 40px; height: 40px;">
+                <i class="bi bi-moon-stars" id="theme-icon"></i>
+            </button>
+        </div>
+    </div>
+</nav>
+
+<!-- Script per evidenziare la pagina attiva -->
+<script>
+    // Evidenzia la pagina attiva nella navbar
+    document.addEventListener('DOMContentLoaded', function() {
+        const currentPath = window.location.pathname;
+        const navLinks = document.querySelectorAll('.navbar-nav .nav-link');
+
+        navLinks.forEach(link => {
+            const href = link.getAttribute('href');
+            if ((href === '/' && currentPath === '/') ||
+                (href !== '/' && currentPath.startsWith(href))) {
+                link.classList.add('active');
+                link.style.background = 'linear-gradient(45deg, #ffd700, #ff6b35)';
+                link.style.fontWeight = '700';
+            }
+        });
+
+        // Gestione theme toggle
+        const themeToggle = document.getElementById('navbar-theme-toggle');
+        const themeIcon = document.getElementById('theme-icon');
+        const htmlElement = document.documentElement;
+
+        // Carica tema salvato
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        htmlElement.setAttribute('data-bs-theme', savedTheme);
+        updateThemeIcon(savedTheme);
+
+        themeToggle?.addEventListener('click', function() {
+            const currentTheme = htmlElement.getAttribute('data-bs-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            htmlElement.setAttribute('data-bs-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeIcon(newTheme);
+        });
+
+        function updateThemeIcon(theme) {
+            if (themeIcon) {
+                themeIcon.className = theme === 'dark' ? 'bi bi-sun' : 'bi bi-moon-stars';
+            }
+        }
+
+        // Aggiorna timestamp (se disponibile via API)
+        updateLastUpdate();
+    });
+
+    async function updateLastUpdate() {
+        try {
+            const response = await fetch('/api/dataset_info');
+            const data = await response.json();
+            const updateElement = document.getElementById('navbar-last-update');
+            if (updateElement && data.updated_at) {
+                const date = new Date(data.updated_at);
+                updateElement.textContent = date.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' });
+            }
+        } catch (error) {
+            console.debug('Navbar: impossibile caricare ultimo aggiornamento');
+        }
+    }
+</script>
+
+<style>
+    /* Stili hover per i nav-link */
+    .navbar-nav .nav-link:hover {
+        background: rgba(255, 255, 255, 0.15) !important;
+        transform: translateY(-2px);
+        transition: all 0.3s ease;
+    }
+
+    .navbar-nav .nav-link.active {
+        background: linear-gradient(45deg, #ffd700, #ff6b35) !important;
+        font-weight: 700 !important;
+        box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+    }
+
+    /* Dropdown hover effect */
+    .dropdown-menu .dropdown-item:hover {
+        background: rgba(255, 255, 255, 0.1) !important;
+        transform: translateX(5px);
+        transition: all 0.2s ease;
+    }
+
+    /* Mobile responsive */
+    @media (max-width: 991px) {
+        .navbar-nav {
+            margin-top: 1rem;
+        }
+        .navbar-nav .nav-item {
+            margin: 0.25rem 0;
+        }
+    }
+</style>

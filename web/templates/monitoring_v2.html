@@ -143,6 +143,7 @@
     </style>
 </head>
 <body>
+    {% include 'navbar.html' %}
     <!-- Theme Toggle -->
     <div class="theme-toggle">
         <button class="btn btn-outline-light" id="themeToggle" onclick="toggleTheme()" aria-label="Cambia tema">
@@ -601,7 +602,7 @@
             // Gli elementi accuracyContent, roiContent, profitContent, pendingContent non esistono
             // Dati ora visibili in Performance Modello ML
             return;
-            
+
             try {
                 // ✅ NEW: Use REAL betting data from Neon database instead of theoretical predictions
                 const response = await fetch('/api/diario/stats');

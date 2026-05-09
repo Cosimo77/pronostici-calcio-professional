@@ -239,6 +239,7 @@
     </style>
 </head>
 <body>
+    {% include 'navbar.html' %}
     <div class="container">
         <!-- Header -->
         <div class="text-center mb-4">
@@ -819,14 +820,14 @@
             console.error = function(...args) {
                 const msg = args.join(' ');
                 // Filter out browser extension errors
-                if (msg.includes('Unchecked runtime.lastError') || 
+                if (msg.includes('Unchecked runtime.lastError') ||
                     msg.includes('message port closed') ||
                     msg.includes('Extension context invalidated')) {
                     return; // Silently ignore
                 }
                 originalError.apply(console, args);
             };
-            
+
             // Also suppress unhandled promise rejections from extensions
             window.addEventListener('unhandledrejection', function(e) {
                 const msg = e.reason?.message || String(e.reason);
@@ -845,7 +846,7 @@
             if ('requestIdleCallback' in window) {
                 // Load stats when browser is idle (better UX)
                 requestIdleCallback(() => loadStats(), { timeout: 100 });
-                
+
                 // Load pending bets with slightly higher priority
                 requestIdleCallback(() => loadPendingBets(), { timeout: 150 });
             } else {
@@ -1374,7 +1375,7 @@
 
                 if (result.success) {
                     alert(`✅ Puntata aggiornata!\n\nStake: ${nuovoStake}\nQuota: ${nuovaQuota}`);
-                    
+
                     // 🚀 PERFORMANCE: Reload all data in parallel
                     reloadAllData();
                 } else {
@@ -1429,9 +1430,9 @@
                     alert(`✅ Risultato aggiornato! Profit: €${result.profit.toFixed(2)}`);
 
                     // 🚀 PERFORMANCE: Reload all data in parallel + switch to completed tab
-                    setTimeout(() => reloadAllData({ 
+                    setTimeout(() => reloadAllData({
                         switchToTab: 'completed-tab',
-                        resetCompletedFlag: true 
+                        resetCompletedFlag: true
                     }), 100);
 
                 } else {
@@ -1460,7 +1461,7 @@
 
                 if (result.success) {
                     alert('✅ Puntata riportata in "In Attesa"');
-                    
+
                     // 🚀 PERFORMANCE: Reload all data in parallel
                     reloadAllData({ resetCompletedFlag: true });
                 } else {
@@ -1486,7 +1487,7 @@
 
                 if (result.success) {
                     alert('✅ Puntata eliminata');
-                    
+
                     // 🚀 PERFORMANCE: Reload all data in parallel
                     reloadAllData({ resetCompletedFlag: source !== 'pending' });
                 } else {
@@ -1814,7 +1815,7 @@
 
                 if (result.success) {
                     alert('✅ Multipla eliminata');
-                    
+
                     // 🚀 PERFORMANCE: Reload all data in parallel
                     reloadAllData({ resetCompletedFlag: source !== 'pending' });
                 } else {
