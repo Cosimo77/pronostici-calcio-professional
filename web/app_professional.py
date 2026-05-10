@@ -1634,20 +1634,22 @@ def fix_import_tracking_live():
             # Note
             note = str(row.get("Note", "")) if pd.notna(row.get("Note")) else ""
 
-            # Add bet
-            bet_id = BetModel.add_bet(
-                data=data_str,
-                partita=partita,
-                mercato=mercato_completo,
-                quota_sistema=quota,
-                quota_sisal=quota,
-                ev_modello=ev_modello,
-                ev_realistico=None,
-                stake=str(stake),
-                risultato=risultato,
-                profit=profit,
-                note=note,
-            )
+            # Create bet usando BetModel.create() con dict
+            bet_data = {
+                "data": data_str,
+                "partita": partita,
+                "mercato": mercato_completo,
+                "quota_sistema": quota,
+                "quota_sisal": quota,
+                "ev_modello": ev_modello if ev_modello else "N/A",
+                "ev_realistico": "N/A",
+                "stake": str(stake),
+                "risultato": risultato,
+                "profit": profit,
+                "note": note,
+            }
+
+            bet_id = BetModel.create(bet_data)
 
             if bet_id:
                 migrated += 1
