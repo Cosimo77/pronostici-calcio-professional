@@ -1675,6 +1675,175 @@ def fix_import_tracking_live():
     return jsonify(result), 200
 
 
+@app.route("/api/diario/convert_pending_to_wl")
+@limiter.limit("2 per hour")
+def convert_pending_to_wl():
+    """
+    Converte le 12 bet PENDING con formato risultato partita (H/D/A/GG/NG/Over/Under)
+    in WIN/LOSS basandosi sul match Predizione == Risultato_Reale (con mapping ITA→ENG)
+    """
+    result = {
+        "timestamp": datetime.now().isoformat(),
+        "status": "starting",
+    }
+
+    # 1. Verifica database
+    try:
+        from database import BetModel, init_db, is_db_available
+        from database.connection import get_db_connection
+
+        if not is_db_available():
+            if not init_db():
+                result["status"] = "failed"
+                result["error"] = "PostgreSQL non disponibile"
+                return jsonify(result), 503
+
+        result["database_available"] = True
+
+    except ImportError as e:
+        result["status"] = "failed"
+        result["error"] = f"Database module error: {str(e)}"
+        return jsonify(result), 500
+
+    # 2. Carica CSV per mapping predizione → risultato reale
+    csv_path = "tracking_predictions_live.csv"
+    if not os.path.exists(csv_path):
+        result["status"] = "failed"
+        result["error"] = f"{csv_path} not found"
+        return jsonify(result), 404
+
+    try:
+        df = pd.read_csv(csv_path)
+        other_format = df[df["Risultato_Reale"].notna() & ~df["Risultato_Reale"].isin(["W", "L"])]
+        result["csv_other_format_count"] = len(other_format)
+
+        logger.info(f"📊 Trovate {len(other_format)} scommesse con formato risultato partita")
+
+    except Exception as e:
+        result["status"] = "failed"
+        result["error"] = f"CSV read error: {str(e)}"
+        return jsonify(result), 500
+
+    # 3. Mapping ITA → ENG per 1X2
+    mapping_1x2 = {"Casa": "H", "Pareggio": "D", "Ospite": "A", "Trasferta": "A"}
+
+    # 4. Analizza e prepara aggiornamenti
+    updates = []
+
+    for idx, row in other_format.iterrows():
+        casa = str(row.get("Casa", ""))
+        ospite = str(row.get("Ospite", ""))
+        mercato = str(row.get("Mercato", ""))
+        predizione = str(row.get("Predizione", ""))
+        risultato_reale = str(row.get("Risultato_Reale", ""))
+        profit = float(row.get("Profit", 0))
+
+        # Normalizza predizione se 1X2
+        predizione_norm = mapping_1x2.get(predizione, predizione)
+
+        # Logica: predizione normalizzata == risultato reale
+        if predizione_norm == risultato_reale:
+            nuovo_risultato = "WIN"
+        else:
+            nuovo_risultato = "LOSS"
+
+        # VERIFICA COERENZA: profit positivo = WIN, negativo = LOSS
+        if profit > 0 and nuovo_risultato == "LOSS":
+            logger.warning(f"⚠️ Incoerenza: profit +{profit:.2f}€ ma LOSS → forzo WIN")
+            nuovo_risultato = "WIN"
+        elif profit < 0 and nuovo_risultato == "WIN":
+            logger.warning(f"⚠️ Incoerenza: profit {profit:.2f}€ ma WIN → forzo LOSS")
+            nuovo_risultato = "LOSS"
+
+        updates.append(
+            {
+                "casa": casa,
+                "ospite": ospite,
+                "mercato": mercato,
+                "predizione": predizione,
+                "predizione_norm": predizione_norm,
+                "risultato_reale": risultato_reale,
+                "nuovo_risultato": nuovo_risultato,
+                "profit": profit,
+            }
+        )
+
+    # 5. Statistiche pre-update
+    win_count = sum(1 for u in updates if u["nuovo_risultato"] == "WIN")
+    loss_count = sum(1 for u in updates if u["nuovo_risultato"] == "LOSS")
+    total_profit = sum(u["profit"] for u in updates)
+
+    result["updates_planned"] = len(updates)
+    result["win_count"] = win_count
+    result["loss_count"] = loss_count
+    result["total_profit"] = round(total_profit, 2)
+
+    logger.info(f"📊 Pianificati {len(updates)} update: {win_count}W/{loss_count}L, profit {total_profit:+.2f}€")
+
+    # 6. Esegui aggiornamenti su database
+    updated_count = 0
+    errors = []
+
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                for update in updates:
+                    try:
+                        # Match su partita + mercato (le 12 sono tutte marzo 2026)
+                        cur.execute(
+                            """
+                            UPDATE bets 
+                            SET risultato = %s
+                            WHERE risultato = 'PENDING'
+                              AND partita LIKE %s
+                              AND mercato LIKE %s
+                            RETURNING id, partita;
+                        """,
+                            (
+                                update["nuovo_risultato"],
+                                f"%{update['casa']}%",
+                                f"%{update['mercato']}%",
+                            ),
+                        )
+
+                        result_row = cur.fetchone()
+                        if result_row:
+                            updated_count += 1
+                            logger.info(f"✅ Bet ID {result_row[0]} → {update['nuovo_risultato']}")
+                        else:
+                            error_msg = f"Non trovata: {update['casa']} vs {update['ospite']} - {update['mercato']}"
+                            errors.append(error_msg)
+                            logger.warning(f"⚠️ {error_msg}")
+
+                    except Exception as e:
+                        error_msg = f"Update error: {str(e)}"
+                        errors.append(error_msg)
+                        logger.error(f"❌ {error_msg}")
+
+                conn.commit()
+
+    except Exception as e:
+        result["status"] = "failed"
+        result["error"] = f"Database error: {str(e)}"
+        return jsonify(result), 500
+
+    # 7. Risultato finale
+    result["status"] = "completed"
+    result["updated_count"] = updated_count
+    result["errors"] = errors[:10]
+    result["total_errors"] = len(errors)
+
+    if updated_count > 0:
+        result["message"] = f"✅ {updated_count} bet convertite da PENDING a WIN/LOSS!"
+
+    if errors:
+        result["warning"] = f"⚠️ {len(errors)} errori durante conversione"
+
+    logger.info(f"🎉 Conversione completata: {updated_count}/{len(updates)} bet aggiornate")
+
+    return jsonify(result), 200
+
+
 @app.route("/api/database/migrate_schema")
 @limiter.limit("2 per hour")  # Molto limitato - operazione critica
 def migrate_schema_api():
