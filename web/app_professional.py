@@ -1496,6 +1496,187 @@ def migrate_csv_to_db_api():
     return jsonify(result), 200
 
 
+@app.route("/api/diario/fix_import_tracking_live")
+@limiter.limit("2 per hour")  # Molto limitato - operazione critica
+def fix_import_tracking_live():
+    """
+    Corregge importazione database:
+    - Cancella bet vecchie (da tracking_giocate.csv incompleto)
+    - Importa tracking_predictions_live.csv completo (28 bet effettive)
+    """
+    import pandas as pd
+
+    result: Dict[str, Any] = {
+        "timestamp": datetime.now().isoformat(),
+        "csv_file": "tracking_predictions_live.csv",
+        "status": "starting",
+    }
+
+    # 1. Verifica PostgreSQL
+    try:
+        from database import BetModel, init_db, is_db_available
+        from database.connection import get_db_connection
+
+        if not is_db_available():
+            if not init_db():
+                result["status"] = "failed"
+                result["error"] = "PostgreSQL non disponibile"
+                return jsonify(result), 503
+
+        result["database_available"] = True
+
+    except ImportError as e:
+        result["status"] = "failed"
+        result["error"] = f"Database module error: {str(e)}"
+        return jsonify(result), 500
+
+    # 2. Conta bet vecchie
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM bets")
+        old_count = cursor.fetchone()[0]
+        cursor.close()
+        conn.close()
+
+        result["old_bets_count"] = old_count
+        logger.info(f"🗑️  Bet vecchie da cancellare: {old_count}")
+
+    except Exception as e:
+        result["warning"] = f"Count error: {str(e)}"
+        result["old_bets_count"] = 0
+
+    # 3. CANCELLA bet vecchie
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM bets")
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        result["deleted_count"] = result["old_bets_count"]
+        logger.info(f"✅ {result['deleted_count']} bet vecchie cancellate")
+
+    except Exception as e:
+        result["status"] = "failed"
+        result["error"] = f"Delete error: {str(e)}"
+        return jsonify(result), 500
+
+    # 4. Leggi CSV tracking_predictions_live.csv
+    csv_path = "tracking_predictions_live.csv"
+    if not os.path.exists(csv_path):
+        result["status"] = "failed"
+        result["error"] = f"{csv_path} not found"
+        return jsonify(result), 404
+
+    try:
+        df = pd.read_csv(csv_path)
+        result["csv_total_rows"] = len(df)
+
+        # Filtra solo scommesse effettive (con Risultato_Reale)
+        scommesse = df[df["Risultato_Reale"].notna()].copy()
+        result["csv_effective_bets"] = len(scommesse)
+
+        logger.info(f"✅ CSV caricato: {len(df)} righe, {len(scommesse)} scommesse effettive")
+
+    except Exception as e:
+        result["status"] = "failed"
+        result["error"] = f"CSV read error: {str(e)}"
+        return jsonify(result), 500
+
+    # 5. IMPORTA bet corrette
+    migrated = 0
+    errors = []
+
+    for idx, row in scommesse.iterrows():
+        try:
+            # Parse data
+            data_str = str(row["Data"])
+
+            # Costruisci partita
+            casa = str(row.get("Casa", ""))
+            ospite = str(row.get("Ospite", ""))
+
+            # Se Casa contiene "vs", splitta
+            if " vs " in casa and pd.isna(row.get("Ospite")):
+                parts = casa.split(" vs ")
+                casa = parts[0].strip()
+                ospite = parts[1].strip() if len(parts) > 1 else ""
+
+            partita = f"{casa} vs {ospite}".strip()
+
+            # Mercato + Predizione
+            mercato = str(row.get("Mercato", ""))
+            predizione = str(row.get("Predizione", ""))
+
+            if predizione and predizione != "nan":
+                mercato_completo = f"{mercato} - {predizione}"
+            else:
+                mercato_completo = mercato
+
+            # Quote
+            quota = float(row.get("Quota", 0))
+
+            # EV
+            ev_str = str(row.get("EV_%", ""))
+            if ev_str and ev_str != "nan":
+                ev_modello = f"+{ev_str}%" if not ev_str.startswith(("+", "-")) else f"{ev_str}%"
+            else:
+                ev_modello = None
+
+            # Stake (default 10)
+            stake = 10.0
+
+            # Risultato
+            risultato_reale = str(row.get("Risultato_Reale", ""))
+            risultato = "WIN" if risultato_reale == "W" else "LOSS" if risultato_reale == "L" else "PENDING"
+
+            # Profit
+            profit = float(row.get("Profit", 0))
+
+            # Note
+            note = str(row.get("Note", "")) if pd.notna(row.get("Note")) else ""
+
+            # Add bet
+            bet_id = BetModel.add_bet(
+                data=data_str,
+                partita=partita,
+                mercato=mercato_completo,
+                quota_sistema=quota,
+                quota_sisal=quota,
+                ev_modello=ev_modello,
+                ev_realistico=None,
+                stake=str(stake),
+                risultato=risultato,
+                profit=profit,
+                note=note,
+            )
+
+            if bet_id:
+                migrated += 1
+
+        except Exception as e:
+            error_msg = f"Row {idx}: {str(e)}"
+            errors.append(error_msg)
+            logger.error(f"❌ Import error: {error_msg}")
+
+    # 6. Risultato
+    result["status"] = "completed"
+    result["migrated"] = migrated
+    result["errors"] = errors[:10]
+    result["total_errors"] = len(errors)
+
+    if migrated > 0:
+        result["message"] = f"✅ {migrated} bet importate da tracking_predictions_live.csv!"
+    if errors:
+        result["warning"] = f"⚠️ {len(errors)} errori durante import"
+
+    logger.info(f"✅ Fix import completato: {migrated}/{len(scommesse)} bet migrate")
+
+    return jsonify(result), 200
+
+
 @app.route("/api/database/migrate_schema")
 @limiter.limit("2 per hour")  # Molto limitato - operazione critica
 def migrate_schema_api():
