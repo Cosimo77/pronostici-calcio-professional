@@ -1532,12 +1532,10 @@ def fix_import_tracking_live():
 
     # 2. Conta bet vecchie
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT COUNT(*) FROM bets")
-        old_count = cursor.fetchone()[0]
-        cursor.close()
-        conn.close()
+        with get_db_connection() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT COUNT(*) FROM bets")
+                old_count = cursor.fetchone()[0]
 
         result["old_bets_count"] = old_count
         logger.info(f"🗑️  Bet vecchie da cancellare: {old_count}")
@@ -1548,12 +1546,10 @@ def fix_import_tracking_live():
 
     # 3. CANCELLA bet vecchie
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM bets")
-        conn.commit()
-        cursor.close()
-        conn.close()
+        with get_db_connection() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("DELETE FROM bets")
+                conn.commit()
 
         result["deleted_count"] = result["old_bets_count"]
         logger.info(f"✅ {result['deleted_count']} bet vecchie cancellate")
