@@ -1,4 +1,4 @@
-name: 🧹 Pulizia e Manutenzione Settimanale
+name: Weekly Maintenance
 
 on:
   # Ogni domenica alle 03:00 UTC
