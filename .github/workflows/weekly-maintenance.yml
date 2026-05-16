@@ -1,0 +1,126 @@
+name: 🧹 Pulizia e Manutenzione Settimanale
+
+on:
+  # Ogni domenica alle 03:00 UTC
+  schedule:
+    - cron: '0 3 * * 0'
+
+  workflow_dispatch:
+
+jobs:
+  maintenance:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: 🐍 Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: 📦 Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: 🗑️ Cleanup backup vecchi (>30 giorni)
+        run: |
+          echo "🗑️ Rimuovo backup più vecchi di 30 giorni..."
+          find backups/ -name "daily_backup_*.json" -type f -mtime +30 -delete || true
+          find backups/ -name "backup_db_*.json" -type f -mtime +30 -delete || true
+
+          echo "📊 Backup rimanenti:"
+          ls -lh backups/*.json 2>/dev/null || echo "Nessun backup"
+
+      - name: 🗜️ Comprimi log vecchi
+        run: |
+          echo "🗜️ Comprimo log più vecchi di 7 giorni..."
+          find logs/ -name "*.log" -type f -mtime +7 ! -name "*.gz" -exec gzip {} \; || true
+
+          echo "📊 Log rimanenti:"
+          ls -lh logs/*.log 2>/dev/null | head -10 || echo "Nessun log"
+
+      - name: 🧪 Verifica integrità dataset
+        run: |
+          echo "🧪 Verifico integrità dataset..."
+          python3 << 'EOF'
+          import pandas as pd
+          import os
+
+          errors = []
+
+          # Check CSV principali
+          for csv_file in ['data/dataset_pulito.csv', 'data/dataset_features.csv']:
+              if os.path.exists(csv_file):
+                  try:
+                      df = pd.read_csv(csv_file)
+                      print(f"✅ {csv_file}: {len(df)} righe, {len(df.columns)} colonne")
+
+                      # Check duplicati
+                      dupes = df.duplicated().sum()
+                      if dupes > 0:
+                          print(f"⚠️ {dupes} righe duplicate trovate")
+                          errors.append(f"{csv_file}: {dupes} duplicati")
+
+                      # Check valori mancanti critici
+                      if 'Date' in df.columns:
+                          missing_dates = df['Date'].isna().sum()
+                          if missing_dates > 0:
+                              print(f"⚠️ {missing_dates} date mancanti")
+                              errors.append(f"{csv_file}: {missing_dates} date mancanti")
+
+                  except Exception as e:
+                      print(f"❌ Errore leggendo {csv_file}: {e}")
+                      errors.append(f"{csv_file}: {str(e)}")
+              else:
+                  print(f"⚠️ {csv_file} non trovato")
+                  errors.append(f"{csv_file} mancante")
+
+          # Report finale
+          if errors:
+              print(f"\n⚠️ {len(errors)} problemi trovati:")
+              for err in errors:
+                  print(f"  - {err}")
+              exit(1)
+          else:
+              print("\n✅ Tutti i check passati!")
+          EOF
+
+      - name: 📊 Statistiche repository
+        run: |
+          echo "============================================"
+          echo "📊 STATISTICHE REPOSITORY"
+          echo "============================================"
+
+          echo "📁 Spazio disco:"
+          du -sh data/ backups/ logs/ models/ 2>/dev/null || true
+
+          echo ""
+          echo "📈 Files per directory:"
+          echo "  data/: $(find data/ -type f | wc -l) files"
+          echo "  backups/: $(find backups/ -type f | wc -l) files"
+          echo "  logs/: $(find logs/ -type f | wc -l) files"
+
+          echo ""
+          echo "🗓️ Ultimo aggiornamento:"
+          ls -lt data/*.csv | head -1
+
+      - name: 📝 Commit cleanup risultati
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "GitHub Actions Bot"
+
+          git add backups/ logs/ || true
+          git commit -m "🧹 Manutenzione settimanale automatica
+
+          - Cleanup backup vecchi (>30 giorni)
+          - Compressione log (>7 giorni)
+          - Verifica integrità dataset
+
+          Triggered by: GitHub Actions (weekly)" || echo "Nessuna modifica"
+
+          git push || true
