@@ -136,9 +136,7 @@ class DiarioStorage:
         return {
             "id": int(bet_id),
             "group_id": (str(row["group_id"]) if pd.notna(row["group_id"]) and row["group_id"] != "" else None),
-            "bet_number": (
-                int(row["bet_number"]) if "bet_number" in row and pd.notna(row["bet_number"]) else 1
-            ),
+            "bet_number": (int(row["bet_number"]) if "bet_number" in row and pd.notna(row["bet_number"]) else 1),
             "tipo_bet": (str(row["tipo_bet"]) if "tipo_bet" in row and pd.notna(row["tipo_bet"]) else "SINGLE"),
             "data": str(row["Data"]),
             "partita": str(row["Partita"]),
@@ -378,28 +376,76 @@ class DiarioStorage:
         """
         if DiarioStorage._use_database():
             try:
+                import json
+
                 from database import get_db_connection
+
+                # Crea directory backups se non esiste
+                backup_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "backups")
+                os.makedirs(backup_dir, exist_ok=True)
 
                 with get_db_connection() as conn:
                     with conn.cursor() as cur:
-                        # Count bet da cancellare per logging
-                        cur.execute("SELECT COUNT(*) FROM bets")
-                        count_result = cur.fetchone()
-                        count = count_result[0] if count_result else 0
+                        # PRIMA: Export completo database in JSON
+                        cur.execute(
+                            """
+                            SELECT id, data, partita, mercato, quota_sistema, quota_sisal,
+                                   ev_modello, ev_realistico, stake, risultato, profit, note,
+                                   created_at, updated_at, group_id, bet_number, tipo_bet
+                            FROM bets
+                            ORDER BY data, id
+                        """
+                        )
 
-                        # DELETE invece di DROP TABLE (mantiene schema intatto)
+                        rows = cur.fetchall()
+                        count = len(rows)
+
+                        # Converti a lista di dict per JSON
+                        backup_data = []
+                        for row in rows:
+                            backup_data.append(
+                                {
+                                    "id": row[0],
+                                    "data": row[1].isoformat() if row[1] else None,
+                                    "partita": row[2],
+                                    "mercato": row[3],
+                                    "quota_sistema": float(row[4]) if row[4] else None,
+                                    "quota_sisal": float(row[5]) if row[5] else None,
+                                    "ev_modello": row[6],
+                                    "ev_realistico": row[7],
+                                    "stake": row[8],
+                                    "risultato": row[9],
+                                    "profit": float(row[10]) if row[10] else None,
+                                    "note": row[11],
+                                    "created_at": row[12].isoformat() if row[12] else None,
+                                    "updated_at": row[13].isoformat() if row[13] else None,
+                                    "group_id": row[14],
+                                    "bet_number": row[15],
+                                    "tipo_bet": row[16],
+                                }
+                            )
+
+                        # Salva backup JSON
+                        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                        backup_name = f"backup_db_{timestamp}.json"
+                        backup_path = os.path.join(backup_dir, backup_name)
+
+                        with open(backup_path, "w") as f:
+                            json.dump(backup_data, f, indent=2, ensure_ascii=False)
+
+                        logger.warning(f"💾 Backup creato: {backup_path} ({count} bet)")
+
+                        # ORA: DELETE dopo backup sicuro
                         cur.execute("DELETE FROM bets")
                         conn.commit()
 
                         logger.warning(f"🔴 PostgreSQL reset: {count} bet cancellate")
 
-                        # Return backup identifier (database non ha backup file fisico)
-                        backup_name = f"backup_db_{datetime.now().strftime('%Y%m%d_%H%M%S')}.backup"
                         return backup_name
 
             except Exception as e:
                 logger.error("Database reset failed", error=str(e))
-                # Fall through to CSV reset se database fallisce
+                raise  # Non fallback a CSV in caso di errore - troppo pericoloso
 
         # CSV reset
         if not os.path.exists(DiarioStorage.CSV_FILE):
