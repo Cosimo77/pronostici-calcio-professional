@@ -1,103 +1,81 @@
-name: "📊 Daily Predictions Generation"
+name: Daily Predictions & Value Betting
 
 on:
-  # Automazione giornaliera: 08:00 UTC (10:00 Italia) - prima delle partite
+  # Esegui DOPO daily-update (06:00 UTC) per avere dati freschi
   schedule:
-    - cron: '0 8 * * *'
+    - cron: '30 6 * * *'  # 06:30 UTC giornaliero (07:30 CET / 08:30 CEST)
 
-  # Trigger manuale per test immediate
+  # Trigger manuale per test
   workflow_dispatch:
-    inputs:
-      force_run:
-        description: 'Force run anche senza nuove predizioni'
-        required: false
-        default: 'false'
+
+permissions:
+  contents: write  # Per committare tracking CSV aggiornato
 
 jobs:
   generate-predictions:
-    name: "Genera Predizioni Giornaliere"
+    name: Genera predizioni + value betting
     runs-on: ubuntu-latest
-    timeout-minutes: 15  # Timeout massimo per job
-
-    # Retry automatico su fallimenti infrastrutturali
-    strategy:
-      fail-fast: false
-      max-parallel: 1
 
     steps:
-      - name: "📥 Checkout repository"
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: "🔧 Setup Git Config"
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
         run: |
-          git config --global user.name "GitHub Actions Bot"
-          git config --global user.email "actions@github.com"
+          pip install --upgrade pip
+          pip install -r requirements.txt
 
-      - name: "📊 Chiama Batch Generate Predictions API"
-        id: generate
-        timeout-minutes: 10  # Timeout specifico per questo step
-        continue-on-error: false  # Fallisce job se API non risponde
+      - name: Genera predizioni giornaliere
+        env:
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
         run: |
-          echo "::group::🎯 Generazione Predizioni"
+          python scripts/genera_predizioni_giornaliere.py
 
-          # Retry logic: 3 tentativi con backoff esponenziale
-          MAX_RETRIES=3
-          RETRY_DELAY=30
+      - name: Verifica modifiche tracking
+        id: check_changes
+        run: |
+          git diff --quiet tracking_predictions_live.csv || echo "changed=true" >> $GITHUB_OUTPUT
 
-          for i in $(seq 1 $MAX_RETRIES); do
-            echo "Tentativo $i/$MAX_RETRIES..."
+      - name: Commit tracking aggiornato
+        if: steps.check_changes.outputs.changed == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "GitHub Actions Bot"
+          git add tracking_predictions_live.csv
+          git commit -m "🤖 Auto-update predizioni: $(date +'%Y-%m-%d %H:%M UTC')" -m "Aggiornate predizioni e risultati tracking accuracy"
+          git push
 
-            # Call batch endpoint con timeout curl (120s)
-            RESPONSE=$(curl -s -X POST \
-              --max-time 120 \
-              --connect-timeout 30 \
-              -H "Content-Type: application/json" \
-              https://pronostici-calcio-professional.onrender.com/api/batch_generate_predictions)
+      - name: Summary predizioni
+        if: always()
+        run: |
+          echo "## 📊 Predizioni Generate" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
 
-            # Verifica risposta valida
-            if echo "$RESPONSE" | python3 -c "import sys,json; json.load(sys.stdin)" 2>/dev/null; then
-              echo "✅ API call riuscita al tentativo $i"
-              break
-            else
-              echo "⚠️ Tentativo $i fallito, attendo ${RETRY_DELAY}s prima di riprovare..."
-              if [ $i -lt $MAX_RETRIES ]; then
-                sleep $RETRY_DELAY
-                RETRY_DELAY=$((RETRY_DELAY * 2))  # Backoff esponenziale
-              else
-                echo "::error::❌ Tutti i tentativi falliti"
-                exit 1
-              fi
-            fi
-          done
+          if [ -f tracking_predictions_live.csv ]; then
+            total_pred=$(tail -n +2 tracking_predictions_live.csv | wc -l | tr -d ' ')
+            value_bets=$(grep -c ",True," tracking_predictions_live.csv || echo "0")
 
-          echo "Response completa:"
-          echo "$RESPONSE" | python3 -m json.tool || echo "$RESPONSE"
+            echo "- **Totale predizioni**: $total_pred" >> $GITHUB_STEP_SUMMARY
+            echo "- **Value betting opportunities**: $value_bets" >> $GITHUB_STEP_SUMMARY
 
-          # Estrai metriche
-          STATUS=$(echo "$RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin).get('status', 'unknown'))" 2>/dev/null || echo "error")
-          GENERATED=$(echo "$RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('summary', {}).get('predictions_generated', 0))" 2>/dev/null || echo 0)
-          TRACKED=$(echo "$RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('summary', {}).get('tracked_fase1', 0))" 2>/dev/null || echo 0)
-          FILTERED=$(echo "$RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('summary', {}).get('filtered_out', 0))" 2>/dev/null || echo 0)
-
-          echo "status=$STATUS" >> $GITHUB_OUTPUT
-          echo "generated=$GENERATED" >> $GITHUB_OUTPUT
-          echo "tracked=$TRACKED" >> $GITHUB_OUTPUT
-          echo "filtered=$FILTERED" >> $GITHUB_OUTPUT
-
-          echo "::endgroup::"
-
-          echo "::notice::✅ Predizioni generate: $GENERATED (Tracked: $TRACKED, Filtered: $FILTERED)"
-
-          # Exit code based on status
-          if [ "$STATUS" = "success" ]; then
-            exit 0
-          elif [ "$STATUS" = "no_matches" ]; then
-            echo "::warning::Nessuna partita disponibile oggi"
-            exit 0
+            # Mostra ultime 5 predizioni
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Ultime predizioni:" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            tail -5 tracking_predictions_live.csv >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           else
-            echo "::error::API call fallita: $STATUS"
+            echo "⚠️ File tracking non generato" >> $GITHUB_STEP_SUMMARY
+          fi
+
             exit 1
           fi
 
