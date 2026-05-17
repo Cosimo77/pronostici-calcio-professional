@@ -1792,7 +1792,7 @@ def convert_pending_to_wl():
                         # Match su partita + mercato (le 12 sono tutte marzo 2026)
                         cur.execute(
                             """
-                            UPDATE bets 
+                            UPDATE bets
                             SET risultato = %s
                             WHERE risultato = 'PENDING'
                               AND partita LIKE %s
@@ -5801,8 +5801,9 @@ def api_monitoring_accuracy():
         # Converti Date SUBITO (prima di filtrare) per evitare errori confronto stringhe vs datetime
         df["Data"] = pd.to_datetime(df["Data"], errors="coerce")
 
-        # ESCLUDI predizioni FILTERED_OUT (non validate dal sistema)
-        df = df[~df["Note"].str.contains("FILTERED_OUT", na=False)]
+        # ESCLUDI predizioni FILTERED_OUT (non validate dal sistema) - solo se colonna Note esiste
+        if "Note" in df.columns:
+            df = df[~df["Note"].str.contains("FILTERED_OUT", na=False)]
 
         # Filtra solo righe con risultato reale disponibile
         df_risultati = df[df["Risultato_Reale"].notna() & (df["Risultato_Reale"] != "")]
