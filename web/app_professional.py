@@ -6143,18 +6143,40 @@ def api_investor_metrics():
         # Carica tracking predictions
         df = pd.read_csv(tracking_file)
 
-        # Gestisci schema CSV (verifica colonne essenziali)
-        required_cols = ["Data", "Mercato", "Corretto", "Profit"]
-        missing_cols = [col for col in required_cols if col not in df.columns]
-        if missing_cols:
-            return jsonify({"error": f"Colonne mancanti nel tracking: {missing_cols}"}), 500
-
-        # Gestisci nomi colonne legacy
-        if "Risultato_Reale" not in df.columns:
-            # Se manca, considera tutte le righe con Profit definito come validate
-            df["Risultato_Reale"] = df["Profit"].apply(
-                lambda x: "W" if pd.notna(x) and x > 0 else ("L" if pd.notna(x) else "")
-            )
+        # COMPATIBILITÀ: Aggiungi colonne mancanti se necessario
+        # tracking_predictions_live.csv ha schema diverso da diario betting
+        
+        # Aggiungi colonna Mercato se mancante (sempre 1X2 per predizioni ML)
+        if "Mercato" not in df.columns:
+            df["Mercato"] = "1X2"
+        
+        # Aggiungi colonna Profit se mancante (calcola da risultati)
+        if "Profit" not in df.columns:
+            def calculate_profit(row):
+                # Se non c'è risultato, profit è NaN
+                if pd.isna(row.get("Risultato_Reale")) or row.get("Risultato_Reale") == "":
+                    return np.nan
+                
+                # Se predizione corretta, profit = (quota - 1) * stake
+                if row.get("Corretto") == True or row.get("Corretto") == 1:
+                    # Determina quota vincente in base a Best_Bet
+                    best_bet = row.get("Best_Bet", "")
+                    if best_bet == "Casa" and "Quota_Casa" in df.columns:
+                        quota = row.get("Quota_Casa", 2.0)
+                    elif best_bet == "Pareggio" and "Quota_X" in df.columns:
+                        quota = row.get("Quota_X", 3.0)
+                    elif best_bet == "Ospite" and "Quota_Ospite" in df.columns:
+                        quota = row.get("Quota_Ospite", 2.0)
+                    else:
+                        quota = 2.0  # Default se non trova quota
+                    
+                    stake = 10  # Stake fisso
+                    return (quota - 1) * stake
+                else:
+                    # Predizione sbagliata, perdi lo stake
+                    return -10.0
+            
+            df["Profit"] = df.apply(calculate_profit, axis=1)
 
         # Filtra solo predizioni con risultati (esclude pending)
         df_risultati = df[df["Risultato_Reale"].notna() & (df["Risultato_Reale"] != "")].copy()
@@ -6194,8 +6216,8 @@ def api_investor_metrics():
                 if pd.isna(market):
                     continue
 
-                # Normalizza nome mercato per visualizzazione chiara
-                market_normalized = normalize_market_name(market)
+                # Usa nome mercato diretto (già normalizzato a "1X2" per predizioni ML)
+                market_name = str(market)
 
                 df_market = df_risultati[df_risultati["Mercato"] == market]
                 trades = len(df_market)
@@ -6205,24 +6227,24 @@ def api_investor_metrics():
                 total_stake = trades * 10
                 roi = (profit / total_stake) * 100 if total_stake > 0 else 0
 
-                # Aggrega mercati normalizzati (es. OU25 + Over/Under 2.5)
-                if market_normalized in roi_by_market:
-                    roi_by_market[market_normalized]["trades"] += int(trades)
-                    roi_by_market[market_normalized]["wins"] += int(wins)
-                    roi_by_market[market_normalized]["profit"] += float(profit)
+                # Aggrega mercati con stesso nome
+                if market_name in roi_by_market:
+                    roi_by_market[market_name]["trades"] += int(trades)
+                    roi_by_market[market_name]["wins"] += int(wins)
+                    roi_by_market[market_name]["profit"] += float(profit)
                     # Ricalcola ROI e Win Rate aggregati
-                    total_trades = roi_by_market[market_normalized]["trades"]
-                    total_wins = roi_by_market[market_normalized]["wins"]
-                    total_profit = roi_by_market[market_normalized]["profit"]
+                    total_trades = roi_by_market[market_name]["trades"]
+                    total_wins = roi_by_market[market_name]["wins"]
+                    total_profit = roi_by_market[market_name]["profit"]
                     total_stake_agg = total_trades * 10  # Stake fisso 10€
-                    roi_by_market[market_normalized]["roi_pct"] = (
+                    roi_by_market[market_name]["roi_pct"] = (
                         round((total_profit / total_stake_agg) * 100, 2) if total_stake_agg > 0 else 0
                     )
-                    roi_by_market[market_normalized]["win_rate_pct"] = (
+                    roi_by_market[market_name]["win_rate_pct"] = (
                         round((total_wins / total_trades) * 100, 1) if total_trades > 0 else 0
                     )
                 else:
-                    roi_by_market[market_normalized] = {
+                    roi_by_market[market_name] = {
                         "trades": int(trades),
                         "wins": int(wins),
                         "win_rate_pct": round((wins / trades) * 100, 1) if trades > 0 else 0,
