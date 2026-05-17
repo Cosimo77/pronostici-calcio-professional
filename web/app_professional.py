@@ -5813,10 +5813,12 @@ def api_monitoring_accuracy():
 
         # Se non ci sono risultati, mostra info pending
         if len(df_risultati) == 0:
-            # Conta pending recenti (ultimi 7 giorni)
+            # Conta pending recenti (ultimi 7 giorni e 30 giorni)
             today = datetime.now()
             seven_days_ago = today - timedelta(days=7)
+            thirty_days_ago = today - timedelta(days=30)
             df_pending_recent = df_pending[df_pending["Data"] >= seven_days_ago]
+            df_pending_30d = df_pending[df_pending["Data"] >= thirty_days_ago]
 
             return jsonify(
                 {
@@ -5826,10 +5828,17 @@ def api_monitoring_accuracy():
                     "predictions_count": len(df),
                     "pending_predictions": len(df_pending),
                     "pending_recent_7d": len(df_pending_recent),
+                    "pending_predictions_30d": len(df_pending_30d),
                     "accuracy_7d": 0.0,
                     "accuracy_7d_pct": 0.0,
                     "predictions_7d": 0,
                     "correct_7d": 0,
+                    # Campi lifetime per compatibilità dashboard
+                    "predictions_lifetime": len(df),
+                    "correct_lifetime": 0,
+                    "accuracy_lifetime": 0.0,
+                    "accuracy_lifetime_pct": 0.0,
+                    "days_window": "7gg",
                 }
             )
 
