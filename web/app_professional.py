@@ -7714,6 +7714,13 @@ def api_diario_pending():
     try:
         bets = DiarioStorage.get_all_bets(risultato="PENDING")
 
+        # Ordina per data decrescente (più recenti prima)
+        # FIX 23 Mag 2026: Sort cronologico su DD/MM/YYYY
+        bets.sort(
+            key=lambda x: datetime.strptime(x.get("data", "01/01/2000"), "%d/%m/%Y"),
+            reverse=True
+        )
+
         # Format per frontend
         formatted_bets = []
         for bet in bets:
@@ -7752,6 +7759,13 @@ def api_diario_completed():
         all_bets = DiarioStorage.get_all_bets()
         completed = [b for b in all_bets if b["risultato"] in ["WIN", "LOSS", "VOID", "SKIP"]]
 
+        # Ordina per data decrescente (più recenti prima)
+        # FIX 23 Mag 2026: Sort cronologico su DD/MM/YYYY
+        completed.sort(
+            key=lambda x: datetime.strptime(x.get("data", "01/01/2000"), "%d/%m/%Y"),
+            reverse=True
+        )
+
         # Format per frontend
         formatted_bets = []
         for bet in completed:
@@ -7789,6 +7803,13 @@ def api_diario_all():
     """Tutte le puntate (pending + completed) - per analisi/grafici"""
     try:
         all_bets = DiarioStorage.get_all_bets()
+
+        # Ordina per data decrescente (più recenti prima)
+        # FIX 23 Mag 2026: Sort cronologico su DD/MM/YYYY
+        all_bets.sort(
+            key=lambda x: datetime.strptime(x.get("data", "01/01/2000"), "%d/%m/%Y"),
+            reverse=True
+        )
 
         # Ritorna array semplice per compatibilità con JS filter
         return jsonify(all_bets)
@@ -8068,6 +8089,13 @@ def api_diario_get_multiple():
         risultato = request.args.get("risultato")
         multiple = DiarioStorage.get_all_multiple(risultato=risultato)
 
+        # Ordina per data decrescente (più recenti prima)
+        # FIX 23 Mag 2026: Sort cronologico su DD/MM/YYYY
+        multiple.sort(
+            key=lambda x: datetime.strptime(x.get("data", "01/01/2000"), "%d/%m/%Y"),
+            reverse=True
+        )
+
         return jsonify({"multiple": multiple})
 
     except Exception as e:
@@ -8081,6 +8109,14 @@ def api_diario_get_multiple_pending():
     """Recupera solo multiple PENDING"""
     try:
         multiple = DiarioStorage.get_all_multiple(risultato="PENDING")
+
+        # Ordina per data decrescente (più recenti prima)
+        # FIX 23 Mag 2026: Sort cronologico su DD/MM/YYYY
+        multiple.sort(
+            key=lambda x: datetime.strptime(x.get("data", "01/01/2000"), "%d/%m/%Y"),
+            reverse=True
+        )
+
         return jsonify({"multiple": multiple})
     except Exception as e:
         logger.error(f"❌ Errore get multiple pending: {e}")
@@ -8094,6 +8130,14 @@ def api_diario_get_multiple_completed():
     try:
         all_multiple = DiarioStorage.get_all_multiple()
         completed = [m for m in all_multiple if m["risultato"] in ["WIN", "LOSS", "VOID"]]
+
+        # Ordina per data decrescente (più recenti prima)
+        # FIX 23 Mag 2026: Sort cronologico su DD/MM/YYYY
+        completed.sort(
+            key=lambda x: datetime.strptime(x.get("data", "01/01/2000"), "%d/%m/%Y"),
+            reverse=True
+        )
+
         return jsonify({"multiple": completed})
     except Exception as e:
         logger.error(f"❌ Errore get multiple completed: {e}")
