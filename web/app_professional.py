@@ -5801,6 +5801,34 @@ def api_monitoring_accuracy():
         # Converti Date SUBITO (prima di filtrare) per evitare errori confronto stringhe vs datetime
         df["Data"] = pd.to_datetime(df["Data"], errors="coerce")
 
+        # Aggiungi colonna Mercato se mancante (tracking_predictions_live.csv non ha Mercato)
+        if "Mercato" not in df.columns:
+            df["Mercato"] = "1X2"
+
+        # Aggiungi colonna Profit se mancante (calcolo da Corretto + Quote)
+        if "Profit" not in df.columns:
+            def calculate_profit(row):
+                if pd.isna(row.get("Corretto")) or pd.isna(row.get("Risultato_Reale")):
+                    return np.nan
+                
+                # Trova quota in base a Best_Bet
+                if pd.notna(row.get("Best_Bet")):
+                    best_bet = row["Best_Bet"]
+                    if best_bet == "Casa" and "Quota_Casa" in row:
+                        odds = row["Quota_Casa"]
+                    elif best_bet == "Pareggio" and "Quota_X" in row:
+                        odds = row["Quota_X"]
+                    elif best_bet == "Ospite" and "Quota_Ospite" in row:
+                        odds = row["Quota_Ospite"]
+                    else:
+                        return np.nan
+                    
+                    # Profit = (odds - 1) se corretto, -1 se sbagliato
+                    return float((odds - 1.0) if row["Corretto"] else -1.0)
+                return np.nan
+            
+            df["Profit"] = df.apply(calculate_profit, axis=1)
+
         # ESCLUDI predizioni FILTERED_OUT (non validate dal sistema) - solo se colonna Note esiste
         if "Note" in df.columns:
             df = df[~df["Note"].str.contains("FILTERED_OUT", na=False)]
@@ -5866,7 +5894,7 @@ def api_monitoring_accuracy():
                 total_lifetime = len(df_risultati)
                 correct_lifetime = int(df_risultati["Corretto"].sum()) if total_lifetime > 0 else 0
                 accuracy_lifetime = float(correct_lifetime / total_lifetime) if total_lifetime > 0 else 0.0
-                total_profit_lifetime = float(df_risultati["Profit"].sum()) if total_lifetime > 0 else 0.0
+                total_profit_lifetime = float(df_risultati["Profit"].dropna().sum()) if total_lifetime > 0 else 0.0
 
                 return jsonify(
                     {
@@ -5928,9 +5956,9 @@ def api_monitoring_accuracy():
                 "accuracy_pct": round(accuracy * 100, 2),
             }
 
-        # Calcola profitto totale
+        # Calcola profitto totale (filtra NaN)
         total_profit = (
-            float(df_7d["Profit"].sum()) if "Profit" in df_7d.columns else 0.0
+            float(df_7d["Profit"].dropna().sum()) if "Profit" in df_7d.columns else 0.0
         )  # Convert numpy to Python float
         roi_pct = float(total_profit / total_predictions * 100) if total_predictions > 0 else 0.0
 
