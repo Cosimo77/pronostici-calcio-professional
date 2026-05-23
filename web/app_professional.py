@@ -2215,7 +2215,6 @@ def api_cache_clear():
 def api_reload_dataset():
     """Endpoint per ricaricare dataset aggiornato (dopo update dati)"""
     try:
-        global calculator
         result = calculator.ricarica_dataset()
 
         if result.get("success"):
@@ -6937,8 +6936,6 @@ def api_force_update():
 
         # Ricarica dataset dal repository
         logger.info("🔄 Ricaricamento dataset in memoria...")
-
-        global calculator
 
         # FIX: Ricarica DATASET_FEATURES (non dataset_pulito) per avere features per predizioni
         df_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "dataset_features.csv")
