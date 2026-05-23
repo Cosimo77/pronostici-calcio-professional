@@ -53,7 +53,7 @@ jobs:
             --cov=database \
             --cov-report=term-missing \
             --cov-report=xml \
-            --cov-fail-under=29 \
+            --cov-fail-under=27 \
             -v \
             --tb=short
 

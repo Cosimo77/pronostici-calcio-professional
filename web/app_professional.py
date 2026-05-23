@@ -663,12 +663,12 @@ class ProfessionalCalculator:
                 }
 
             # BAYESIAN SMOOTHING CONSERVATIVO: Combina dati reali con prior (UNICO layer)
-            # FIX TRADING v4 (9 Feb 2026): Soglia 30 partite, peso prior 60% max
-            # Analisi esterna: Probabilità troppo estreme su squadre con pochi dati
-            # Causa: EV 30-60% sistematici = overconfidence del modello
-            # Soluzione: Aumentare regularizzazione 50%→60% per convergere verso medie campionato
-            # Risultato atteso: Probabilità più moderate, EV più realistici (10-20% vs 30-60%)
-            peso_prior = min(50 / max(n_partite, 1), 0.60)  # Max 60% peso prior per <30 partite
+            # FIX TRADING v5 (23 Mag 2026): Ridotto peso prior 60%→40% per ridurre bias Casa
+            # Backtest evidenza: Smoothing 60% crea overweight Casa (82% vs 40% reale)
+            # Root cause: Convergenza eccessiva verso prior + home advantage → bias cumulativo
+            # Soluzione: Ridurre regularizzazione 60%→40% per dare più peso a dati reali squadra
+            # Risultato atteso: Distribuzione predizioni più bilanciata (target Casa <60%)
+            peso_prior = min(50 / max(n_partite, 1), 0.40)  # Max 40% peso prior per <30 partite
             peso_dati = 1 - peso_prior
 
             # PESO FORMA RECENTE: Ultimi 10 match pesano 10x (DOMINANTE per forma corrente)
@@ -760,8 +760,9 @@ class ProfessionalCalculator:
         partite_ospite = stats_ospite.get("partite_totali", 10)
 
         # Vantaggio casa variabile basato su esperienza
+        # FIX v5 (23 Mag 2026): Ridotto da 3-8% a 2-5% per correggere bias Casa
         fattore_esperienza = min(partite_casa, partite_ospite) / 50  # Normalizza su 50 partite
-        vantaggio_casa_base = 0.03 + (0.05 * fattore_esperienza)  # 3-8% adattivo
+        vantaggio_casa_base = 0.02 + (0.03 * fattore_esperienza)  # 2-5% adattivo (ridotto)
 
         # Applica vantaggio casa con bilanciamento
         adjustment = vantaggio_casa_base / 2
@@ -5806,10 +5807,11 @@ def api_monitoring_accuracy():
 
         # Aggiungi colonna Profit se mancante (calcolo da Corretto + Quote)
         if "Profit" not in df.columns:
+
             def calculate_profit(row):
                 if pd.isna(row.get("Corretto")) or pd.isna(row.get("Risultato_Reale")):
                     return np.nan
-                
+
                 # Trova quota in base a Best_Bet
                 if pd.notna(row.get("Best_Bet")):
                     best_bet = row["Best_Bet"]
@@ -5821,11 +5823,11 @@ def api_monitoring_accuracy():
                         odds = row["Quota_Ospite"]
                     else:
                         return np.nan
-                    
+
                     # Profit = (odds - 1) se corretto, -1 se sbagliato
                     return float((odds - 1.0) if row["Corretto"] else -1.0)
                 return np.nan
-            
+
             df["Profit"] = df.apply(calculate_profit, axis=1)
 
         # ESCLUDI predizioni FILTERED_OUT (non validate dal sistema) - solo se colonna Note esiste
@@ -6172,18 +6174,19 @@ def api_investor_metrics():
 
         # COMPATIBILITÀ: Aggiungi colonne mancanti se necessario
         # tracking_predictions_live.csv ha schema diverso da diario betting
-        
+
         # Aggiungi colonna Mercato se mancante (sempre 1X2 per predizioni ML)
         if "Mercato" not in df.columns:
             df["Mercato"] = "1X2"
-        
+
         # Aggiungi colonna Profit se mancante (calcola da risultati)
         if "Profit" not in df.columns:
+
             def calculate_profit(row):
                 # Se non c'è risultato, profit è NaN
                 if pd.isna(row.get("Risultato_Reale")) or row.get("Risultato_Reale") == "":
                     return np.nan
-                
+
                 # Se predizione corretta, profit = (quota - 1) * stake
                 if row.get("Corretto") == True or row.get("Corretto") == 1:
                     # Determina quota vincente in base a Best_Bet
@@ -6196,13 +6199,13 @@ def api_investor_metrics():
                         quota = row.get("Quota_Ospite", 2.0)
                     else:
                         quota = 2.0  # Default se non trova quota
-                    
+
                     stake = 10  # Stake fisso
                     return (quota - 1) * stake
                 else:
                     # Predizione sbagliata, perdi lo stake
                     return -10.0
-            
+
             df["Profit"] = df.apply(calculate_profit, axis=1)
 
         # Filtra solo predizioni con risultati (esclude pending)
@@ -6282,7 +6285,7 @@ def api_investor_metrics():
         # 3. DRAWDOWN ANALYSIS
         # Filtra ANCHE per Profit non-NaN (essenziale per calcoli corretti)
         df_with_profit = df_risultati[df_risultati["Profit"].notna()].copy()
-        
+
         if len(df_with_profit) > 0:
             df_risultati_sorted = df_with_profit.sort_values("Data")
             cumulative_profit = df_risultati_sorted["Profit"].cumsum()
@@ -6301,6 +6304,7 @@ def api_investor_metrics():
 
             # Converti eventuali NaN residui a 0 (JSON-safe)
             import math
+
             drawdown_metrics = {
                 "max_drawdown": round(max_drawdown, 2) if not math.isnan(max_drawdown) else 0.0,
                 "max_drawdown_pct": round(max_drawdown_pct, 2) if not math.isnan(max_drawdown_pct) else 0.0,
