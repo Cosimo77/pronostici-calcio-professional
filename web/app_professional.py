@@ -8351,8 +8351,12 @@ def api_equity_curve():
                 }
             )
 
-        # Ordina per data
-        completed_bets.sort(key=lambda x: x.get("data", ""))
+        # Ordina per data (conversione datetime per sort cronologico corretto)
+        # FIX 23 Mag 2026: Sort lessicografico su "DD/MM/YYYY" era buggato
+        # Bug: "25/04/2026" veniva dopo "17/05/2026" (25 > 17 come stringa)
+        completed_bets.sort(
+            key=lambda x: datetime.strptime(x.get("data", "01/01/2000"), "%d/%m/%Y")
+        )
 
         # Calcola equity curve
         config = load_bankroll_config()
