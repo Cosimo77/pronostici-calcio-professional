@@ -6253,8 +6253,11 @@ def api_investor_metrics():
                     }
 
         # 3. DRAWDOWN ANALYSIS
-        if len(df_risultati) > 0:
-            df_risultati_sorted = df_risultati.sort_values("Data")
+        # Filtra ANCHE per Profit non-NaN (essenziale per calcoli corretti)
+        df_with_profit = df_risultati[df_risultati["Profit"].notna()].copy()
+        
+        if len(df_with_profit) > 0:
+            df_risultati_sorted = df_with_profit.sort_values("Data")
             cumulative_profit = df_risultati_sorted["Profit"].cumsum()
 
             # Calcola drawdown
@@ -6269,13 +6272,15 @@ def api_investor_metrics():
             current_drawdown = current_profit - peak
             current_drawdown_pct = (current_drawdown / peak) * 100 if peak > 0 else 0
 
+            # Converti eventuali NaN residui a 0 (JSON-safe)
+            import math
             drawdown_metrics = {
-                "max_drawdown": round(max_drawdown, 2),
-                "max_drawdown_pct": round(max_drawdown_pct, 2),
-                "current_drawdown": round(current_drawdown, 2),
-                "current_drawdown_pct": round(current_drawdown_pct, 2),
-                "peak_profit": round(peak, 2),
-                "current_profit": round(current_profit, 2),
+                "max_drawdown": round(max_drawdown, 2) if not math.isnan(max_drawdown) else 0.0,
+                "max_drawdown_pct": round(max_drawdown_pct, 2) if not math.isnan(max_drawdown_pct) else 0.0,
+                "current_drawdown": round(current_drawdown, 2) if not math.isnan(current_drawdown) else 0.0,
+                "current_drawdown_pct": round(current_drawdown_pct, 2) if not math.isnan(current_drawdown_pct) else 0.0,
+                "peak_profit": round(peak, 2) if not math.isnan(peak) else 0.0,
+                "current_profit": round(current_profit, 2) if not math.isnan(current_profit) else 0.0,
             }
         else:
             drawdown_metrics = {
