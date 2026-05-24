@@ -159,7 +159,7 @@
 
     <div class="container">
         <!-- Header -->
-        <div class="glass-card p-4 mb-4 text-center">
+        <div class="glass-card-hover p-4 mb-4 text-center">
             <h1 class="display-4 mb-2">🔍 Monitoraggio Sistema Professionale</h1>
             <p class="lead mb-3">Dashboard in tempo reale per il sistema di pronostici calcio</p>
 
@@ -186,7 +186,7 @@
         <!-- Dati reali visibili in "Performance Modello ML" (tracking_predictions_live.csv) -->
         <!-- ============================================ -->
         <!--
-        <div class="glass-card p-4 mb-4 section-betting-reale">
+        <div class="glass-card-hover p-4 mb-4 section-betting-reale">
             <h3 class="mb-2">
                 <i class="bi bi-wallet2"></i> Performance Betting Reale
                 <span class="badge bg-success">Live</span>
@@ -195,7 +195,7 @@
 
             <div class="row g-4 mb-4">
                 <div class="col-lg-3 col-md-6">
-                    <div class="glass-card p-4">
+                    <div class="glass-card-hover p-4">
                         <h5><i class="bi bi-bullseye"></i> Win Rate</h5>
                         <div id="accuracyContent">
                             <div class="skeleton skeleton-text"></div>
@@ -205,7 +205,7 @@
                 </div>
 
                 <div class="col-lg-3 col-md-6">
-                    <div class="glass-card p-4">
+                    <div class="glass-card-hover p-4">
                         <h5><i class="bi bi-graph-up-arrow"></i> ROI</h5>
                         <div id="roiContent">
                             <div class="skeleton skeleton-text"></div>
@@ -215,7 +215,7 @@
                 </div>
 
                 <div class="col-lg-3 col-md-6">
-                    <div class="glass-card p-4">
+                    <div class="glass-card-hover p-4">
                         <h5><i class="bi bi-currency-euro"></i> Profit</h5>
                         <div id="profitContent">
                             <div class="skeleton skeleton-text"></div>
@@ -225,7 +225,7 @@
                 </div>
 
                 <div class="col-lg-3 col-md-6">
-                    <div class="glass-card p-4">
+                    <div class="glass-card-hover p-4">
                         <h5><i class="bi bi-hourglass-split"></i> Pending</h5>
                         <div id="pendingContent">
                             <div class="skeleton skeleton-text"></div>
@@ -237,7 +237,7 @@
 
             <div class="row g-4 mb-4">
                 <div class="col-lg-6">
-                    <div class="glass-card p-4">
+                    <div class="glass-card-hover p-4">
                         <h5><i class="bi bi-graph-up"></i> Win Rate Mensile</h5>
                         <div class="chart-container">
                             <canvas id="accuracyChart"></canvas>
@@ -246,7 +246,7 @@
                 </div>
 
                 <div class="col-lg-6">
-                    <div class="glass-card p-4">
+                    <div class="glass-card-hover p-4">
                         <h5><i class="bi bi-currency-euro"></i> ROI Cumulativo</h5>
                         <div class="chart-container">
                             <canvas id="roiChart"></canvas>
@@ -255,7 +255,7 @@
                 </div>
             </div>
 
-            <div class="glass-card p-4 mb-4">
+            <div class="glass-card-hover p-4 mb-4">
                 <h5><i class="bi bi-bar-chart"></i> Accuratezza per Mercato</h5>
                 <div class="chart-container">
                     <canvas id="marketAccuracyChart"></canvas>
@@ -264,7 +264,7 @@
 
             <div class="row g-4 mb-0">
                 <div class="col-lg-6">
-                    <div class="glass-card p-4">
+                    <div class="glass-card-hover p-4">
                         <h5><i class="bi bi-calendar3"></i> Performance Mensile</h5>
                         <div class="table-responsive">
                             <table class="table table-sm" id="monthlyPerformanceTable">
@@ -286,7 +286,7 @@
                 </div>
 
                 <div class="col-lg-6">
-                    <div class="glass-card p-4">
+                    <div class="glass-card-hover p-4">
                         <h5><i class="bi bi-arrow-down-circle"></i> Drawdown Analysis</h5>
                         <div id="drawdownMetrics">
                             <div class="skeleton skeleton-text"></div>
@@ -302,7 +302,7 @@
         <!-- ============================================ -->
         <!-- SEZIONE 2: PERFORMANCE MODELLO ML 🤖 -->
         <!-- ============================================ -->
-        <div class="glass-card p-4 mb-4 section-ml-performance">
+        <div class="glass-card-hover p-4 mb-4 section-ml-performance">
             <h3 class="mb-2">
                 <i class="bi bi-robot"></i> Performance Modello ML
                 <span class="badge bg-info">Teorico</span>
@@ -313,7 +313,7 @@
             <div class="row g-4 mb-4">
                 <!-- Accuracy ML -->
                 <div class="col-lg-3 col-md-6">
-                    <div class="glass-card p-4">
+                    <div class="glass-card-hover p-4">
                         <h5><i class="bi bi-cpu"></i> Accuracy ML</h5>
                         <div id="mlAccuracyContent">
                             <div class="skeleton skeleton-text"></div>
@@ -324,7 +324,7 @@
 
                 <!-- Predizioni Totali -->
                 <div class="col-lg-3 col-md-6">
-                    <div class="glass-card p-4">
+                    <div class="glass-card-hover p-4">
                         <h5><i class="bi bi-file-earmark-text"></i> Predizioni</h5>
                         <div id="mlPredictionsContent">
                             <div class="skeleton skeleton-text"></div>
@@ -335,7 +335,7 @@
 
                 <!-- Pending Predictions -->
                 <div class="col-lg-3 col-md-6">
-                    <div class="glass-card p-4">
+                    <div class="glass-card-hover p-4">
                         <h5><i class="bi bi-clock-history"></i> Pending ML</h5>
                         <div id="mlPendingContent">
                             <div class="skeleton skeleton-text"></div>
@@ -346,7 +346,7 @@
 
                 <!-- Periodo -->
                 <div class="col-lg-3 col-md-6">
-                    <div class="glass-card p-4">
+                    <div class="glass-card-hover p-4">
                         <h5><i class="bi bi-calendar-range"></i> Periodo</h5>
                         <div id="mlPeriodContent">
                             <div class="skeleton skeleton-text"></div>
@@ -360,7 +360,7 @@
             <div class="row g-4 mb-0">
                 <!-- ROI by Market ML -->
                 <div class="col-lg-12">
-                    <div class="glass-card p-4">
+                    <div class="glass-card-hover p-4">
                         <h5><i class="bi bi-pie-chart"></i> ROI per Mercato (Teorico)</h5>
                         <div class="chart-container">
                             <canvas id="mlRoiByMarketChart"></canvas>
@@ -373,7 +373,7 @@
         <!-- ============================================ -->
         <!-- SEZIONE 3: SISTEMA & DATABASE ⚙️ -->
         <!-- ============================================ -->
-        <div class="glass-card p-4 mb-4 section-sistema">
+        <div class="glass-card-hover p-4 mb-4 section-sistema">
             <h3 class="mb-2">
                 <i class="bi bi-gear-fill"></i> Sistema & Database
                 <span class="badge bg-warning text-dark">Status</span>
@@ -383,7 +383,7 @@
             <div class="row g-4">
                 <!-- Health Status -->
                 <div class="col-lg-4">
-                    <div class="glass-card p-4">
+                    <div class="glass-card-hover p-4">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h5><i class="bi bi-heart-pulse"></i> Health</h5>
                             <span class="status-badge bg-success" id="healthBadge"></span>
@@ -398,7 +398,7 @@
 
                 <!-- Database Info -->
                 <div class="col-lg-4">
-                    <div class="glass-card p-4">
+                    <div class="glass-card-hover p-4">
                         <h5><i class="bi bi-database"></i> Database</h5>
                         <div id="databaseContent">
                             <div class="skeleton skeleton-text"></div>
@@ -409,7 +409,7 @@
 
                 <!-- ROI by Market (Betting Reale) -->
                 <div class="col-lg-4">
-                    <div class="glass-card p-4">
+                    <div class="glass-card-hover p-4">
                         <h5><i class="bi bi-pie-chart"></i> ROI Mercati</h5>
                         <div class="chart-container chart-container-sm">
                             <canvas id="roiByMarketChart"></canvas>
