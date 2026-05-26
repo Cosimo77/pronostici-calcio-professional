@@ -6,18 +6,14 @@
     <title>📔 Diario Betting Professionale</title>
 
     <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
 
     <!-- Professional Theme CSS -->
     <link rel="stylesheet" href="/static/css/professional-theme.css">
 
     <style>
-        body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px 0;
-        }
+        /* Body style removed - using professional-theme.css global style */
         .container {
             max-width: 1200px;
         }
@@ -27,7 +23,7 @@
             margin-bottom: 20px;
         }
         .card-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--gradient-primary);
             color: white;
             border-radius: 15px 15px 0 0 !important;
             padding: 20px;
@@ -67,7 +63,7 @@
             color: #383d41;
         }
         .btn-add-bet {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--gradient-primary);
             border: none;
             color: white;
             padding: 12px 30px;
@@ -99,7 +95,7 @@
             border-color: rgba(102, 126, 234, 0.5);
         }
         .nav-pills .nav-link.active {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--gradient-primary);
             color: white;
             border: 2px solid white;
             box-shadow: 0 4px 15px rgba(102, 126, 234, 0.6);
@@ -135,7 +131,7 @@
             font-size: 3rem;
         }
         .multipla-card {
-            border: 2px solid #667eea;
+            border: 2px solid var(--color-primary);
             border-radius: 12px;
             padding: 15px;
             margin: 15px 0;
@@ -167,7 +163,7 @@
         .evento-item {
             padding: 8px;
             margin: 5px 0;
-            border-left: 3px solid #667eea;
+            border-left: 3px solid var(--color-primary);
             background: white;
             border-radius: 4px;
         }

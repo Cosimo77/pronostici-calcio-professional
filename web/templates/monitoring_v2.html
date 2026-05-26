@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="it" data-bs-theme="dark">
+<html lang="it">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,141 +9,12 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
 
-    <!-- Professional Theme CSS -->
-    <link rel="stylesheet" href="/static/css/professional-theme.css">
+    <!-- UNIFIED Professional Theme - Dark & Clean -->
+    <link rel="stylesheet" href="/static/css/professional-theme.css?v=2">
 
     <!-- Chart.js 4.4.0 -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
-    <style>
-        :root {
-            --bs-body-bg: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-        }
-
-        body {
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        [data-bs-theme="light"] body {
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-        }
-
-        .glass-card {
-            background: rgba(255, 255, 255, 0.1);
-            -webkit-backdrop-filter: blur(10px);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 15px;
-            transition: all 0.3s ease;
-        }
-
-        [data-bs-theme="light"] .glass-card {
-            background: rgba(255, 255, 255, 0.9);
-            border: 1px solid rgba(0, 0, 0, 0.1);
-        }
-
-        .glass-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-        }
-
-        .status-badge {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            display: inline-block;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        .metric-value {
-            font-size: 2rem;
-            font-weight: 700;
-            background: linear-gradient(45deg, #ffd700, #ff6b35);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        /* Loading Skeleton */
-        .skeleton {
-            background: linear-gradient(90deg,
-                rgba(255,255,255,0.1) 25%,
-                rgba(255,255,255,0.2) 50%,
-                rgba(255,255,255,0.1) 75%
-            );
-            background-size: 200% 100%;
-            animation: loading 1.5s infinite;
-            border-radius: 4px;
-        }
-
-        @keyframes loading {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-        }
-
-        .skeleton-text {
-            height: 20px;
-            margin: 10px 0;
-        }
-
-        .skeleton-chart {
-            height: 300px;
-            border-radius: 10px;
-        }
-
-        /* Theme Toggle */
-        .theme-toggle {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 1000;
-        }
-
-        /* Toast Container */
-        .toast-container {
-            position: fixed;
-            top: 80px;
-            right: 20px;
-            z-index: 1050;
-        }
-
-        /* Chart Container */
-        .chart-container {
-            position: relative;
-            height: 300px;
-            margin-top: 20px;
-        }
-
-        /* Altezza maggiore per chart ROI orizzontale */
-        #mlRoiByMarketChart {
-            min-height: 250px !important;
-        }
-
-        /* Bordi colorati sezioni dashboard */
-        .section-betting-reale {
-            border-left: 5px solid #4CAF50;
-        }
-
-        .section-ml-performance {
-            border-left: 5px solid #2196F3;
-        }
-
-        .section-sistema {
-            border-left: 5px solid #FFC107;
-        }
-
-        /* Chart containers con altezze specifiche */
-        .chart-container-sm {
-            height: 200px;
-        }
-    </style>
 </head>
 <body>
     {% include 'navbar.html' %}
@@ -449,7 +320,7 @@
 
         // Theme Management
         function loadTheme() {
-            const theme = localStorage.getItem('theme') || 'dark';
+            const theme = localStorage.getItem('theme') || 'light';
             document.documentElement.setAttribute('data-bs-theme', theme);
             updateThemeIcon(theme);
         }

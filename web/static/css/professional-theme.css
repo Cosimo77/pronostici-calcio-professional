@@ -1001,6 +1001,17 @@ body {
     font-size: 1rem;
     line-height: 1.6;
     font-weight: var(--font-weight-normal);
+    background: var(--gradient-primary);
+    min-height: 100vh;
+    padding: 20px;
+}
+
+[data-bs-theme="dark"] body {
+    background: var(--gradient-primary);  /* Unified color across all themes */
+}
+
+[data-bs-theme="light"] body {
+    background: var(--gradient-primary);  /* Unified color across all themes */
 }
 
 p {
@@ -1595,6 +1606,85 @@ a:focus-visible {
 /* FASE 3 Polish & Refinement - COMPLETED
  * - Typography hierarchy optimized (h1-h6, line-height, letter-spacing)
  * - Charts enhancement with CSS variables integration
+ * - Animation polish
+ * - Accessibility enhancements (focus states, WCAG AAA contrast ratios)
+ * - Print styles optimized
+ */
+
+/* ============================================
+   UTILITY CLASSES - Unified Colors
+   ============================================ */
+
+/* Badge colors using global variables */
+.badge-fase1,
+.badge-fase1-inline {
+    background: var(--gradient-success) !important;
+    color: white !important;
+}
+
+.badge-fase2,
+.badge-fase2-inline {
+    background: var(--gradient-gold) !important;
+    color: white !important;
+}
+
+.badge-fase3,
+.badge-fase3-inline {
+    background: var(--color-success) !important;
+    color: white !important;
+}
+
+.badge-fase4,
+.badge-fase4-inline {
+    background: var(--color-warning) !important;
+    color: white !important;
+}
+
+.badge-fase5,
+.badge-fase5-inline {
+    background: var(--color-gray-600) !important;
+    color: white !important;
+}
+
+.badge-bet {
+    background: var(--gradient-gold) !important;
+    color: white !important;
+    font-weight: 700;
+}
+
+.badge-skip {
+    background: var(--color-gray-500) !important;
+    color: white !important;
+}
+
+/* Status card colors */
+.status-good {
+    background: var(--color-success) !important;
+    color: white !important;
+}
+
+.status-warning {
+    background: var(--color-warning) !important;
+    color: white !important;
+}
+
+.status-danger {
+    background: var(--color-danger) !important;
+    color: white !important;
+}
+
+/* Primary colored elements */
+.bg-gradient-primary {
+    background: var(--gradient-primary) !important;
+}
+
+.border-primary-color {
+    border-color: var(--color-primary) !important;
+}
+
+.text-primary-color {
+    color: var(--color-primary) !important;
+}
  * - Animations: fadeIn, slideIn, scale, pulse, shimmer, stagger
  * - Focus states: Enhanced outline with rings
  * - Error/Success/Warning states with icons

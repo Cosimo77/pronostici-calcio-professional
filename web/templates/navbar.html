@@ -156,9 +156,9 @@
 </script>
 
 <style>
-    /* Navbar principale */
+    /* Navbar principale - using global CSS variables */
     .navbar-professional {
-        background: rgba(30, 60, 114, 0.95);
+        background: var(--bg-card, rgba(30, 60, 114, 0.95));
         -webkit-backdrop-filter: blur(10px);
         backdrop-filter: blur(10px);
         box-shadow: 0 4px 20px rgba(0,0,0,0.3);
@@ -172,7 +172,7 @@
     }
 
     .navbar-brand-gradient {
-        background: linear-gradient(45deg, #ffd700, #ff6b35);
+        background: var(--gradient-gold);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
     }
@@ -182,7 +182,7 @@
     }
 
     .navbar-brand-badge {
-        background: linear-gradient(45deg, #ffd700, #ff6b35);
+        background: var(--gradient-gold);
         font-size: 0.7rem;
         font-weight: 600;
     }
@@ -213,7 +213,7 @@
     }
 
     .navbar-nav .nav-link.active {
-        background: linear-gradient(45deg, #ffd700, #ff6b35) !important;
+        background: var(--gradient-gold) !important;
         font-weight: 700 !important;
         box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
     }
