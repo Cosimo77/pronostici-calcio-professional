@@ -1062,8 +1062,8 @@ small, .small {
     background: var(--chart-bg);
     border-radius: var(--radius-lg);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
 }
 
 /* Chart Tooltip Styling */
@@ -1073,8 +1073,8 @@ small, .small {
     border-radius: var(--radius-md) !important;
     padding: var(--space-sm) var(--space-md) !important;
     box-shadow: var(--shadow-lg) !important;
-    backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
 }
 
 .chart-tooltip-professional .title {

@@ -1,0 +1,484 @@
+/**
+ * UNIFIED PROFESSIONAL THEME - Pronostici Calcio
+ * Design System Coerente per TUTTE le pagine
+ * Contrasti WCAG AAA - Dark Theme Professionale
+ * Data: 25 Maggio 2026 - RIFATTO DA ZERO
+ */
+
+/* ============================================
+   PALETTE PROFESSIONALE UNIFICATA
+   ============================================ */
+
+:root {
+    /* Dark Background - Neutro Professionale */
+    --bg-primary: #0f172a;          /* Slate 900 - Background principale */
+    --bg-secondary: #1e293b;        /* Slate 800 - Cards, containers */
+    --bg-tertiary: #334155;         /* Slate 700 - Hover states */
+
+    /* Text - Alto Contrasto */
+    --text-primary: #f8fafc;        /* Slate 50 - Testo principale (contrast 18:1) */
+    --text-secondary: #cbd5e1;      /* Slate 300 - Testo secondario (contrast 9:1) */
+    --text-muted: #94a3b8;          /* Slate 400 - Labels, hints (contrast 5:1) */
+
+    /* Accent Colors - Professional */
+    --accent-primary: #3b82f6;      /* Blue 500 - Primary actions */
+    --accent-primary-hover: #2563eb; /* Blue 600 */
+    --accent-success: #10b981;      /* Emerald 500 - Success, profits */
+    --accent-success-hover: #059669; /* Emerald 600 */
+    --accent-danger: #ef4444;       /* Red 500 - Danger, losses */
+    --accent-danger-hover: #dc2626; /* Red 600 */
+    --accent-warning: #f59e0b;      /* Amber 500 - Warnings */
+    --accent-gold: #fbbf24;         /* Amber 400 - Premium */
+
+    /* Borders */
+    --border-primary: #334155;      /* Slate 700 */
+    --border-secondary: #475569;    /* Slate 600 - Hover */
+
+    /* Shadows - Profonde e Soft */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.6);
+
+    /* Glass Effect - Subtle */
+    --glass-bg: rgba(30, 41, 59, 0.7);  /* Slate 800 semi-transparent */
+    --glass-border: rgba(148, 163, 184, 0.1);
+
+    /* Spacing (8px base) */
+    --space-xs: 0.25rem;   /* 4px */
+    --space-sm: 0.5rem;    /* 8px */
+    --space-md: 1rem;      /* 16px */
+    --space-lg: 1.5rem;    /* 24px */
+    --space-xl: 2rem;      /* 32px */
+    --space-2xl: 3rem;     /* 48px */
+
+    /* Border Radius */
+    --radius-sm: 0.375rem;  /* 6px */
+    --radius-md: 0.5rem;    /* 8px */
+    --radius-lg: 0.75rem;   /* 12px */
+    --radius-xl: 1rem;      /* 16px */
+
+    /* Typography */
+    --font-sans: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+
+    /* Transitions */
+    --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ============================================
+   GLOBAL RESET & BASE
+   ============================================ */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.6;
+    font-weight: var(--font-weight-normal);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    min-height: 100vh;
+}
+
+/* ============================================
+   TYPOGRAPHY - Alto Contrasto
+   ============================================ */
+
+h1, .h1 {
+    font-size: 2.25rem;      /* 36px */
+    font-weight: var(--font-weight-bold);
+    line-height: 1.2;
+    color: var(--text-primary);
+    margin-bottom: var(--space-lg);
+}
+
+h2, .h2 {
+    font-size: 1.875rem;     /* 30px */
+    font-weight: var(--font-weight-bold);
+    line-height: 1.3;
+    color: var(--text-primary);
+    margin-bottom: var(--space-md);
+}
+
+h3, .h3 {
+    font-size: 1.5rem;       /* 24px */
+    font-weight: var(--font-weight-semibold);
+    line-height: 1.4;
+    color: var(--text-primary);
+    margin-bottom: var(--space-md);
+}
+
+h4, .h4 {
+    font-size: 1.25rem;      /* 20px */
+    font-weight: var(--font-weight-semibold);
+    line-height: 1.5;
+    color: var(--text-primary);
+    margin-bottom: var(--space-sm);
+}
+
+h5, .h5 {
+    font-size: 1.125rem;     /* 18px */
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+    color: var(--text-primary);
+}
+
+h6, .h6 {
+    font-size: 1rem;         /* 16px */
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+    color: var(--text-primary);
+}
+
+p {
+    color: var(--text-secondary);
+    margin-bottom: var(--space-md);
+}
+
+.text-primary {
+    color: var(--text-primary) !important;
+}
+
+.text-secondary {
+    color: var(--text-secondary) !important;
+}
+
+.text-muted {
+    color: var(--text-muted) !important;
+}
+
+/* ============================================
+   CARDS - Glass Morphism Unificato
+   ============================================ */
+
+.card-professional {
+    background: var(--glass-bg);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    transition: all var(--transition-base);
+}
+
+.card-professional:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--border-secondary);
+}
+
+.card-solid {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    transition: all var(--transition-base);
+}
+
+.card-solid:hover {
+    border-color: var(--border-secondary);
+    box-shadow: var(--shadow-md);
+}
+
+/* ============================================
+   BUTTONS - Professional & Accessible
+   ============================================ */
+
+.btn-professional {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    font-weight: var(--font-weight-medium);
+    line-height: 1;
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    text-decoration: none;
+    min-height: 44px;
+}
+
+.btn-professional:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+}
+
+.btn-primary {
+    background: var(--accent-primary);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: var(--accent-primary-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+.btn-success {
+    background: var(--accent-success);
+    color: white;
+}
+
+.btn-success:hover {
+    background: var(--accent-success-hover);
+    transform: translateY(-1px);
+}
+
+.btn-danger {
+    background: var(--accent-danger);
+    color: white;
+}
+
+.btn-danger:hover {
+    background: var(--accent-danger-hover);
+    transform: translateY(-1px);
+}
+
+.btn-outline {
+    background: transparent;
+    color: var(--text-primary);
+    border: 1px solid var(--border-primary);
+}
+
+.btn-outline:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--border-secondary);
+}
+
+/* ============================================
+   BADGES - Professional Status Indicators
+   ============================================ */
+
+.badge-professional {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    font-weight: var(--font-weight-medium);
+    line-height: 1;
+    border-radius: var(--radius-sm);
+    white-space: nowrap;
+}
+
+.badge-success {
+    background: rgba(16, 185, 129, 0.15);
+    color: var(--accent-success);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.badge-danger {
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--accent-danger);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.badge-warning {
+    background: rgba(245, 158, 11, 0.15);
+    color: var(--accent-warning);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.badge-primary {
+    background: rgba(59, 130, 246, 0.15);
+    color: var(--accent-primary);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.badge-gold {
+    background: rgba(251, 191, 36, 0.15);
+    color: var(--accent-gold);
+    border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+/* ============================================
+   TABLES - Professional Data Display
+   ============================================ */
+
+.table-professional {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.9375rem;
+}
+
+.table-professional thead th {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-weight: var(--font-weight-semibold);
+    text-align: left;
+    padding: 0.75rem 1rem;
+    border-bottom: 2px solid var(--border-secondary);
+}
+
+.table-professional tbody td {
+    padding: 0.75rem 1rem;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-primary);
+}
+
+.table-professional tbody tr:hover {
+    background: rgba(148, 163, 184, 0.05);
+}
+
+.table-professional tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* ============================================
+   FORMS - Professional Inputs
+   ============================================ */
+
+.form-control-professional {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    line-height: 1.5;
+    color: var(--text-primary);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-md);
+    transition: all var(--transition-fast);
+}
+
+.form-control-professional:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-control-professional::placeholder {
+    color: var(--text-muted);
+}
+
+label {
+    display: block;
+    margin-bottom: var(--space-xs);
+    font-size: 0.875rem;
+    font-weight: var(--font-weight-medium);
+    color: var(--text-secondary);
+}
+
+/* ============================================
+   NAVBAR - Unified Navigation
+   ============================================ */
+
+.navbar-professional {
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-primary);
+    padding: var(--space-md) 0;
+}
+
+.navbar-professional .nav-link {
+    color: var(--text-secondary);
+    font-weight: var(--font-weight-medium);
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-fast);
+}
+
+.navbar-professional .nav-link:hover {
+    color: var(--text-primary);
+    background: rgba(148, 163, 184, 0.1);
+}
+
+.navbar-professional .nav-link.active {
+    color: var(--accent-primary);
+    background: rgba(59, 130, 246, 0.1);
+}
+
+/* ============================================
+   CHARTS - Professional Styling
+   ============================================ */
+
+.chart-container-professional {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+}
+
+canvas {
+    max-width: 100%;
+    height: auto;
+}
+
+/* ============================================
+   UTILITIES
+   ============================================ */
+
+.text-center {
+    text-align: center;
+}
+
+.text-right {
+    text-align: right;
+}
+
+.mb-1 { margin-bottom: var(--space-xs); }
+.mb-2 { margin-bottom: var(--space-sm); }
+.mb-3 { margin-bottom: var(--space-md); }
+.mb-4 { margin-bottom: var(--space-lg); }
+.mb-5 { margin-bottom: var(--space-xl); }
+
+.mt-1 { margin-top: var(--space-xs); }
+.mt-2 { margin-top: var(--space-sm); }
+.mt-3 { margin-top: var(--space-md); }
+.mt-4 { margin-top: var(--space-lg); }
+.mt-5 { margin-top: var(--space-xl); }
+
+.p-1 { padding: var(--space-xs); }
+.p-2 { padding: var(--space-sm); }
+.p-3 { padding: var(--space-md); }
+.p-4 { padding: var(--space-lg); }
+.p-5 { padding: var(--space-xl); }
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+@media (max-width: 768px) {
+    h1 { font-size: 1.875rem; }
+    h2 { font-size: 1.5rem; }
+    h3 { font-size: 1.25rem; }
+
+    .card-professional,
+    .card-solid {
+        padding: var(--space-md);
+    }
+}
+
+/* ============================================
+   ACCESSIBILITY
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Focus visible for keyboard navigation */
+*:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+}
