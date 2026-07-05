@@ -840,25 +840,6 @@
         let completedLoaded = false;
 
         // Carica dati al load (ottimizzato con debouncing + requestIdleCallback)
-        // Carica bankroll da localStorage se presente
-        function loadBankrollFromLocalStorage() {
-            const savedBankroll = localStorage.getItem('bankroll');
-            if (savedBankroll) {
-                const bankroll = parseFloat(savedBankroll);
-                document.getElementById('bankroll-iniziale').textContent = '€' + bankroll.toFixed(0);
-                document.getElementById('bankroll-corrente').textContent = '€' + bankroll.toFixed(0);
-                document.getElementById('unita-betting').textContent = '€' + (bankroll * 0.01).toFixed(2);
-
-                // Popola anche il campo di configurazione
-                const configInput = document.getElementById('config-bankroll-iniziale');
-                if (configInput && !configInput.value) {
-                    configInput.value = bankroll.toFixed(0);
-                }
-
-                console.log('✅ Bankroll diario sincronizzato da localStorage:', bankroll);
-            }
-        }
-
         document.addEventListener('DOMContentLoaded', function() {
             // Use requestIdleCallback for non-critical operations to avoid blocking main thread
             if ('requestIdleCallback' in window) {
@@ -867,14 +848,10 @@
 
                 // Load pending bets with slightly higher priority
                 requestIdleCallback(() => loadPendingBets(), { timeout: 150 });
-
-                // Sincronizza bankroll da localStorage dopo caricamento stats
-                requestIdleCallback(() => loadBankrollFromLocalStorage(), { timeout: 200 });
             } else {
                 // Fallback for browsers without requestIdleCallback
                 setTimeout(loadStats, 10);
                 setTimeout(loadPendingBets, 50);
-                setTimeout(loadBankrollFromLocalStorage, 100);
             }
 
             // Auto-fill data odierna (can run immediately, minimal cost)
@@ -1957,10 +1934,6 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    // Salva anche in localStorage per sincronizzazione con dashboard
-                    localStorage.setItem('bankroll', bankrollIniziale.toString());
-                    console.log('💾 Bankroll sincronizzato in localStorage:', bankrollIniziale);
-
                     alert(`✅ Configurazione aggiornata!\n\nBankroll: €${result.bankroll.bankroll_iniziale}\nUnit\u00e0: €${result.bankroll.unita_betting.toFixed(2)}`);
                     loadStats();  // Ricarica stats
                 } else {

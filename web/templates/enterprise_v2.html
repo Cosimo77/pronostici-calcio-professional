@@ -1210,23 +1210,47 @@
             loadPredictionHistory();
         }
 
-        // Bankroll Management - LocalStorage
-        function loadBankrollConfig() {
-            const savedBankroll = localStorage.getItem('bankroll');
-            const bankrollInput = document.getElementById('bankrollInput');
+        // Bankroll Management - Database API
+        async function loadBankrollConfig() {
+            try {
+                const response = await fetch('/api/bankroll');
+                const data = await response.json();
 
-            if (bankrollInput) {
-                // Usa valore salvato o default 1000
-                const value = savedBankroll || '1000';
-                bankrollInput.value = value;
-                console.log('✅ Bankroll caricato:', value);
+                const bankrollInput = document.getElementById('bankrollInput');
+                if (bankrollInput && data.bankroll_corrente) {
+                    bankrollInput.value = data.bankroll_corrente.toFixed(0);
+                    console.log('✅ Bankroll caricato da DB:', data.bankroll_corrente);
+                }
+            } catch (error) {
+                console.error('Errore caricamento bankroll:', error);
+                // Fallback a default
+                const bankrollInput = document.getElementById('bankrollInput');
+                if (bankrollInput && !bankrollInput.value) {
+                    bankrollInput.value = '1000';
+                }
             }
         }
 
-        function saveBankrollConfig(value) {
-            if (value && value !== '') {
-                localStorage.setItem('bankroll', value);
-                console.log('💾 Bankroll salvato:', value);
+        async function saveBankrollConfig(value) {
+            if (!value || value === '') return;
+
+            try {
+                const response = await fetch('/api/bankroll', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        bankroll_iniziale: parseFloat(value)
+                    })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    console.log('💾 Bankroll salvato in DB:', value);
+                } else {
+                    console.error('Errore salvataggio bankroll:', result.error);
+                }
+            } catch (error) {
+                console.error('Errore salvataggio bankroll:', error);
             }
         }
 
