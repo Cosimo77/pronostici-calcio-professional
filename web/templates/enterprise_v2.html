@@ -1309,9 +1309,10 @@
 
             const bankrollInput = document.getElementById('bankrollInput');
             if (bankrollInput) {
-                bankrollInput.addEventListener('input', () => {
-                    // Salva il nuovo valore
-                    saveBankrollConfig(bankrollInput.value);
+                // Handler per salvare il valore
+                const handleBankrollChange = () => {
+                    const value = bankrollInput.value;
+                    saveBankrollConfig(value);
 
                     // Re-calcola se c'è una predizione attiva
                     const evElement = document.querySelector('.h4.mb-0.fw-bold');
@@ -1322,7 +1323,12 @@
                             updateBankrollCard(ev, 0.5);
                         }
                     }
-                });
+                };
+
+                // Ascolta sia 'input' che 'change' per compatibilità cross-browser
+                bankrollInput.addEventListener('input', handleBankrollChange);
+                bankrollInput.addEventListener('change', handleBankrollChange);
+                bankrollInput.addEventListener('blur', handleBankrollChange);
             }
         });
 
