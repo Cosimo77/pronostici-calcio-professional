@@ -1233,27 +1233,42 @@
             else if (percent >= 50) color = '#f59e0b'; // Giallo
 
             return `
-                <div class=\"confidence-gauge\">
-                    <svg width=\"120\" height=\"60\" viewBox=\"0 0 120 60\">
-                        <!-- Arco background -->\n                        <path d=\"M 10 60 A 50 50 0 0 1 110 60\" fill=\"none\" stroke=\"rgba(255,255,255,0.1)\" stroke-width=\"8\"/>\n                        <!-- Arco confidenza -->\n                        <path d=\"${arcPath}\" fill=\"none\" stroke=\"${color}\" stroke-width=\"8\" class=\"gauge-arc\"/>\n                    </svg>\n                    <div class=\"gauge-value\">${percent.toFixed(0)}%</div>\n                    <div class=\"gauge-labels\">\n                        <span>Bassa</span>\n                        <span>Alta</span>\n                    </div>\n                </div>\n            `;\n        }
+                <div class="confidence-gauge">
+                    <svg width="120" height="60" viewBox="0 0 120 60">
+                        <path d="M 10 60 A 50 50 0 0 1 110 60" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="8"/>
+                        <path d="${arcPath}" fill="none" stroke="${color}" stroke-width="8" class="gauge-arc"/>
+                    </svg>
+                    <div class="gauge-value">${percent.toFixed(0)}%</div>
+                    <div class="gauge-labels">
+                        <span>Bassa</span>
+                        <span>Alta</span>
+                    </div>
+                </div>
+            `;
+        }
 
         // Bankroll Management - Kelly Criterion
         function updateBankrollCard(ev, confidence) {
             const bankrollCard = document.getElementById('bankrollCard');
             const bankroll = parseFloat(document.getElementById('bankrollInput').value) || 1000;
 
-            if (!ev || ev <= 0) {\n                bankrollCard.style.display = 'none';
+            if (!ev || ev <= 0) {
+                bankrollCard.style.display = 'none';
                 return;
             }
 
             bankrollCard.style.display = 'block';
 
-            // Kelly Criterion frazionale (25%)\n            const kellPct = (ev / 100) * 0.25; // 25% Kelly\n            const kellyStake = Math.max(0, bankroll * kellPct);
+            // Kelly Criterion frazionale (25%)
+            const kellPct = (ev / 100) * 0.25; // 25% Kelly
+            const kellyStake = Math.max(0, bankroll * kellPct);
             const expectedProfit = kellyStake * (ev / 100);
 
-            // Risk Level\n            let riskLevel = 'Basso';
+            // Risk Level
+            let riskLevel = 'Basso';
             let riskColor = 'success';
-            if (kellPct > 0.05) {\n                riskLevel = 'Alto';
+            if (kellPct > 0.05) {
+                riskLevel = 'Alto';
                 riskColor = 'danger';
             } else if (kellPct > 0.02) {
                 riskLevel = 'Medio';
