@@ -9,8 +9,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
 
-    <!-- Professional Theme CSS -->
-    <link rel="stylesheet" href="/static/css/professional-theme.css">
+    <!-- Dark Professional Theme CSS -->
+    <link rel="stylesheet" href="/static/css/dark-professional.css?v=16">
 
     <style>
         /* All global styles moved to professional-theme.css */
@@ -34,11 +34,20 @@
         }
 
         .hero-gradient {
-            background: var(--gradient-gold);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            font-weight: 800;
+            color: var(--text-primary) !important;
+            font-weight: 700;
+            font-size: 2.5rem;
+            line-height: 1.2;
+        }
+
+        @media (min-width: 768px) {
+            .hero-gradient {
+                font-size: 3.5rem;
+            }
+        }
+
+        .hero-gradient .hero-emoji {
+            color: white !important;
         }
 
         .enterprise-badge {
@@ -88,6 +97,260 @@
         .skeleton-text {
             height: 24px;
             margin: 12px 0;
+        }
+
+        /* Quick Stats Badges */
+        .stat-badge {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            color: white;
+        }
+
+        .stat-badge:hover {
+            transform: translateX(5px);
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .stat-accuracy {
+            border-left: 4px solid #ea580c;
+        }
+
+        .stat-accuracy i {
+            color: #ea580c;
+        }
+
+        .stat-roi {
+            border-left: 4px solid #059669;
+        }
+
+        .stat-roi i {
+            color: #059669;
+        }
+
+        .stat-trade {
+            border-left: 4px solid #0284c7;
+        }
+
+        .stat-trade i {
+            color: #0284c7;
+        }
+
+        /* Prediction Result Styles */
+        .result-prediction-badge {
+            background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .prob-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.3s ease;
+        }
+
+        .prob-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .probability-bar {
+            height: 32px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .probability-fill {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: width 0.6s ease;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .prob-fill-success {
+            background: linear-gradient(90deg, #059669 0%, #047857 100%);
+        }
+
+        .prob-fill-warning {
+            background: linear-gradient(90deg, #ea580c 0%, #c2410c 100%);
+        }
+
+        .prob-fill-danger {
+            background: linear-gradient(90deg, #dc2626 0%, #b91c1c 100%);
+        }
+
+        .prob-badge-success {
+            background: #059669;
+            color: white;
+            padding: 0.4rem 0.8rem;
+            font-size: 0.9rem;
+        }
+
+        .prob-badge-warning {
+            background: #ea580c;
+            color: white;
+            padding: 0.4rem 0.8rem;
+            font-size: 0.9rem;
+        }
+
+        .prob-badge-danger {
+            background: #dc2626;
+            color: white;
+            padding: 0.4rem 0.8rem;
+            font-size: 0.9rem;
+        }
+
+        .prob-text {
+            color: white;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Value Betting Card */
+        .value-betting-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .value-betting-success {
+            border-color: #059669;
+            background: rgba(5, 150, 105, 0.1);
+        }
+
+        .value-betting-neutral {
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .value-badge-yes {
+            background: #059669;
+            color: white;
+            padding: 0.5rem 1rem;
+            font-size: 0.95rem;
+        }
+
+        .value-badge-no {
+            background: #6b7280;
+            color: white;
+            padding: 0.5rem 1rem;
+            font-size: 0.95rem;
+        }
+
+        /* Quote Badges */
+        .quote-badge {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid;
+            transition: all 0.3s ease;
+        }
+
+        .quote-badge:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+        }
+
+        .quote-badge-success {
+            border-color: #059669;
+        }
+
+        .quote-badge-warning {
+            border-color: #ea580c;
+        }
+
+        .quote-badge-danger {
+            border-color: #dc2626;
+        }
+
+        .quote-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: white;
+        }
+
+        .quote-label {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.7);
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        /* Market Cards */
+        .market-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .market-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateX(5px);
+        }
+
+        .market-badge {
+            background: #1e40af;
+            color: white;
+            padding: 0.4rem 0.8rem;
+            font-size: 0.85rem;
+        }
+
+        /* Nascondi mercati collassati */
+        .mercato-hidden {
+            display: none;
+        }
+
+        /* Storico Predizioni */
+        .pred-history-item {
+            background: rgba(255, 255, 255, 0.03);
+            border-left: 3px solid;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            border-radius: 0 6px 6px 0;
+            transition: all 0.2s;
+        }
+        .pred-history-item:hover {
+            background: rgba(255, 255, 255, 0.06);
+            transform: translateX(3px);
+        }
+        .pred-history-item.win {
+            border-left-color: #10b981;
+        }
+        .pred-history-item.loss {
+            border-left-color: #ef4444;
+        }
+        .pred-history-item.pending {
+            border-left-color: #f59e0b;
+        }
+
+        /* Confidence Gauge */
+        .confidence-gauge {
+            position: relative;
+            width: 120px;
+            height: 60px;
+            margin: 0 auto;
+        }
+        .gauge-arc {
+            stroke-linecap: round;
+            transition: stroke-dasharray 1s ease;
+        }
+        .gauge-value {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -10%);
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #fff;
+        }
+        .gauge-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 0.25rem;
         }
 
         .form-control, .form-select {
@@ -194,8 +457,8 @@
     <div class="container py-5">
         <!-- Hero Header -->
         <div class="glass-card p-5 mb-5 text-center">
-            <h1 class="display-3 hero-gradient mb-3">
-                ⚽ Sistema Enterprise Pronostici Serie A
+            <h1 class="hero-gradient mb-3">
+                <span class="hero-emoji">⚽</span> Sistema Enterprise Pronostici Serie A
             </h1>
             <p class="lead mb-3">
                 Predizioni professionali basate su ML deterministico e Value Betting
@@ -237,14 +500,14 @@
                     <!-- Prediction Form -->
                     <div class="col-lg-5">
                         <div class="glass-card p-4 mb-4">
-                            <h4 class="mb-4">
-                                <i class="bi bi-activity"></i> Genera Predizione
+                            <h4 class="mb-4 text-white">
+                                <i class="bi bi-activity me-2"></i> Genera Predizione
                             </h4>
 
                             <form id="predictionForm">
                                 <div class="mb-3">
-                                    <label class="form-label fw-bold" for="squadraCasa">
-                                        <i class="bi bi-house"></i> Squadra Casa
+                                    <label class="form-label fw-bold text-white" for="squadraCasa">
+                                        <i class="bi bi-house me-2"></i> Squadra Casa
                                     </label>
                                     <select class="form-select" id="squadraCasa" aria-label="Seleziona squadra casa" required>
                                         <option value="">Seleziona squadra...</option>
@@ -273,8 +536,8 @@
                                 </div>
 
                                 <div class="mb-3">
-                                    <label class="form-label fw-bold" for="squadraOspite">
-                                        <i class="bi bi-airplane"></i> Squadra Ospite
+                                    <label class="form-label fw-bold text-white" for="squadraOspite">
+                                        <i class="bi bi-airplane me-2"></i> Squadra Ospite
                                     </label>
                                     <select class="form-select" id="squadraOspite" aria-label="Seleziona squadra ospite" required>
                                         <option value="">Seleziona squadra...</option>
@@ -305,8 +568,8 @@
                                 <div class="mb-4">
                                     <div class="form-check form-switch">
                                         <input class="form-check-input" type="checkbox" id="valueBetting" checked>
-                                        <label class="form-check-label fw-bold" for="valueBetting">
-                                            <i class="bi bi-graph-up-arrow"></i> Analisi Value Betting
+                                        <label class="form-check-label fw-bold text-white" for="valueBetting">
+                                            <i class="bi bi-graph-up-arrow me-2"></i> Analisi Value Betting
                                         </label>
                                     </div>
                                 </div>
@@ -319,31 +582,102 @@
 
                         <!-- Quick Stats -->
                         <div class="glass-card p-4">
-                            <h5 class="mb-3">
-                                <i class="bi bi-speedometer2"></i> Quick Stats
+                            <h5 class="mb-4 text-white">
+                                <i class="bi bi-speedometer2 me-2"></i> Quick Stats
                             </h5>
-                            <div class="row text-center">
-                                <div class="col-4">
-                                    <div class="mb-1">
-                                        <i class="bi bi-bullseye text-warning"></i>
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <div class="stat-badge stat-accuracy p-3 rounded-3">
+                                        <div class="d-flex align-items-center">
+                                            <i class="bi bi-bullseye fs-3 me-3"></i>
+                                            <div>
+                                                <div class="h4 mb-0 fw-bold">71.4%</div>
+                                                <small class="text-white-50">Accuracy</small>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div class="h4 mb-0">71.4%</div>
-                                    <small class="text-muted">Accuracy</small>
                                 </div>
-                                <div class="col-4">
-                                    <div class="mb-1">
-                                        <i class="bi bi-graph-up text-success"></i>
+                                <div class="col-12">
+                                    <div class="stat-badge stat-roi p-3 rounded-3">
+                                        <div class="d-flex align-items-center">
+                                            <i class="bi bi-graph-up fs-3 me-3"></i>
+                                            <div>
+                                                <div class="h4 mb-0 fw-bold">+7.2%</div>
+                                                <small class="text-white-50">ROI Fase 1</small>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div class="h4 mb-0">+7.2%</div>
-                                    <small class="text-muted">ROI Fase 1</small>
                                 </div>
-                                <div class="col-4">
-                                    <div class="mb-1">
-                                        <i class="bi bi-award text-info"></i>
+                                <div class="col-12">
+                                    <div class="stat-badge stat-trade p-3 rounded-3">
+                                        <div class="d-flex align-items-center">
+                                            <i class="bi bi-award fs-3 me-3"></i>
+                                            <div>
+                                                <div class="h4 mb-0 fw-bold">158</div>
+                                                <small class="text-white-50">Trade</small>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div class="h4 mb-0">158</div>
-                                    <small class="text-muted">Trade</small>
                                 </div>
+                            </div>
+                        </div>
+
+                        <!-- Ultime Predizioni -->
+                        <div class="glass-card p-4 mt-4" id="ultimePredizioni">
+                            <h5 class="mb-3 text-white">
+                                <i class="bi bi-clock-history me-2"></i> Ultime Predizioni
+                                <span class="badge bg-primary ms-2" id="predCountBadge">0</span>
+                            </h5>
+                            <div id="predHistoryContainer">
+                                <div class="text-center py-3">
+                                    <small class="text-white-50">Nessuna predizione ancora</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Bankroll Management -->
+                        <div class="glass-card p-4 mt-4" id="bankrollCard" style="display: none;">
+                            <h5 class="mb-3 text-white">
+                                <i class="bi bi-wallet2 me-2"></i> Gestione Bankroll
+                            </h5>
+                            <div class="mb-3">
+                                <label class="text-white-50 small mb-1">Saldo Attuale (€)</label>
+                                <input type="number" class="form-control" id="bankrollInput" value="1000" min="0" step="10">
+                            </div>
+                            <div class="p-3 rounded" style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3);">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <small class="text-white-50">Kelly Criterion (25%)</small>
+                                    <strong class="text-primary" id="kellyStake">€0</strong>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <small class="text-white-50">ROI Expected</small>
+                                    <strong class="text-success" id="expectedProfit">+€0</strong>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <small class="text-white-50">Risk Level</small>
+                                    <span class="badge bg-warning" id="riskLevel">-</span>
+                                </div>
+                            </div>
+                            <small class="text-white-50 d-block mt-2">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Stake calcolato con Kelly Criterion frazionale (25% per gestione conservativa)
+                            </small>
+                        </div>
+
+                        <!-- Altri Mercati (popolato dinamicamente) -->
+                        <div class="glass-card p-4 mt-4" id="altriMercatiCard" style="display: none;">
+                            <h5 class="mb-3 text-white">
+                                <i class="bi bi-grid-3x3 me-2"></i> Altri Mercati
+                                <span class="badge bg-secondary ms-2" id="mercatiCount">0</span>
+                            </h5>
+                            <div class="row g-3" id="altriMercatiContainer">
+                                <!-- Mercati popolati via JavaScript -->
+                            </div>
+                            <div class="text-center mt-3" id="toggleMercatiWrapper" style="display: none;">
+                                <button class="btn btn-outline-light btn-sm" id="toggleMercati" onclick="toggleAllMercati()">
+                                    <i class="bi bi-chevron-down me-1"></i>
+                                    <span id="toggleMercatiText">Mostra altri mercati</span>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -488,21 +822,36 @@
         function displayPrediction(data) {
             // Fix: API restituisce probabilita_ensemble con chiavi H/D/A
             const prob = data.probabilita_ensemble || data.probabilita || {};
-            const predizione = data.predizione_enterprise || data.predizione || 'N/A';
+            const predizioneRaw = data.predizione_enterprise || data.predizione || 'N/A';
             const confidenza = data.confidenza || 0;
+
+            // Converti predizione da H/D/A a 1/X/2 (notazione italiana)
+            const predizione1X2 = {
+                'H': '1',  // Home = 1 (Casa)
+                'D': 'X',  // Draw = X (Pareggio)
+                'A': '2'   // Away = 2 (Ospite)
+            }[predizioneRaw] || predizioneRaw;
 
             let html = `
                 <div class="prediction-result">
-                    <h4 class="mb-4">
-                        <i class="bi bi-trophy"></i> ${data.squadra_casa} vs ${data.squadra_ospite}
+                    <h4 class="mb-4 text-white">
+                        <i class="bi bi-trophy me-2"></i> ${data.squadra_casa} vs ${data.squadra_ospite}
                     </h4>
 
-                    <div class="alert alert-info mb-4">
-                        <h5><i class="bi bi-star-fill"></i> Predizione: <strong>${predizione}</strong></h5>
-                        <p class="mb-0">Confidenza: <strong>${(confidenza * 100).toFixed(1)}%</strong></p>
+                    <div class="result-prediction-badge p-4 rounded-3 mb-4">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <h5 class="mb-2"><i class="bi bi-star-fill me-2"></i> Predizione</h5>
+                                <div class="display-5 fw-bold">${predizione1X2}</div>
+                            </div>
+                            <div class="col-md-6 text-center mt-3 mt-md-0">
+                                <div class="text-white-50 mb-2">Confidenza</div>
+                                ${createConfidenceGauge(confidenza)}
+                            </div>
+                        </div>
                     </div>
 
-                    <h5 class="mb-3">Probabilità per Esito:</h5>
+                    <h5 class="mb-3 text-white"><i class="bi bi-bar-chart me-2"></i> Probabilità per Esito:</h5>
             `;
 
             // Fix: Map H/D/A a Casa/Pareggio/Ospite
@@ -515,60 +864,105 @@
             esiti.forEach(esito => {
                 const probValue = (prob[esito.key] || 0) * 100;
                 html += `
-                    <div class="mb-3">
-                        <div class="d-flex justify-content-between mb-1">
-                            <span><i class="bi bi-${esito.icon}"></i> ${esito.nome}</span>
-                            <strong>${probValue.toFixed(1)}%</strong>
+                    <div class="mb-3 prob-item p-3 rounded-3">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-white fw-bold"><i class="bi bi-${esito.icon} me-2"></i> ${esito.nome}</span>
+                            <span class="badge prob-badge-${esito.color}">${probValue.toFixed(1)}%</span>
                         </div>
-                        <div class="probability-bar bg-secondary bg-opacity-25">
-                            <div class="probability-fill bg-${esito.color}" style="width: ${probValue}%">
-                                ${probValue > 20 ? probValue.toFixed(1) + '%' : ''}
+                        <div class="probability-bar">
+                            <div class="probability-fill prob-fill-${esito.color}" style="width: ${probValue}%">
+                                ${probValue > 15 ? '<span class="prob-text">' + probValue.toFixed(1) + '%</span>' : ''}
                             </div>
                         </div>
                     </div>
                 `;
             });
 
-            if (data.value_betting) {
+            // Controlla sia che i dati esistano SIA che il checkbox sia attivo
+            const valueBettingEnabled = document.getElementById('valueBetting').checked;
+            if (data.value_betting && valueBettingEnabled) {
                 const vb = data.value_betting;
                 const rec = vb.recommendation || {};
 
                 // Determina se c'è value dalla raccomandazione
                 const hasValue = rec.fase1_validated || false;
                 const evPct = rec.roi_expected_pct || 0;
+                const isFiltered = rec.strategy === 'FILTERED_OUT';
+                const filterReason = rec.fase1_filter_reason || '';
+
+                // Badge migliorato per predizioni filtrate
+                let statusBadge = '';
+                if (hasValue) {
+                    statusBadge = '<span class="badge value-badge-yes"><i class="bi bi-check-circle-fill me-1"></i> VALUE BET</span>';
+                } else if (isFiltered) {
+                    statusBadge = '<span class="badge bg-warning text-dark"><i class="bi bi-exclamation-triangle-fill me-1"></i> Filtrata - Valore Scommessa Basso</span>';
+                } else {
+                    statusBadge = '<span class="badge value-badge-no"><i class="bi bi-x-circle-fill me-1"></i> No value</span>';
+                }
 
                 html += `
-                    <hr class="my-4">
-                    <h5 class="mb-3">
-                        <i class="bi bi-graph-up-arrow"></i> Analisi Value Betting
+                    <hr class="my-4 border-secondary">
+                    <h5 class="mb-3 text-white">
+                        <i class="bi bi-graph-up-arrow me-2"></i> Analisi Value Betting
                     </h5>
-                    <div class="alert alert-${hasValue ? 'success' : 'secondary'}">
-                        <div class="mb-2">
-                            <strong>Expected Value:</strong> ${evPct ? evPct.toFixed(2) + '%' : 'N/A'}
-                        </div>
-                        <div class="mb-2">
-                            <strong>Opportunità:</strong> ${hasValue ? '✅ VALUE BET' : '❌ No value'}
-                        </div>
-                        ${rec.reason ? `<div class="mt-2"><small>${rec.reason}</small></div>` : ''}
-                    </div>
-
-                    ${vb.odds ? `
-                        <div class="mt-3">
-                            <h6>Quote Bookmaker:</h6>
-                            <div class="row text-center">
-                                <div class="col-4">
-                                    <div class="badge bg-success">${vb.odds.Casa || 'N/A'}</div>
-                                    <div><small>Casa</small></div>
-                                </div>
-                                <div class="col-4">
-                                    <div class="badge bg-warning">${vb.odds.Pareggio || 'N/A'}</div>
-                                    <div><small>Pareggio</small></div>
-                                </div>
-                                <div class="col-4">
-                                    <div class="badge bg-danger">${vb.odds.Trasferta || 'N/A'}</div>
-                                    <div><small>Trasferta</small></div>
+                    <div class="value-betting-card p-4 rounded-3 ${hasValue ? 'value-betting-success' : 'value-betting-neutral'}">
+                        <div class="row mb-3">
+                            <div class="col-md-6 mb-2">
+                                <div class="text-white-50 mb-1">Expected Value</div>
+                                <div class="h4 mb-0 fw-bold">${evPct ? evPct.toFixed(2) + '%' : 'N/A'}</div>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <div class="text-white-50 mb-1">Opportunità</div>
+                                <div class="h5 mb-0">
+                                    ${statusBadge}
                                 </div>
                             </div>
+                        </div>
+                    </div>
+
+                    ${isFiltered && vb.expected_values ? `
+                        <div class="info-card warning mt-3 p-3 rounded-3" style="background: rgba(251, 191, 36, 0.1); border-left: 4px solid #fbbf24;">
+                            <strong class="text-warning"><i class="bi bi-info-circle-fill me-2"></i>Perché filtrata?</strong>
+                            <div class="mt-2">
+                                <small class="text-white-50">
+                                    Expected Value: <span class="text-warning fw-bold">${evPct ? evPct.toFixed(1) + '%' : 'N/A'}</span> (minimo richiesto: <span class="text-warning fw-bold">25%</span>)
+                                    <br>
+                                    <em>Le scommesse con EV basso non soddisfano i criteri FASE1 validati (ROI +7.2%)</em>
+                                </small>
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    ${vb.odds ? `
+                        <div class="mt-4">
+                            <h6 class="mb-2 text-white">
+                                <i class="bi bi-tag me-2"></i> Quote Simulate
+                                <span class="badge bg-secondary ms-2" style="font-size: 0.65rem; font-weight: normal;">Modello +7%</span>
+                            </h6>
+                            <div class="row g-3">
+                                <div class="col-4">
+                                    <div class="quote-badge quote-badge-success text-center p-3 rounded-3">
+                                        <div class="quote-value mb-2">${vb.odds.Casa || 'N/A'}</div>
+                                        <div class="quote-label">1</div>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="quote-badge quote-badge-warning text-center p-3 rounded-3">
+                                        <div class="quote-value mb-2">${vb.odds.Pareggio || 'N/A'}</div>
+                                        <div class="quote-label">X</div>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="quote-badge quote-badge-danger text-center p-3 rounded-3">
+                                        <div class="quote-value mb-2">${vb.odds.Trasferta || 'N/A'}</div>
+                                        <div class="quote-label">2</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <small class="text-white-50 d-block mt-2">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Quote calcolate dalle probabilità del modello con margine bookmaker simulato (7%)
+                            </small>
                         </div>
                     ` : ''}
                 `;
@@ -576,63 +970,326 @@
 
             // Mercati Multipli
             if (data.mercati) {
-                const mercatiPrincipali = {
-                    'mou25': { nome: 'Over/Under 2.5', icon: 'activity' },
-                    'mgg': { nome: 'Goal/NoGoal', icon: 'bullseye' },
-                    'mpt1x2': { nome: 'Primo Tempo 1X2', icon: 'clock' },
-                    'mcorner': { nome: 'Corner O/U 9.5', icon: 'triangle' },
-                    'mah': { nome: 'Asian Handicap', icon: 'bar-chart' },
-                    'mcs': { nome: 'Clean Sheet', icon: 'shield-check' }
+                // Mapping icone per mercati (con fallback)
+                const iconePersonalizzate = {
+                    'm1x2': 'trophy',
+                    'mou25': 'activity',
+                    'mou15': 'graph-down',
+                    'mou35': 'graph-up',
+                    'mgg': 'bullseye',
+                    'mpt1x2': 'clock',
+                    'mptou': 'clock-history',
+                    'mcorner': 'triangle',
+                    'mcornercasa': 'house-fill',
+                    'mcornerospite': 'airplane-fill',
+                    'mah': 'bar-chart',
+                    'mcs': 'shield-check',
+                    'mdc': 'shield-check',
+                    'mheuro': 'arrows-expand',
+                    'mhandicapcasa': 'house-check',
+                    'mhandicapospite': 'airplane-engines',
+                    'mcards': 'card-text',
+                    'mcardrossi': 'exclamation-octagon',
+                    'mcasasegna': 'house-heart',
+                    'mospitesegna': 'airplane-engines-fill',
+                    'mprimo': 'flag-fill',
+                    'mcombo': 'collection',
+                    'mes': 'grid-3x3',
+                    'mparidispari': 'dice-5',
+                    'mptou15': 'clock-history',
+                    'mvincente': 'trophy-fill'
                 };
 
-                html += `
-                    <hr class="my-4">
-                    <h5 class="mb-3">
-                        <i class="bi bi-grid-3x3"></i> Altri Mercati
-                    </h5>
-                    <div class="row">
-                `;
+                // Nomi professionali in italiano per tutti i mercati
+                const nomiMercati = {
+                    'm1x2': '1X2 (Esito Finale)',
+                    'mou25': 'Over/Under 2.5 Gol',
+                    'mou15': 'Over/Under 1.5 Gol',
+                    'mou35': 'Over/Under 3.5 Gol',
+                    'mgg': 'Goal/No Goal',
+                    'mpt1x2': 'Primo Tempo 1X2',
+                    'mptou': 'Primo Tempo Over/Under',
+                    'mptou15': 'Primo Tempo Over/Under 1.5',
+                    'mcorner': 'Corner Over/Under 9.5',
+                    'mcornercasa': 'Corner Casa',
+                    'mcornerospite': 'Corner Ospite',
+                    'mah': 'Asian Handicap',
+                    'mcs': 'Clean Sheet',
+                    'mdc': 'Doppia Chance',
+                    'mheuro': 'Handicap Europeo',
+                    'mhandicapcasa': 'Handicap Casa',
+                    'mhandicapospite': 'Handicap Ospite',
+                    'mcards': 'Cartellini Totali',
+                    'mcardrossi': 'Cartellini Rossi',
+                    'mcasasegna': 'Squadra Casa Segna',
+                    'mospitesegna': 'Squadra Ospite Segna',
+                    'mprimo': 'Prima Squadra a Segnare',
+                    'mcombo': 'Scommessa Combinata',
+                    'mes': 'Risultato Esatto',
+                    'mparidispari': 'Gol Pari/Dispari',
+                    'mvincente': 'Vincente della Partita'
+                };
 
-                for (const [key, info] of Object.entries(mercatiPrincipali)) {
-                    const mercato = data.mercati[key];
-                    if (mercato) {
-                        const conf = (mercato.confidenza * 100).toFixed(1);
-                        const consiglio = mercato.consiglio || 'N/A';
-
-                        html += `
-                            <div class="col-md-6 mb-3">
-                                <div class="card bg-opacity-10 bg-light">
-                                    <div class="card-body p-3">
-                                        <h6 class="card-title mb-2">
-                                            <i class="bi bi-${info.icon}"></i> ${info.nome}
-                                        </h6>
-                                        <div class="d-flex justify-content-between">
-                                            <span><strong>Consiglio:</strong> ${consiglio}</span>
-                                            <span class="badge bg-primary">${conf}%</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-                    }
+                // Popola i mercati nel container separato
+                if (data.mercati && Object.keys(data.mercati).length > 0) {
+                    displayAltriMercati(data.mercati, iconePersonalizzate, nomiMercati);
                 }
-
-                html += `
-                    </div>
-                    <div class="text-center mt-2">
-                        <small class="text-muted">
-                            ${Object.keys(data.mercati).length} mercati totali disponibili
-                        </small>
-                    </div>
-                `;
             }
 
             html += '</div>';
             document.getElementById('resultContainer').innerHTML = html;
+
+            // ========== AGGIORNA COMPONENTI PROFESSIONALI ==========
+
+            // Salva predizione nello storico
+            const matchName = `${data.squadra_casa} - ${data.squadra_ospite}`;
+            const evPct = data.value_betting?.recommendation?.roi_expected_pct;
+            savePrediction(matchName, predizione1X2, confidenza, evPct ? evPct.toFixed(1) : null);
+
+            // Aggiorna Bankroll Management card
+            if (data.value_betting && evPct) {
+                updateBankrollCard(evPct, confidenza);
+            }
         }
 
+        // Funzione separata per popolare Altri Mercati
+        function displayAltriMercati(mercati, iconePersonalizzate, nomiMercati) {
+            const altriMercatiCard = document.getElementById('altriMercatiCard');
+            const altriMercatiContainer = document.getElementById('altriMercatiContainer');
+            const mercatiCount = document.getElementById('mercatiCount');
+            const toggleWrapper = document.getElementById('toggleMercatiWrapper');
+
+            // Mostra la card
+            altriMercatiCard.style.display = 'block';
+
+            // Aggiorna conteggio
+            mercatiCount.textContent = Object.keys(mercati).length;
+
+            // Converti in array e ordina per confidenza decrescente
+            const mercatiArray = Object.entries(mercati)
+                .map(([key, mercato]) => ({ key, ...mercato }))
+                .sort((a, b) => b.confidenza - a.confidenza);
+
+            // Genera HTML per i mercati
+            let mercatiHtml = '';
+            mercatiArray.forEach((mercato, index) => {
+                if (mercato) {
+                    const conf = (mercato.confidenza * 100).toFixed(1);
+                    let consiglio = mercato.consiglio || 'N/A';
+
+                    // Converti H/D/A in 1/X/2 per i mercati 1X2
+                    if (consiglio === 'H') consiglio = '1';
+                    else if (consiglio === 'D') consiglio = 'X';
+                    else if (consiglio === 'A') consiglio = '2';
+
+                    // Converti Doppia Chance in notazione betting standard
+                    else if (consiglio === 'Casa/Pareggio' || consiglio === 'Home/Draw') consiglio = '1X';
+                    else if (consiglio === 'Casa/Trasferta' || consiglio === 'Home/Away') consiglio = '12';
+                    else if (consiglio === 'Pareggio/Trasferta' || consiglio === 'Draw/Away') consiglio = 'X2';
+
+                    // Converti Asian Handicap in notazione numerica
+                    else if (consiglio === 'Equilibrato') consiglio = '0.0';
+
+                    // Migliora leggibilità Scommesse Combinate (sostituisci _ con +)
+                    consiglio = consiglio.replace(/_/g, ' + ');
+
+                    const icon = iconePersonalizzate[mercato.key] || 'graph-up';
+                    const nome = nomiMercati[mercato.key] || mercato.key.replace('m', '').toUpperCase();
+
+                    // Nascondi i mercati dopo il 6°
+                    const hiddenClass = index >= 6 ? 'mercato-hidden' : '';
+
+                    mercatiHtml += `
+                        <div class="col-12 mb-3 ${hiddenClass}">
+                            <div class="market-card p-3 rounded-3">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="mb-0 text-white-50 fw-normal small">
+                                        <i class="bi bi-${icon} me-1"></i> ${nome}
+                                    </h6>
+                                    <span class="badge market-badge">${conf}%</span>
+                                </div>
+                                <div class="h5 mb-0 text-white fw-bold">${consiglio}</div>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+
+            altriMercatiContainer.innerHTML = mercatiHtml;
+
+            // Mostra pulsante toggle se ci sono più di 6 mercati
+            if (mercatiArray.length > 6) {
+                toggleWrapper.style.display = 'block';
+                const toggleText = document.getElementById('toggleMercatiText');
+                toggleText.textContent = `Mostra altri ${mercatiArray.length - 6} mercati`;
+            } else {
+                toggleWrapper.style.display = 'none';
+            }
+        }
+
+        // Funzione per toggle mercati nascosti
+        function toggleAllMercati() {
+            const hiddenMercati = document.querySelectorAll('.mercato-hidden');
+            const toggleBtn = document.getElementById('toggleMercati');
+            const toggleText = document.getElementById('toggleMercatiText');
+            const toggleIcon = toggleBtn.querySelector('i');
+
+            const isHidden = hiddenMercati[0].style.display === 'none' || hiddenMercati[0].style.display === '';
+
+            hiddenMercati.forEach(mercato => {
+                mercato.style.display = isHidden ? 'block' : 'none';
+            });
+
+            if (isHidden) {
+                toggleIcon.className = 'bi bi-chevron-up me-1';
+                toggleText.textContent = 'Mostra meno';
+            } else {
+                toggleIcon.className = 'bi bi-chevron-down me-1';
+                const totalHidden = document.querySelectorAll('.mercato-hidden').length;
+                toggleText.textContent = `Mostra altri ${totalHidden} mercati`;
+            }
+        }
+
+        // ========== NUOVE FUNZIONI PROFESSIONALI ==========
+
+        // Storico Predizioni - LocalStorage
+        function loadPredictionHistory() {
+            const history = JSON.parse(localStorage.getItem('predictionHistory') || '[]');
+            const container = document.getElementById('predHistoryContainer');
+            const badge = document.getElementById('predCountBadge');
+
+            if (history.length === 0) {
+                container.innerHTML = '<div class=\"text-center py-3\"><small class=\"text-white-50\">Nessuna predizione ancora</small></div>';
+                badge.textContent = '0';
+                return;
+            }
+
+            badge.textContent = history.length;
+            const recent = history.slice(-5).reverse(); // Ultime 5, più recenti prima
+
+            let html = '';
+            recent.forEach(pred => {
+                const statusClass = pred.result === 'win' ? 'win' : pred.result === 'loss' ? 'loss' : 'pending';
+                const statusIcon = pred.result === 'win' ? '✓' : pred.result === 'loss' ? '✗' : '○';
+                const confidence = Math.round(pred.confidence * 100);
+
+                html += `
+                    <div class="pred-history-item ${statusClass}">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="flex-grow-1">
+                                <strong class="text-white">${statusIcon} ${pred.match}</strong>
+                                <div class="small text-white-50">${pred.prediction} (${confidence}%)</div>
+                            </div>
+                            ${pred.ev ? `<span class="badge bg-primary">EV ${pred.ev}%</span>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function savePrediction(match, prediction, confidence, ev) {
+            const history = JSON.parse(localStorage.getItem('predictionHistory') || '[]');
+
+            history.push({
+                match: match,
+                prediction: prediction,
+                confidence: confidence,
+                ev: ev,
+                result: 'pending', // win/loss/pending
+                timestamp: new Date().toISOString()
+            });
+
+            // Mantieni solo ultime 50
+            if (history.length > 50) {
+                history.shift();
+            }
+
+            localStorage.setItem('predictionHistory', JSON.stringify(history));
+            loadPredictionHistory();
+        }
+
+        // Confidence Gauge SVG
+        function createConfidenceGauge(confidence) {
+            const percent = confidence * 100;
+            const angle = (percent / 100) * 180;
+            const radians = (angle - 90) * (Math.PI / 180);
+            const radius = 50;
+            const centerX = 60;
+            const centerY = 60;
+
+            // Calcola punto finale arco
+            const endX = centerX + radius * Math.cos(radians);
+            const endY = centerY + radius * Math.sin(radians);
+
+            // Path arco
+            const largeArc = angle > 180 ? 1 : 0;
+            const arcPath = `M ${centerX - radius} ${centerY} A ${radius} ${radius} 0 ${largeArc} 1 ${endX} ${endY}`;
+
+            // Colore basato su confidenza
+            let color = '#ef4444'; // Rosso
+            if (percent >= 70) color = '#10b981'; // Verde
+            else if (percent >= 50) color = '#f59e0b'; // Giallo
+
+            return `
+                <div class=\"confidence-gauge\">
+                    <svg width=\"120\" height=\"60\" viewBox=\"0 0 120 60\">
+                        <!-- Arco background -->\n                        <path d=\"M 10 60 A 50 50 0 0 1 110 60\" fill=\"none\" stroke=\"rgba(255,255,255,0.1)\" stroke-width=\"8\"/>\n                        <!-- Arco confidenza -->\n                        <path d=\"${arcPath}\" fill=\"none\" stroke=\"${color}\" stroke-width=\"8\" class=\"gauge-arc\"/>\n                    </svg>\n                    <div class=\"gauge-value\">${percent.toFixed(0)}%</div>\n                    <div class=\"gauge-labels\">\n                        <span>Bassa</span>\n                        <span>Alta</span>\n                    </div>\n                </div>\n            `;\n        }
+
+        // Bankroll Management - Kelly Criterion
+        function updateBankrollCard(ev, confidence) {
+            const bankrollCard = document.getElementById('bankrollCard');
+            const bankroll = parseFloat(document.getElementById('bankrollInput').value) || 1000;
+
+            if (!ev || ev <= 0) {\n                bankrollCard.style.display = 'none';
+                return;
+            }
+
+            bankrollCard.style.display = 'block';
+
+            // Kelly Criterion frazionale (25%)\n            const kellPct = (ev / 100) * 0.25; // 25% Kelly\n            const kellyStake = Math.max(0, bankroll * kellPct);
+            const expectedProfit = kellyStake * (ev / 100);
+
+            // Risk Level\n            let riskLevel = 'Basso';
+            let riskColor = 'success';
+            if (kellPct > 0.05) {\n                riskLevel = 'Alto';
+                riskColor = 'danger';
+            } else if (kellPct > 0.02) {
+                riskLevel = 'Medio';
+                riskColor = 'warning';
+            }
+
+            document.getElementById('kellyStake').textContent = `€${kellyStake.toFixed(2)}`;
+            document.getElementById('expectedProfit').textContent = `+€${expectedProfit.toFixed(2)}`;
+            const riskBadge = document.getElementById('riskLevel');
+            riskBadge.textContent = riskLevel;
+            riskBadge.className = `badge bg-${riskColor}`;
+        }
+
+        // Aggiorna input bankroll
+        document.addEventListener('DOMContentLoaded', () => {
+            const bankrollInput = document.getElementById('bankrollInput');
+            if (bankrollInput) {
+                bankrollInput.addEventListener('input', () => {
+                    // Re-calcola se c'è una predizione attiva
+                    const evElement = document.querySelector('.h4.mb-0.fw-bold');
+                    if (evElement) {
+                        const evText = evElement.textContent;
+                        const ev = parseFloat(evText);
+                        if (!isNaN(ev)) {
+                            updateBankrollCard(ev, 0.5);
+                        }
+                    }
+                });
+            }
+        });
+
         // Initialize
-        document.addEventListener('DOMContentLoaded', loadTheme);
+        document.addEventListener('DOMContentLoaded', () => {
+            loadTheme();
+            loadPredictionHistory();
+        });
     </script>
 </body>
 </html>
