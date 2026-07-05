@@ -642,7 +642,7 @@
                             </h5>
                             <div class="mb-3">
                                 <label class="text-white-50 small mb-1">Saldo Attuale (€)</label>
-                                <input type="number" class="form-control" id="bankrollInput" value="1000" min="0" step="10">
+                                <input type="number" class="form-control" id="bankrollInput" min="0" step="10" placeholder="1000">
                             </div>
                             <div class="p-3 rounded" style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3);">
                                 <div class="d-flex justify-content-between mb-2">
@@ -1215,13 +1215,19 @@
             const savedBankroll = localStorage.getItem('bankroll');
             const bankrollInput = document.getElementById('bankrollInput');
 
-            if (savedBankroll && bankrollInput) {
-                bankrollInput.value = savedBankroll;
+            if (bankrollInput) {
+                // Usa valore salvato o default 1000
+                const value = savedBankroll || '1000';
+                bankrollInput.value = value;
+                console.log('✅ Bankroll caricato:', value);
             }
         }
 
         function saveBankrollConfig(value) {
-            localStorage.setItem('bankroll', value);
+            if (value && value !== '') {
+                localStorage.setItem('bankroll', value);
+                console.log('💾 Bankroll salvato:', value);
+            }
         }
 
         // Confidence Gauge SVG
