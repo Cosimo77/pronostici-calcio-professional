@@ -1210,6 +1210,20 @@
             loadPredictionHistory();
         }
 
+        // Bankroll Management - LocalStorage
+        function loadBankrollConfig() {
+            const savedBankroll = localStorage.getItem('bankroll');
+            const bankrollInput = document.getElementById('bankrollInput');
+
+            if (savedBankroll && bankrollInput) {
+                bankrollInput.value = savedBankroll;
+            }
+        }
+
+        function saveBankrollConfig(value) {
+            localStorage.setItem('bankroll', value);
+        }
+
         // Confidence Gauge SVG
         function createConfidenceGauge(confidence) {
             const percent = confidence * 100;
@@ -1284,9 +1298,15 @@
 
         // Aggiorna input bankroll
         document.addEventListener('DOMContentLoaded', () => {
+            // Carica configurazione salvata
+            loadBankrollConfig();
+
             const bankrollInput = document.getElementById('bankrollInput');
             if (bankrollInput) {
                 bankrollInput.addEventListener('input', () => {
+                    // Salva il nuovo valore
+                    saveBankrollConfig(bankrollInput.value);
+
                     // Re-calcola se c'è una predizione attiva
                     const evElement = document.querySelector('.h4.mb-0.fw-bold');
                     if (evElement) {
