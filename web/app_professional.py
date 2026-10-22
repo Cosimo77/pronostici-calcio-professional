@@ -981,6 +981,52 @@ def normalize_team_name(team_name: str) -> str:
     return TEAM_NAME_MAPPING.get(team_name, team_name)
 
 
+SERIE_A_FALLBACK = [
+    "Atalanta",
+    "Bologna",
+    "Cagliari",
+    "Como",
+    "Cremonese",
+    "Fiorentina",
+    "Genoa",
+    "Inter",
+    "Juventus",
+    "Lazio",
+    "Lecce",
+    "Milan",
+    "Napoli",
+    "Parma",
+    "Pisa",
+    "Roma",
+    "Sassuolo",
+    "Torino",
+    "Udinese",
+    "Verona",
+]  # Serie A 2025-26, usata solo se il CSV della stagione corrente non e' leggibile
+
+
+def squadre_serie_a_stagione_corrente() -> list:
+    """Squadre della stagione in corso, lette dall'ultimo data/I1_AABB.csv"""
+    import csv
+    import glob
+
+    data_dir = os.path.join(os.path.dirname(__file__), "..", "data")
+    files = sorted(glob.glob(os.path.join(data_dir, "I1_[0-9][0-9][0-9][0-9].csv")))
+    if files:
+        try:
+            with open(files[-1], encoding="utf-8-sig") as f:
+                squadre = set()
+                for riga in csv.DictReader(f):
+                    squadre.add(normalize_team_name(riga["HomeTeam"]))
+                    squadre.add(normalize_team_name(riga["AwayTeam"]))
+            if len(squadre) == 20:
+                return sorted(squadre)
+            logger.warning(f"⚠️ {files[-1]}: {len(squadre)} squadre (attese 20), uso lista di fallback")
+        except Exception as e:
+            logger.warning(f"⚠️ Lettura squadre da {files[-1]} fallita: {e}, uso lista di fallback")
+    return sorted(SERIE_A_FALLBACK)
+
+
 def normalize_market_name(market: str) -> str:
     """
     Normalizza nomi mercati per visualizzazione chiara e consistente
@@ -1032,34 +1078,12 @@ def inizializza_sistema_professionale():
         if not calculator.carica_dati():
             raise Exception("Impossibile caricare dataset")
 
-        # Squadre Serie A 2025-26 (dal CSV ufficiale I1_2526.csv)
-        squadre_serie_a_2025_26 = [
-            "Atalanta",
-            "Bologna",
-            "Cagliari",
-            "Como",
-            "Cremonese",
-            "Fiorentina",
-            "Genoa",
-            "Inter",
-            "Juventus",
-            "Lazio",
-            "Lecce",
-            "Milan",
-            "Napoli",
-            "Parma",
-            "Pisa",
-            "Roma",
-            "Sassuolo",
-            "Torino",
-            "Udinese",
-            "Verona",
-        ]
+        # Squadre della stagione in corso (dall'ultimo CSV ufficiale I1_AABB.csv)
+        squadre_serie_a = squadre_serie_a_stagione_corrente()
 
         # Combina con squadre che hanno dati storici disponibili
-        squadre_dataset = squadre_serie_a_2025_26
+        squadre_dataset = squadre_serie_a
 
-        # Note: Composizione Serie A 2025-26 basata su dati ufficiali CSV
         # Tutte le squadre vengono verificate contro il dataset storico
 
         # Verifica che tutte le squadre siano nel dataset con dati sufficienti
@@ -3523,29 +3547,8 @@ def api_upcoming_matches():
 
         logger.info(f"✅ {len(upcoming)} partite FUTURE ricevute da The Odds API")
 
-        # Whitelist Serie A 2025-26 (20 squadre)
-        SERIE_A_2025_26 = {
-            "Atalanta",
-            "Bologna",
-            "Cagliari",
-            "Como",
-            "Cremonese",
-            "Fiorentina",
-            "Genoa",
-            "Inter",
-            "Juventus",
-            "Lazio",
-            "Lecce",
-            "Milan",
-            "Napoli",
-            "Parma",
-            "Pisa",
-            "Roma",
-            "Sassuolo",
-            "Torino",
-            "Udinese",
-            "Verona",
-        }
+        # Whitelist Serie A stagione corrente (20 squadre)
+        SERIE_A_CORRENTE = set(squadre_serie_a_stagione_corrente())
 
         # Processa partite con predizioni
         matches_with_predictions = []
@@ -3560,9 +3563,11 @@ def api_upcoming_matches():
 
                 logger.info(f"🔄 Normalizzazione: '{home_display}' → '{home}', '{away_display}' → '{away}'")
 
-                # 🚨 FILTRO SERIE A: Verifica che entrambe le squadre siano in Serie A 2025-26
-                if home not in SERIE_A_2025_26 or away not in SERIE_A_2025_26:
-                    logger.warning(f"⚠️ SKIP: {home} vs {away} - Una o entrambe le squadre NON in Serie A 2025-26")
+                # 🚨 FILTRO SERIE A: Verifica che entrambe le squadre siano in Serie A (stagione corrente)
+                if home not in SERIE_A_CORRENTE or away not in SERIE_A_CORRENTE:
+                    logger.warning(
+                        f"⚠️ SKIP: {home} vs {away} - Una o entrambe le squadre NON in Serie A stagione corrente"
+                    )
                     continue
 
                 # Estrai quote REALI (già processate come medie da OddsAPIClient)
@@ -7716,10 +7721,7 @@ def api_diario_pending():
 
         # Ordina per data decrescente (più recenti prima)
         # FIX 23 Mag 2026: Sort cronologico su DD/MM/YYYY
-        bets.sort(
-            key=lambda x: datetime.strptime(x.get("data", "01/01/2000"), "%d/%m/%Y"),
-            reverse=True
-        )
+        bets.sort(key=lambda x: datetime.strptime(x.get("data", "01/01/2000"), "%d/%m/%Y"), reverse=True)
 
         # Format per frontend
         formatted_bets = []
@@ -7761,10 +7763,7 @@ def api_diario_completed():
 
         # Ordina per data decrescente (più recenti prima)
         # FIX 23 Mag 2026: Sort cronologico su DD/MM/YYYY
-        completed.sort(
-            key=lambda x: datetime.strptime(x.get("data", "01/01/2000"), "%d/%m/%Y"),
-            reverse=True
-        )
+        completed.sort(key=lambda x: datetime.strptime(x.get("data", "01/01/2000"), "%d/%m/%Y"), reverse=True)
 
         # Format per frontend
         formatted_bets = []
@@ -7806,10 +7805,7 @@ def api_diario_all():
 
         # Ordina per data decrescente (più recenti prima)
         # FIX 23 Mag 2026: Sort cronologico su DD/MM/YYYY
-        all_bets.sort(
-            key=lambda x: datetime.strptime(x.get("data", "01/01/2000"), "%d/%m/%Y"),
-            reverse=True
-        )
+        all_bets.sort(key=lambda x: datetime.strptime(x.get("data", "01/01/2000"), "%d/%m/%Y"), reverse=True)
 
         # Ritorna array semplice per compatibilità con JS filter
         return jsonify(all_bets)
@@ -8091,10 +8087,7 @@ def api_diario_get_multiple():
 
         # Ordina per data decrescente (più recenti prima)
         # FIX 23 Mag 2026: Sort cronologico su DD/MM/YYYY
-        multiple.sort(
-            key=lambda x: datetime.strptime(x.get("data", "01/01/2000"), "%d/%m/%Y"),
-            reverse=True
-        )
+        multiple.sort(key=lambda x: datetime.strptime(x.get("data", "01/01/2000"), "%d/%m/%Y"), reverse=True)
 
         return jsonify({"multiple": multiple})
 
@@ -8112,10 +8105,7 @@ def api_diario_get_multiple_pending():
 
         # Ordina per data decrescente (più recenti prima)
         # FIX 23 Mag 2026: Sort cronologico su DD/MM/YYYY
-        multiple.sort(
-            key=lambda x: datetime.strptime(x.get("data", "01/01/2000"), "%d/%m/%Y"),
-            reverse=True
-        )
+        multiple.sort(key=lambda x: datetime.strptime(x.get("data", "01/01/2000"), "%d/%m/%Y"), reverse=True)
 
         return jsonify({"multiple": multiple})
     except Exception as e:
@@ -8133,10 +8123,7 @@ def api_diario_get_multiple_completed():
 
         # Ordina per data decrescente (più recenti prima)
         # FIX 23 Mag 2026: Sort cronologico su DD/MM/YYYY
-        completed.sort(
-            key=lambda x: datetime.strptime(x.get("data", "01/01/2000"), "%d/%m/%Y"),
-            reverse=True
-        )
+        completed.sort(key=lambda x: datetime.strptime(x.get("data", "01/01/2000"), "%d/%m/%Y"), reverse=True)
 
         return jsonify({"multiple": completed})
     except Exception as e:
@@ -8398,9 +8385,7 @@ def api_equity_curve():
         # Ordina per data (conversione datetime per sort cronologico corretto)
         # FIX 23 Mag 2026: Sort lessicografico su "DD/MM/YYYY" era buggato
         # Bug: "25/04/2026" veniva dopo "17/05/2026" (25 > 17 come stringa)
-        completed_bets.sort(
-            key=lambda x: datetime.strptime(x.get("data", "01/01/2000"), "%d/%m/%Y")
-        )
+        completed_bets.sort(key=lambda x: datetime.strptime(x.get("data", "01/01/2000"), "%d/%m/%Y"))
 
         # Calcola equity curve
         config = load_bankroll_config()
