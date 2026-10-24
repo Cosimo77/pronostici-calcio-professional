@@ -6365,47 +6365,42 @@ def api_accuracy_report():
         return jsonify({"error": "Sistema non inizializzato"}), 500
 
     try:
-        # Report accuratezza basato su backtesting reale
+        # Report calcolato sul tracking reale (solo mercato 1X2, unico tracciato)
+        tracking_path = os.path.join(os.path.dirname(__file__), "..", "tracking_predictions_live.csv")
+        df_t = pd.read_csv(tracking_path)
+        df_t = df_t[df_t["Risultato_Reale"].notna() & (df_t["Risultato_Reale"] != "")].copy()
+        df_t["Corretto"] = pd.to_numeric(df_t["Corretto"], errors="coerce").fillna(0)
+
+        def _accuracy(df_sub):
+            totale = len(df_sub)
+            corrette = int(df_sub["Corretto"].sum())
+            return {
+                "percentage": round(corrette / totale * 100, 1) if totale else None,
+                "correct": corrette,
+                "total": totale,
+            }
+
         report = {
-            "backtesting_period": "2021-2025",
-            "total_matches_tested": 1777,
-            "overall_accuracy": {
-                "percentage": 65.8,
-                "correct": 961,
-                "total": 1777,
-                "grade": "Professionale",
+            "source": "tracking_predictions_live.csv (predizioni reali con risultato)",
+            "period": {
+                "da": str(df_t["Data"].min()) if len(df_t) else None,
+                "a": str(df_t["Data"].max()) if len(df_t) else None,
             },
-            "accuracy_by_market": {
-                "risultato_finale_1x2": 43.2,  # Backtest reale 567 partite
-                "over_under_25": 48.5,  # Stimato proporzionale
-                "over_under_15": 52.8,  # Più facile (meno gol)
-                "goal_nogoal": 46.3,  # Stimato proporzionale
-                "primo_tempo": 38.1,  # Più difficile (meno dati)
-                "exact_score": 12.8,  # Molto difficile (11 esiti)
-                "asian_handicap": 44.2,  # Simile a 1X2
-                "corner_over_under": 45.1,  # Stimato proporzionale
+            "overall_accuracy": _accuracy(df_t),
+            "accuracy_by_market": {"risultato_finale_1x2": _accuracy(df_t)["percentage"]},
+            "accuracy_by_pronostico": {
+                esito: _accuracy(df_t[df_t["Pronostico"] == esito]) for esito in ("H", "D", "A")
             },
             "confidence_analysis": {
-                "high_confidence": {"threshold": 0.6, "accuracy": 68.2, "matches": 423},
+                "high_confidence": {"threshold": 0.6, **_accuracy(df_t[df_t["Confidenza"] >= 0.6])},
                 "medium_confidence": {
                     "threshold": 0.4,
-                    "accuracy": 52.1,
-                    "matches": 892,
+                    **_accuracy(df_t[(df_t["Confidenza"] >= 0.4) & (df_t["Confidenza"] < 0.6)]),
                 },
-                "low_confidence": {"threshold": 0.3, "accuracy": 43.7, "matches": 462},
+                "low_confidence": {"threshold": 0.0, **_accuracy(df_t[df_t["Confidenza"] < 0.4])},
             },
-            "team_performance": {
-                "top_teams_accuracy": 58.3,
-                "mid_teams_accuracy": 52.1,
-                "bottom_teams_accuracy": 51.2,
-            },
-            "seasonal_trends": {
-                "stagione_2021_22": 52.8,
-                "stagione_2022_23": 54.7,
-                "stagione_2023_24": 55.1,
-                "stagione_2025_26": 54.9,
-            },
-            "methodology": "Backtesting deterministico su dati storici Serie A",
+            "monthly_trend": {mese: _accuracy(g) for mese, g in df_t.groupby(df_t["Data"].astype(str).str[:7])},
+            "methodology": "Accuracy live: pronostico 1X2 vs risultato reale, solo partite concluse",
             "timestamp": datetime.now().isoformat(),
         }
 
