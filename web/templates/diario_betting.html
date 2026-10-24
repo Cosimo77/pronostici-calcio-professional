@@ -704,10 +704,15 @@
                                             💡 <strong>Suggerimento:</strong> <span id="stake-suggestion-text"></span>
                                         </small>
                                     </div>
-                                    <div id="kelly-result" class="kelly-result-box">
+                                    <div id="bet-kelly-result" class="kelly-result-box">
                                         <small class="kelly-result-text">
-                                            🎯 <strong>Kelly Stake:</strong> <span id="kelly-stake-value">€0.00</span><br>
-                                            📊 Edge: <span id="kelly-edge-value">0%</span> | Prob Win: <span id="kelly-prob-value">0%</span>
+                                            <span id="bet-kelly-dettagli">
+                                                🎯 <strong>Kelly Stake:</strong> <span id="bet-kelly-stake-value">€0.00</span><br>
+                                                📊 Edge: <span id="bet-kelly-edge-value">0%</span> | Prob Win: <span id="bet-kelly-prob-value">0%</span>
+                                            </span>
+                                            <span id="bet-kelly-warning" style="display: none;">
+                                                ⚠️ <strong>Kelly Negativo:</strong> Non scommettere (probabilità troppo bassa)
+                                            </span>
                                         </small>
                                     </div>
                                 </div>
@@ -776,7 +781,7 @@
 
                             <div class="card mb-3 bg-light-gray">
                                 <div class="card-body">
-                                    <h6 class="mb-3"><i class="bi bi-list-check"></i> Eventi Multipla</h6>
+                                    <h6 class="mb-3 text-dark"><i class="bi bi-list-check"></i> Eventi Multipla</h6>
                                     <div id="eventi-multipla-container"></div>
                                     <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="aggiungiEventoMultipla()">
                                         <i class="bi bi-plus-circle"></i> Aggiungi Evento
@@ -1545,11 +1550,72 @@
             return { '1': o.home, 'X': o.draw, '2': o.away, 'OVER_25': t.over_25, 'UNDER_25': t.under_25 }[mercato] || null;
         }
 
-        function aggiornaSuggerimentoQuota() {
+        // Probabilita' del modello (0-1) ed EV (%) per i mercati che il sistema calcola
+        function datiModelloMercato(m, mercato) {
+            const p = (m.prediction || {}).probabilities || {};
+            const mercati = (m.markets || {}).mercati || {};
+            const dc = (mercati.mdc || {}).probabilita || {};
+            const gg = (mercati.mgg || {}).probabilita || {};
+            const ev = (m.analysis || m.value_betting || {}).expected_values || {};
+            return {
+                '1': { prob: p.H, ev: ev.home }, 'X': { prob: p.D, ev: ev.draw }, '2': { prob: p.A, ev: ev.away },
+                '1X': { prob: dc['1X'] }, 'X2': { prob: dc['X2'] }, '12': { prob: dc['12'] },
+                'OVER_25': { prob: p.over, ev: ev.over }, 'UNDER_25': { prob: p.under, ev: ev.under },
+                'GG': { prob: gg.goal }, 'NG': { prob: gg.nogoal }
+            }[mercato] || {};
+        }
+
+        // Compila un campo con il valore automatico; se il mercato non ha dato, svuota solo cio' che era automatico
+        function impostaAuto(input, valore) {
+            if (valore !== null && valore !== undefined && !Number.isNaN(valore)) {
+                input.value = valore;
+                input.dataset.auto = '1';
+            } else if (input.dataset.auto === '1') {
+                input.value = '';
+                delete input.dataset.auto;
+            }
+        }
+
+        function aggiornaSuggerimentiPartita() {
             const hint = document.getElementById('bet-quota-hint');
             const i = document.getElementById('bet-partita-select').value;
-            const quota = i !== '' ? quotaMediaMercato(prossimePartite[i], document.getElementById('bet-mercato').value) : null;
-            hint.textContent = quota ? `Media bookmaker: ${quota.toFixed(2)} (indicativa, inserisci la quota Sisal)` : '';
+            const mercato = document.getElementById('bet-mercato').value;
+            const m = i !== '' ? prossimePartite[i] : null;
+            const quota = m ? quotaMediaMercato(m, mercato) : null;
+            const modello = m ? datiModelloMercato(m, mercato) : {};
+
+            if (quota) {
+                hint.dataset.quota = quota.toFixed(2);
+                hint.innerHTML = `Media bookmaker: <strong>${quota.toFixed(2)}</strong> (indicativa) ` +
+                    '<a href="#" id="bet-quota-usa">usa questa quota</a>';
+            } else {
+                hint.textContent = '';
+                delete hint.dataset.quota;
+            }
+
+            impostaAuto(document.getElementById('bet-prob-win'),
+                modello.prob != null ? (modello.prob * 100).toFixed(1) : null);
+            impostaAuto(document.getElementById('bet-ev-modello'),
+                modello.ev != null ? `${modello.ev >= 0 ? '+' : ''}${modello.ev.toFixed(1)}%` : null);
+
+            if (document.getElementById('use-kelly').checked) calculateKellyStake();
+        }
+
+        // Aggiornamento manuale di un campo compilato in automatico: non va piu' sovrascritto o svuotato
+        ['bet-prob-win', 'bet-ev-modello'].forEach(id =>
+            document.getElementById(id).addEventListener('input', e => delete e.target.dataset.auto));
+
+        // Multipla: quota media come segnaposto e data = ultima partita scelta
+        function aggiornaRigaMultipla(row) {
+            const i = row.querySelector('.evento-partita-select').value;
+            const m = i !== '' ? prossimePartite[i] : null;
+            const quota = m ? quotaMediaMercato(m, row.querySelector('.evento-mercato').value) : null;
+            row.querySelector('.evento-quota').placeholder = quota ? `Media ${quota.toFixed(2)}` : 'Quota';
+
+            const date = [...document.querySelectorAll('.evento-partita-select')]
+                .filter(sel => sel.value !== '')
+                .map(sel => dataPartita(prossimePartite[sel.value]));
+            if (date.length) document.getElementById('multipla-data').value = date.sort().pop();
         }
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -1561,17 +1627,31 @@
                     document.getElementById('bet-partita').value = `${m.home_team} vs ${m.away_team}`;
                     document.getElementById('bet-data').value = dataPartita(m);
                 }
-                aggiornaSuggerimentoQuota();
+                aggiornaSuggerimentiPartita();
             });
-            document.getElementById('bet-mercato').addEventListener('change', aggiornaSuggerimentoQuota);
-            document.getElementById('form-add-bet').addEventListener('reset', () => setTimeout(aggiornaSuggerimentoQuota));
+            document.getElementById('bet-mercato').addEventListener('change', aggiornaSuggerimentiPartita);
+            document.getElementById('form-add-bet').addEventListener('reset', () => setTimeout(() => {
+                ['bet-prob-win', 'bet-ev-modello'].forEach(id => delete document.getElementById(id).dataset.auto);
+                aggiornaSuggerimentiPartita();
+            }));
+            document.getElementById('bet-quota-hint').addEventListener('click', e => {
+                if (e.target.id !== 'bet-quota-usa') return;
+                e.preventDefault();
+                const quota = document.getElementById('bet-quota');
+                quota.value = document.getElementById('bet-quota-hint').dataset.quota;
+                quota.dispatchEvent(new Event('input'));
+            });
 
             // Multipla: i menu vengono creati dinamicamente, quindi delega sull'elenco eventi
             document.getElementById('eventi-multipla-container').addEventListener('change', e => {
+                const row = e.target.closest('.evento-multipla-row');
+                if (!row) return;
                 if (e.target.classList.contains('evento-partita-select') && e.target.value !== '') {
                     const m = prossimePartite[e.target.value];
-                    e.target.closest('.evento-multipla-row').querySelector('.evento-partita').value =
-                        `${m.home_team} vs ${m.away_team}`;
+                    row.querySelector('.evento-partita').value = `${m.home_team} vs ${m.away_team}`;
+                }
+                if (e.target.classList.contains('evento-partita-select') || e.target.classList.contains('evento-mercato')) {
+                    aggiornaRigaMultipla(row);
                 }
             });
         });
@@ -2343,7 +2423,7 @@
             const stakeInput = document.getElementById('bet-stake');
             const stakeLabel = document.getElementById('stake-label');
             const stakeSuggestion = document.getElementById('stake-suggestion');
-            const kellyResult = document.getElementById('kelly-result');
+            const kellyResult = document.getElementById('bet-kelly-result');
 
             if (isKellyActive) {
                 kellyInputRow.style.display = 'flex';
@@ -2406,20 +2486,17 @@
 
                 // Update UI
                 document.getElementById('bet-stake').value = finalStake.toFixed(2);
-                document.getElementById('kelly-stake-value').textContent = '€' + finalStake.toFixed(2);
-                document.getElementById('kelly-edge-value').textContent = (edgeInput || 0).toFixed(1) + '%';
-                document.getElementById('kelly-prob-value').textContent = (probWinAdjusted * 100).toFixed(1) + '%';
+                document.getElementById('bet-kelly-stake-value').textContent = '€' + finalStake.toFixed(2);
+                document.getElementById('bet-kelly-edge-value').textContent = (edgeInput || 0).toFixed(1) + '%';
+                document.getElementById('bet-kelly-prob-value').textContent = (probWinAdjusted * 100).toFixed(1) + '%';
 
-                // Mostra warning se stake = 0 (Kelly negativo)
-                if (finalStake === 0) {
-                    document.getElementById('kelly-result').style.background = '#f8d7da';
-                    document.getElementById('kelly-result').style.borderLeftColor = '#dc3545';
-                    document.getElementById('kelly-stake-value').parentElement.innerHTML =
-                        '⚠️ <strong>Kelly Negativo:</strong> Non scommettere (probabilità troppo bassa)';
-                } else {
-                    document.getElementById('kelly-result').style.background = '#d1f2eb';
-                    document.getElementById('kelly-result').style.borderLeftColor = '#28a745';
-                }
+                // Kelly negativo (stake = 0): mostra l'avviso al posto dei dettagli
+                const kellyNegativo = finalStake === 0;
+                const boxKelly = document.getElementById('bet-kelly-result');
+                document.getElementById('bet-kelly-dettagli').style.display = kellyNegativo ? 'none' : 'inline';
+                document.getElementById('bet-kelly-warning').style.display = kellyNegativo ? 'inline' : 'none';
+                boxKelly.style.background = kellyNegativo ? '#f8d7da' : '#d1f2eb';
+                boxKelly.style.borderLeftColor = kellyNegativo ? '#dc3545' : '#28a745';
 
             } catch (error) {
                 console.error('Errore calcolo Kelly:', error);
