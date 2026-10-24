@@ -370,7 +370,8 @@ class PredictionsGenerator:
 
                 # Aggiorna CSV
                 df.at[idx, "Risultato_Reale"] = risultato_reale
-                df.at[idx, "Corretto"] = 1 if row["Pronostico"] == risultato_reale else 0
+                # Pronostico e' salvato come H/D/A, Risultato_Reale come Casa/Pareggio/Ospite
+                df.at[idx, "Corretto"] = 1 if row["Pronostico"] == ftr else 0
                 updated += 1
 
             except Exception as e:
