@@ -7257,8 +7257,71 @@ def api_metrics_summary():
 # ==================== BANKROLL MANAGEMENT ====================
 
 
+_APP_CONFIG_DDL = """
+    CREATE TABLE IF NOT EXISTS app_config (
+        key VARCHAR(50) PRIMARY KEY,
+        value JSONB NOT NULL,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+"""
+
+
+def _bankroll_from_db() -> Optional[Dict]:
+    """Config bankroll da PostgreSQL (persiste ai riavvii di Render); None se DB non disponibile o vuoto"""
+    try:
+        if not DiarioStorage._use_database():
+            return None
+        from database import get_db_connection
+
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(_APP_CONFIG_DDL)
+                cur.execute("SELECT value FROM app_config WHERE key = 'bankroll'")
+                row = cur.fetchone()
+        return dict(row[0]) if row and row[0] else None
+    except Exception as e:
+        logger.warning(f"Lettura bankroll da database fallita: {e}")
+        return None
+
+
+def _bankroll_to_db(config: Dict) -> bool:
+    """Salva la config bankroll su PostgreSQL; False se non disponibile"""
+    try:
+        if not DiarioStorage._use_database():
+            return False
+        from psycopg2.extras import Json
+
+        from database import get_db_connection
+
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(_APP_CONFIG_DDL)
+                cur.execute(
+                    """
+                    INSERT INTO app_config (key, value) VALUES ('bankroll', %s)
+                    ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = CURRENT_TIMESTAMP
+                    """,
+                    (Json(config),),
+                )
+        return True
+    except Exception as e:
+        logger.warning(f"Salvataggio bankroll su database fallito: {e}")
+        return False
+
+
 def load_bankroll_config():
-    """Carica configurazione bankroll (graceful degradation se filesystem read-only)"""
+    """Carica configurazione bankroll: PostgreSQL se disponibile, altrimenti file JSON"""
+    config = _bankroll_from_db()
+    if config:
+        return {**_load_bankroll_file(), **config}
+
+    config = _load_bankroll_file()
+    _bankroll_to_db(config)  # primo avvio: porta nel database la config del file
+    return config
+
+
+def _load_bankroll_file():
+    """Carica configurazione bankroll da file (graceful degradation se filesystem read-only)"""
     config_file = "config_bankroll.json"
 
     default_config = {
@@ -7297,6 +7360,8 @@ def load_bankroll_config():
 def save_bankroll_config(config: Dict):
     """Salva configurazione bankroll (graceful fail se filesystem read-only)"""
     config["ultimo_aggiornamento"] = datetime.now().strftime("%Y-%m-%d")
+
+    _bankroll_to_db(config)
 
     try:
         import json
@@ -7367,20 +7432,30 @@ def update_bankroll_from_bets():
 
     # Filtra solo WIN/LOSS (esclude VOID e SKIP)
     completed_bets = [bet for bet in all_bets if bet.get("risultato") in ["WIN", "LOSS"]]
+    total_profit = sum(float(bet.get("profit", 0.0)) for bet in completed_bets)
 
-    if len(completed_bets) > 0:
-        # Somma profitti
-        total_profit = sum(float(bet.get("profit", 0.0)) for bet in completed_bets)
+    # Bankroll corrente = iniziale + profit/loss (= iniziale se non ci sono giocate chiuse)
+    corrente = config["bankroll_iniziale"] + total_profit
+    unita = corrente * 0.01  # 1% del bankroll corrente
 
-        # Bankroll corrente = iniziale + profit/loss
-        config["bankroll_corrente"] = config["bankroll_iniziale"] + total_profit
-
-        # Aggiorna unità betting (1% del bankroll corrente)
-        config["unita_betting"] = config["bankroll_corrente"] * 0.01
-
+    if abs(config.get("bankroll_corrente", 0) - corrente) > 1e-9 or abs(config.get("unita_betting", 0) - unita) > 1e-9:
+        config["bankroll_corrente"] = corrente
+        config["unita_betting"] = unita
         save_bankroll_config(config)
 
     return config
+
+
+def bankroll_stats_fields(config: Dict) -> Dict:
+    """Campi bankroll per le statistiche del diario"""
+    iniziale = config["bankroll_iniziale"]
+    corrente = config["bankroll_corrente"]
+    return {
+        "bankroll_iniziale": iniziale,
+        "bankroll_corrente": round(corrente, 2),
+        "unita_betting": round(config["unita_betting"], 2),
+        "roi_bankroll": round((corrente - iniziale) / iniziale * 100, 2) if iniziale > 0 else 0.0,
+    }
 
 
 def calculate_risk_metrics(df_completed: pd.DataFrame) -> Dict:
@@ -7471,6 +7546,7 @@ def api_diario_stats():
                     "roi": 0.0,
                     "win_rate": 0.0,
                     "profit": 0.0,
+                    **bankroll_stats_fields(update_bankroll_from_bets()),
                 }
             )
 
@@ -7517,15 +7593,7 @@ def api_diario_stats():
                 "win_rate": round(win_rate, 2),
                 "profit": round(total_profit, 2),
                 # Bankroll management
-                "bankroll_iniziale": bankroll_config["bankroll_iniziale"],
-                "bankroll_corrente": round(bankroll_config["bankroll_corrente"], 2),
-                "unita_betting": round(bankroll_config["unita_betting"], 2),
-                "roi_bankroll": round(
-                    (bankroll_config["bankroll_corrente"] - bankroll_config["bankroll_iniziale"])
-                    / bankroll_config["bankroll_iniziale"]
-                    * 100,
-                    2,
-                ),
+                **bankroll_stats_fields(bankroll_config),
                 # Risk metrics
                 "sharpe_ratio": risk_metrics["sharpe_ratio"],
                 "max_drawdown": risk_metrics["max_drawdown"],
@@ -8266,7 +8334,10 @@ def api_update_bankroll():
 
         # Aggiorna campi modificabili
         if "bankroll_iniziale" in data:
-            config["bankroll_iniziale"] = float(data["bankroll_iniziale"])
+            bankroll_iniziale = float(data["bankroll_iniziale"])
+            if bankroll_iniziale <= 0:
+                return jsonify({"success": False, "error": "Il bankroll iniziale deve essere positivo"}), 400
+            config["bankroll_iniziale"] = bankroll_iniziale
 
         if "kelly_fraction" in data:
             kelly = float(data["kelly_fraction"])
@@ -8284,10 +8355,8 @@ def api_update_bankroll():
         if "take_profit_percentage" in data:
             config["take_profit_percentage"] = float(data["take_profit_percentage"])
 
-        # Ricalcola unit\u00e0 betting (1% bankroll corrente)
-        config["unita_betting"] = config["bankroll_corrente"] * 0.01
-
         save_bankroll_config(config)
+        config = update_bankroll_from_bets()  # ricalcola bankroll corrente e unita' betting
 
         logger.info(f"✅ Bankroll config aggiornato: {config['bankroll_iniziale']}€")
 
