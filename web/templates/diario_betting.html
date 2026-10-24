@@ -568,7 +568,10 @@
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label for="bet-partita" class="form-label">Partita *</label>
-                                    <input type="text" class="form-control" id="bet-partita" placeholder="es. Parma-Verona" required>
+                                    <select class="form-select mb-2" id="bet-partita-select" aria-label="Scegli una delle prossime partite">
+                                        <option value="">Caricamento prossime partite...</option>
+                                    </select>
+                                    <input type="text" class="form-control" id="bet-partita" placeholder="oppure scrivi a mano (es. Parma vs Verona)" required>
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label for="bet-mercato" class="form-label">Mercato *</label>
@@ -684,6 +687,7 @@
                                 <div class="col-md-4 mb-3">
                                     <label for="bet-quota" class="form-label">Quota Sisal *</label>
                                     <input type="number" class="form-control" id="bet-quota" step="0.01" min="1.01" placeholder="es. 1.45" required>
+                                    <small class="text-muted" id="bet-quota-hint"></small>
                                 </div>
                                 <div class="col-md-4 mb-3">
                                     <div class="form-check mb-2">
@@ -1497,6 +1501,81 @@
             }
         }
 
+        // ==================== PROSSIME PARTITE (compilazione automatica) ====================
+
+        let prossimePartite = [];
+        let prossimePartiteCaricate = null;
+
+        // Elenco da /api/upcoming_matches (cache lato server), caricato una sola volta
+        function caricaProssimePartite() {
+            if (!prossimePartiteCaricate) {
+                prossimePartiteCaricate = fetch('/api/upcoming_matches')
+                    .then(r => r.json())
+                    .then(d => { prossimePartite = Array.isArray(d.matches) ? d.matches : []; })
+                    .catch(() => { prossimePartite = []; });
+            }
+            return prossimePartiteCaricate;
+        }
+
+        function etichettaPartita(m) {
+            const quando = new Date(m.commence_time).toLocaleString('it-IT', {
+                timeZone: 'Europe/Rome', weekday: 'short', day: '2-digit', month: '2-digit',
+                hour: '2-digit', minute: '2-digit'
+            });
+            return `${m.home_team} vs ${m.away_team} - ${quando}`;
+        }
+
+        async function popolaSelectPartite(select) {
+            await caricaProssimePartite();
+            select.innerHTML = '';
+            select.add(new Option(
+                prossimePartite.length ? 'Scegli dalle prossime partite...' : 'Partite non disponibili, scrivi a mano', ''
+            ));
+            prossimePartite.forEach((m, i) => select.add(new Option(etichettaPartita(m), i)));
+        }
+
+        function dataPartita(m) {
+            return new Date(m.commence_time).toLocaleDateString('sv-SE', { timeZone: 'Europe/Rome' });
+        }
+
+        // Quota media dei bookmaker per i mercati per cui abbiamo il dato
+        function quotaMediaMercato(m, mercato) {
+            const o = m.odds_real || {};
+            const t = m.odds_totals || {};
+            return { '1': o.home, 'X': o.draw, '2': o.away, 'OVER_25': t.over_25, 'UNDER_25': t.under_25 }[mercato] || null;
+        }
+
+        function aggiornaSuggerimentoQuota() {
+            const hint = document.getElementById('bet-quota-hint');
+            const i = document.getElementById('bet-partita-select').value;
+            const quota = i !== '' ? quotaMediaMercato(prossimePartite[i], document.getElementById('bet-mercato').value) : null;
+            hint.textContent = quota ? `Media bookmaker: ${quota.toFixed(2)} (indicativa, inserisci la quota Sisal)` : '';
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            popolaSelectPartite(document.getElementById('bet-partita-select'));
+
+            document.getElementById('bet-partita-select').addEventListener('change', function () {
+                if (this.value !== '') {
+                    const m = prossimePartite[this.value];
+                    document.getElementById('bet-partita').value = `${m.home_team} vs ${m.away_team}`;
+                    document.getElementById('bet-data').value = dataPartita(m);
+                }
+                aggiornaSuggerimentoQuota();
+            });
+            document.getElementById('bet-mercato').addEventListener('change', aggiornaSuggerimentoQuota);
+            document.getElementById('form-add-bet').addEventListener('reset', () => setTimeout(aggiornaSuggerimentoQuota));
+
+            // Multipla: i menu vengono creati dinamicamente, quindi delega sull'elenco eventi
+            document.getElementById('eventi-multipla-container').addEventListener('change', e => {
+                if (e.target.classList.contains('evento-partita-select') && e.target.value !== '') {
+                    const m = prossimePartite[e.target.value];
+                    e.target.closest('.evento-multipla-row').querySelector('.evento-partita').value =
+                        `${m.home_team} vs ${m.away_team}`;
+                }
+            });
+        });
+
         // ==================== SCOMMESSE MULTIPLE ====================
 
         let eventiMultiplaCounter = 0;
@@ -1510,8 +1589,11 @@
                 <div class="evento-multipla-row" id="evento-${eventiMultiplaCounter}">
                     <div class="row align-items-center">
                         <div class="col-md-4 mb-2">
+                            <select class="form-select form-select-sm mb-1 evento-partita-select" aria-label="Scegli una delle prossime partite">
+                                <option value="">Caricamento prossime partite...</option>
+                            </select>
                             <input type="text" class="form-control form-control-sm evento-partita"
-                                   placeholder="Partita (es. Inter vs Milan)" required>
+                                   placeholder="oppure scrivi a mano (es. Inter vs Milan)" required>
                         </div>
                         <div class="col-md-3 mb-2">
                             <select class="form-select form-select-sm evento-mercato" required>
@@ -1636,6 +1718,7 @@
             `;
 
             container.insertAdjacentHTML('beforeend', eventoHtml);
+            popolaSelectPartite(container.lastElementChild.querySelector('.evento-partita-select'));
             ricalcolaQuotaTotale();
         }
 
