@@ -511,27 +511,7 @@
                                     </label>
                                     <select class="form-select" id="squadraCasa" aria-label="Seleziona squadra casa" required>
                                         <option value="">Seleziona squadra...</option>
-                                        <!-- Serie A 2025-26 (20 squadre) -->
-                                        <option value="Atalanta">Atalanta</option>
-                                        <option value="Bologna">Bologna</option>
-                                        <option value="Cagliari">Cagliari</option>
-                                        <option value="Como">Como</option>
-                                        <option value="Cremonese">Cremonese</option>
-                                        <option value="Fiorentina">Fiorentina</option>
-                                        <option value="Genoa">Genoa</option>
-                                        <option value="Inter">Inter</option>
-                                        <option value="Juventus">Juventus</option>
-                                        <option value="Lazio">Lazio</option>
-                                        <option value="Lecce">Lecce</option>
-                                        <option value="Milan">Milan</option>
-                                        <option value="Napoli">Napoli</option>
-                                        <option value="Parma">Parma</option>
-                                        <option value="Pisa">Pisa</option>
-                                        <option value="Roma">Roma</option>
-                                        <option value="Sassuolo">Sassuolo</option>
-                                        <option value="Torino">Torino</option>
-                                        <option value="Udinese">Udinese</option>
-                                        <option value="Verona">Verona</option>
+                                        <!-- Squadre caricate da /api/squadre (stagione corrente) -->
                                     </select>
                                 </div>
 
@@ -541,27 +521,7 @@
                                     </label>
                                     <select class="form-select" id="squadraOspite" aria-label="Seleziona squadra ospite" required>
                                         <option value="">Seleziona squadra...</option>
-                                        <!-- Serie A 2025-26 (20 squadre) -->
-                                        <option value="Atalanta">Atalanta</option>
-                                        <option value="Bologna">Bologna</option>
-                                        <option value="Cagliari">Cagliari</option>
-                                        <option value="Como">Como</option>
-                                        <option value="Cremonese">Cremonese</option>
-                                        <option value="Fiorentina">Fiorentina</option>
-                                        <option value="Genoa">Genoa</option>
-                                        <option value="Inter">Inter</option>
-                                        <option value="Juventus">Juventus</option>
-                                        <option value="Lazio">Lazio</option>
-                                        <option value="Lecce">Lecce</option>
-                                        <option value="Milan">Milan</option>
-                                        <option value="Napoli">Napoli</option>
-                                        <option value="Parma">Parma</option>
-                                        <option value="Pisa">Pisa</option>
-                                        <option value="Roma">Roma</option>
-                                        <option value="Sassuolo">Sassuolo</option>
-                                        <option value="Torino">Torino</option>
-                                        <option value="Udinese">Udinese</option>
-                                        <option value="Verona">Verona</option>
+                                        <!-- Squadre caricate da /api/squadre (stagione corrente) -->
                                     </select>
                                 </div>
 
@@ -771,6 +731,26 @@
             toast.show();
             toastElement.addEventListener('hidden.bs.toast', () => toastElement.remove());
         }
+
+        // Menu squadre: caricato da /api/squadre (sempre la stagione corrente)
+        async function caricaSquadre() {
+            const selezioni = ['squadraCasa', 'squadraOspite'].map(id => document.getElementById(id));
+            try {
+                const res = await fetch('/api/squadre');
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const { squadre } = await res.json();
+                if (!Array.isArray(squadre) || squadre.length === 0) throw new Error('lista vuota');
+                selezioni.forEach(sel => {
+                    squadre.forEach(nome => sel.add(new Option(nome, nome)));
+                });
+            } catch (err) {
+                console.error('Caricamento squadre fallito:', err);
+                selezioni.forEach(sel => {
+                    sel.options[0].textContent = 'Squadre non disponibili, ricarica la pagina';
+                });
+            }
+        }
+        document.addEventListener('DOMContentLoaded', caricaSquadre);
 
         // Form Submission
         document.getElementById('predictionForm').addEventListener('submit', async function(e) {
