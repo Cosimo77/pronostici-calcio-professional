@@ -7,12 +7,18 @@ Riduce response time da 1.5s a <500ms e risparmia chiamate API
 import hashlib
 import json
 import logging
+import time
 from datetime import datetime, timedelta
 from typing import Any, Dict, Optional
 
 import redis
 
 logger = logging.getLogger(__name__)
+
+# Ripiego in memoria per le partite future quando Redis non c'e' (es. Render free):
+# senza, ogni richiesta consumerebbe crediti The Odds API. Valido per singolo processo.
+UPCOMING_MEMORY_TTL = 12 * 3600
+_upcoming_memory: Dict[str, Any] = {"data": None, "expires": 0.0}
 
 
 class CacheManager:
@@ -140,6 +146,10 @@ class CacheManager:
         Returns:
             Numero chiavi eliminate
         """
+        if pattern.startswith("upcoming_matches"):
+            _upcoming_memory["data"] = None
+            _upcoming_memory["expires"] = 0.0
+
         if not self.enabled or not self.redis_client:
             return 0
 
@@ -266,7 +276,12 @@ class CacheManager:
             Dict con lista partite o None
         """
         key = "upcoming_matches:latest"
-        return self.get(key)
+        if self.enabled and self.redis_client:
+            return self.get(key)
+        if _upcoming_memory["data"] is not None and time.time() < _upcoming_memory["expires"]:
+            logger.debug("🎯 Cache HIT (memoria): upcoming_matches")
+            return _upcoming_memory["data"]
+        return None
 
     def set_upcoming_matches(self, matches_data: Dict) -> bool:
         """
@@ -280,7 +295,11 @@ class CacheManager:
         """
         key = "upcoming_matches:latest"
         ttl = 86400  # 24 ore - 1 call/giorno = 30 calls/mese (470 calls risparmiate!)
-        return self.set(key, matches_data, ttl)
+        if self.enabled and self.redis_client:
+            return self.set(key, matches_data, ttl)
+        _upcoming_memory["data"] = matches_data
+        _upcoming_memory["expires"] = time.time() + UPCOMING_MEMORY_TTL
+        return True
 
     def cache_dataset_info(self) -> Optional[Dict]:
         """
