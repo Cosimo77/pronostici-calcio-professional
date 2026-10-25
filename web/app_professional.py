@@ -7806,6 +7806,7 @@ def api_diario_pending():
                     "ev_modello": bet["ev_modello"],
                     "ev_reale": bet["ev_realistico"],
                     "note": bet["note"],
+                    "group_id": bet.get("group_id"),  # il frontend nasconde gli eventi delle multiple
                 }
             )
 
@@ -7848,6 +7849,7 @@ def api_diario_completed():
                     "risultato": bet["risultato"],
                     "profit": bet["profit"],
                     "note": bet["note"],
+                    "group_id": bet.get("group_id"),  # il frontend nasconde gli eventi delle multiple
                 }
             )
 
@@ -7966,7 +7968,12 @@ def api_diario_update():
         if risultato not in ["WIN", "LOSS", "VOID", "SKIP", "PENDING"]:
             return jsonify({"success": False, "error": "Risultato non valido"}), 400
 
-        profit = DiarioStorage.update_risultato(bet_id, risultato)
+        bet = DiarioStorage.get_by_id(bet_id)
+        if bet and bet.get("group_id"):
+            # Evento di una multipla: va ricalcolato anche il risultato della multipla
+            profit = DiarioStorage.update_evento_multipla(bet_id, risultato)
+        else:
+            profit = DiarioStorage.update_risultato(bet_id, risultato)
         logger.info(f"✅ Risultato aggiornato: bet_id={bet_id} → {risultato} (€{profit:+.2f})")
 
         return jsonify({"success": True, "profit": round(profit, 2)})
@@ -8233,7 +8240,7 @@ def api_diario_update_evento_multipla():
     Request body:
     {
         "bet_id": 123,  // ID evento (non group_id!)
-        "risultato": "WIN"  // WIN, LOSS, VOID, SKIP
+        "risultato": "WIN"  // WIN, LOSS, VOID, SKIP, PENDING (annulla)
     }
     """
     try:
@@ -8244,7 +8251,7 @@ def api_diario_update_evento_multipla():
         bet_id = int(data["bet_id"])
         risultato = data["risultato"]
 
-        if risultato not in ["WIN", "LOSS", "VOID", "SKIP"]:
+        if risultato not in ["WIN", "LOSS", "VOID", "SKIP", "PENDING"]:
             return jsonify({"success": False, "error": "Risultato non valido"}), 400
 
         # Aggiorna evento + ricalcola multipla

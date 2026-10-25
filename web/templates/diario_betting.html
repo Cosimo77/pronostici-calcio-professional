@@ -315,7 +315,7 @@
                     <div class="col-md-3">
                         <div class="stat-card stat-neutral">
                             <h3 id="unita-betting">€10</h3>
-                            <small>Unit\u00e0 Betting (1%)</small>
+                            <small>Unità Betting (1%)</small>
                         </div>
                     </div>
                     <div class="col-md-3">
@@ -499,7 +499,7 @@
                                     <div class="alert alert-success">
                                         <h6><i class="bi bi-check-circle"></i> Stake Suggerito</h6>
                                         <p class="mb-1"><strong>Kelly Stake:</strong> <span id="kelly-stake-value">€0.00</span></p>
-                                        <p class="mb-1"><strong>Unit\u00e0:</strong> <span id="kelly-units-value">0.0 U</span></p>
+                                        <p class="mb-1"><strong>Unità:</strong> <span id="kelly-units-value">0.0 U</span></p>
                                         <p class="mb-1"><strong>% Bankroll:</strong> <span id="kelly-pct-value">0%</span></p>
                                         <p class="mb-0"><strong>Expected Value:</strong> <span id="kelly-ev-value">0%</span></p>
                                     </div>
@@ -1099,6 +1099,15 @@
         }
 
         // Render multipla card con eventi espandibili
+        // Riepilogo esiti degli eventi: es. "1 ✓  0 ✗  4 in attesa"
+        function progressoEventi(multipla) {
+            const eventi = multipla.eventi || [];
+            const conta = esito => eventi.filter(e => e.risultato === esito).length;
+            const annullati = conta('VOID') + conta('SKIP');
+            return `<span class="badge bg-light text-dark ms-1">${conta('WIN')} ✓ &nbsp;${conta('LOSS')} ✗` +
+                   `${annullati ? ` &nbsp;${annullati} ann.` : ''} &nbsp;${conta('PENDING')} in attesa</span>`;
+        }
+
         function renderMultipla(multipla, source) {
             const classRisultato = multipla.risultato === 'PENDING' ? 'bet-pending' :
                                   multipla.risultato === 'WIN' ? 'bet-win' :
@@ -1106,12 +1115,13 @@
 
             let html = `
                 <div class="multipla-card ${classRisultato}">
-                    <div class="multipla-header" onclick="toggleEventiMultipla(${multipla.id})">
+                    <div class="multipla-header" onclick="toggleEventiMultipla('${multipla.id}')">
                         <div>
                             <h5>
                                 <i class="bi bi-stack"></i> ${multipla.nome}
                                 <span class="badge badge-multipla bg-info text-dark ms-2">${multipla.tipo_multipla.toUpperCase()}</span>
                                 <span class="badge bg-secondary ms-1">${multipla.num_eventi} eventi</span>
+                                ${progressoEventi(multipla)}
                             </h5>
                             <p class="mb-1">
                                 <strong>Data:</strong> ${multipla.data} |
@@ -1128,7 +1138,7 @@
                         </div>
                     </div>
 
-                    <div class="multipla-eventi" id="eventi-multipla-${multipla.id}">
+                    <div class="multipla-eventi ${multipla.risultato === 'PENDING' ? 'show' : ''}" id="eventi-multipla-${multipla.id}">
                         ${multipla.eventi.map(evento => {
                             const classEvento = evento.risultato === 'PENDING' ? '' :
                                               evento.risultato === 'WIN' ? 'border-success' :
@@ -1145,26 +1155,28 @@
                                                 `<span class="badge ${evento.risultato === 'WIN' ? 'bg-success' : evento.risultato === 'LOSS' ? 'bg-danger' : 'bg-secondary'} ms-2">${evento.risultato}</span>`
                                                 : ''}
                                         </div>
-                                        ${multipla.risultato === 'PENDING' ? `
-                                            <div>
-                                                <button class="btn btn-sm btn-success me-1" onclick="updateEventoMultipla(${evento.id}, 'WIN', ${multipla.id})" title="WIN">
-                                                    <i class="bi bi-check"></i>
-                                                </button>
-                                                <button class="btn btn-sm btn-danger me-1" onclick="updateEventoMultipla(${evento.id}, 'LOSS', ${multipla.id})" title="LOSS">
-                                                    <i class="bi bi-x"></i>
-                                                </button>
-                                                <button class="btn btn-sm btn-secondary" onclick="updateEventoMultipla(${evento.id}, 'VOID', ${multipla.id})" title="VOID">
-                                                    <i class="bi bi-dash"></i>
-                                                </button>
-                                            </div>
-                                        ` : ''}
+                                        <div>
+                                            <button class="btn btn-sm btn-success me-1" onclick="updateEventoMultipla(${evento.id}, 'WIN', '${multipla.id}')" title="WIN">
+                                                <i class="bi bi-check"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-danger me-1" onclick="updateEventoMultipla(${evento.id}, 'LOSS', '${multipla.id}')" title="LOSS">
+                                                <i class="bi bi-x"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-secondary me-1" onclick="updateEventoMultipla(${evento.id}, 'VOID', '${multipla.id}')" title="VOID (annullata: la quota si ricalcola)">
+                                                <i class="bi bi-dash"></i>
+                                            </button>
+                                            ${evento.risultato !== 'PENDING' ? `
+                                                <button class="btn btn-sm btn-outline-secondary" onclick="updateEventoMultipla(${evento.id}, 'PENDING', '${multipla.id}')" title="Annulla esito (torna in attesa)">
+                                                    <i class="bi bi-arrow-counterclockwise"></i>
+                                                </button>` : ''}
+                                        </div>
                                     </div>
                                 </div>
                             `;
                         }).join('')}
 
                         <div class="mt-3 text-end">
-                            <button class="btn btn-sm btn-outline-danger" onclick="deleteMultipla(${multipla.id}, '${source}')" title="Elimina multipla">
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteMultipla('${multipla.id}', '${source}')" title="Elimina multipla">
                                 <i class="bi bi-trash"></i> Elimina Multipla
                             </button>
                         </div>
@@ -1980,10 +1992,7 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    // Notify
-                    alert(`✅ Evento aggiornato → ${risultato}\nProfit multipla: €${result.profit_multipla || 0}`);
-
-                    // 🚀 PERFORMANCE: Reload all data in parallel
+                    // Nessun alert bloccante: la scheda si aggiorna da sola
                     reloadAllData();
                 } else {
                     alert('❌ Errore: ' + (result.error || 'Sconosciuto'));

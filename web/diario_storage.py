@@ -5,6 +5,7 @@ Interfaccia unificata per PostgreSQL + CSV fallback
 
 import os
 import shutil
+import threading
 from datetime import datetime
 from typing import Dict, List, Optional
 
@@ -14,6 +15,9 @@ import structlog
 from database.multipla_rules import esito_multipla
 
 logger = structlog.get_logger()
+
+# Evita che richieste contemporanee inizializzino il database insieme (e che alcune ricadano sul CSV)
+_INIT_LOCK = threading.Lock()
 
 # Import condizionale database module
 try:
@@ -50,20 +54,24 @@ class DiarioStorage:
         # Lazy init: DATABASE_URL presente ma pool non inizializzato?
         database_url = os.getenv("DATABASE_URL")
         if database_url:
-            logger.warning("⚠️ DATABASE_URL presente ma pool non inizializzato - tentativo lazy init...")
-            try:
-                from database import init_db
-
-                success = init_db()
-                if success:
-                    logger.info("✅ Lazy init SUCCESS - PostgreSQL attivo")
+            with _INIT_LOCK:
+                if is_db_available():  # inizializzato da un'altra richiesta nel frattempo
                     return True
-                else:
-                    logger.warning("❌ Lazy init FAILED - fallback CSV")
+
+                logger.warning("⚠️ DATABASE_URL presente ma pool non inizializzato - tentativo lazy init...")
+                try:
+                    from database import init_db
+
+                    success = init_db()
+                    if success:
+                        logger.info("✅ Lazy init SUCCESS - PostgreSQL attivo")
+                        return True
+                    else:
+                        logger.warning("❌ Lazy init FAILED - fallback CSV")
+                        return False
+                except Exception as e:
+                    logger.error("❌ Lazy init exception", error=str(e))
                     return False
-            except Exception as e:
-                logger.error("❌ Lazy init exception", error=str(e))
-                return False
 
         # Nessun DATABASE_URL configurato
         logger.info("🔍 _use_database() = False (no DATABASE_URL)")
