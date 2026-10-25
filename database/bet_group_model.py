@@ -9,6 +9,7 @@ from typing import Dict, List, Optional
 import structlog
 
 from database.connection import get_db_connection
+from database.multipla_rules import GAMBE_NEUTRE, esito_multipla
 
 logger = structlog.get_logger(__name__)
 
@@ -200,43 +201,23 @@ class BetGroupModel:
 
                     quota_totale, stake, num_eventi = row
 
-                    # Conta risultati eventi associati
+                    # Risultato e quota di ogni gamba
                     cursor.execute(
                         """
-                        SELECT risultato, COUNT(*) as cnt
+                        SELECT risultato, quota_sisal
                         FROM bets
                         WHERE group_id = %s
-                        GROUP BY risultato
                     """,
-                        (group_id,),
+                        (str(group_id),),  # bets.group_id e' testo
                     )
+                    gambe = [(r[0], float(r[1])) for r in cursor.fetchall()]
 
-                    risultati = {r[0]: r[1] for r in cursor.fetchall()}
+                    risultato_finale, profit = esito_multipla(gambe, float(quota_totale), float(stake))
 
-                    # Determina risultato finale
-                    num_win = risultati.get("WIN", 0)
-                    num_loss = risultati.get("LOSS", 0)
-                    num_void = risultati.get("VOID", 0)
-                    num_skip = risultati.get("SKIP", 0)
-                    num_pending = risultati.get("PENDING", 0)
-
-                    if num_loss > 0 or num_skip > 0:
-                        # Almeno un LOSS o SKIP → Multipla LOSS
-                        risultato_finale = "LOSS"
-                        profit = -stake
-                    elif num_win == num_eventi:
-                        # Tutti WIN → Multipla WIN
-                        risultato_finale = "WIN"
-                        vincita = quota_totale * stake
-                        profit = vincita - stake
-                    elif num_void > 0 and num_pending == 0 and num_loss == 0:
-                        # Almeno un VOID (senza LOSS/PENDING) → Multipla VOID
-                        risultato_finale = "VOID"
-                        profit = 0.0
-                    else:
-                        # Ancora eventi pending
-                        risultato_finale = "PENDING"
-                        profit = 0.0
+                    # Contatori solo per il log
+                    num_win = sum(1 for r, _ in gambe if r == "WIN")
+                    num_loss = sum(1 for r, _ in gambe if r == "LOSS")
+                    num_void = sum(1 for r, _ in gambe if r in GAMBE_NEUTRE)
 
                     # Aggiorna multipla
                     cursor.execute(
@@ -265,14 +246,17 @@ class BetGroupModel:
             raise
 
     @staticmethod
-    def delete(group_id: int) -> bool:
+    def delete(group_id) -> bool:
         """
-        Elimina multipla (CASCADE elimina anche eventi associati in bets)
+        Elimina multipla e i suoi eventi
         """
         try:
             with get_db_connection() as conn:
                 with conn.cursor() as cursor:
-                    cursor.execute("DELETE FROM bet_groups WHERE id = %s", (group_id,))
+                    # Nessuna FK su bets.group_id (testo): le gambe vanno eliminate esplicitamente
+                    cursor.execute("DELETE FROM bets WHERE group_id = %s", (str(group_id),))
+                    if str(group_id).isdigit():
+                        cursor.execute("DELETE FROM bet_groups WHERE id = %s", (int(group_id),))
 
                     logger.info("Multipla eliminata", group_id=group_id)
                     return True

@@ -7427,8 +7427,8 @@ def update_bankroll_from_bets():
     """
     config = load_bankroll_config()
 
-    # Carica bets da PostgreSQL/CSV fallback
-    all_bets = DiarioStorage.get_all_bets()
+    # Singole + multiple (gli eventi delle multiple non sono puntate)
+    all_bets = DiarioStorage.get_accounting_bets()
 
     # Filtra solo WIN/LOSS (esclude VOID e SKIP)
     completed_bets = [bet for bet in all_bets if bet.get("risultato") in ["WIN", "LOSS"]]
@@ -7534,8 +7534,8 @@ def diario_betting():
 def api_diario_stats():
     """Statistiche globali diario betting - PostgreSQL backed"""
     try:
-        # Carica bets da PostgreSQL/CSV fallback via DiarioStorage
-        all_bets = DiarioStorage.get_all_bets()
+        # Singole + multiple (gli eventi delle multiple non sono puntate)
+        all_bets = DiarioStorage.get_accounting_bets()
 
         if len(all_bets) == 0:
             return jsonify(
@@ -7617,8 +7617,8 @@ def api_diario_investor_metrics():
     try:
         from datetime import datetime
 
-        # Carica bets dal database Neon (NON da CSV)
-        all_bets = DiarioStorage.get_all_bets()
+        # Singole + multiple (gli eventi delle multiple non sono puntate)
+        all_bets = DiarioStorage.get_accounting_bets()
 
         # Filtra solo bet completati (WIN, LOSS) - escludi PENDING, VOID, SKIP
         completed_bets = [b for b in all_bets if b.get("risultato") in ["WIN", "LOSS"]]
@@ -8069,24 +8069,53 @@ def api_diario_add_multipla():
             )
 
         # Validazione eventi
+        visti = set()
         for idx, evento in enumerate(eventi, 1):
             if not all(k in evento for k in ["partita", "mercato", "quota"]):
                 return (
                     jsonify({"success": False, "error": f"Evento {idx} incompleto"}),
                     400,
                 )
+            try:
+                quota_evento = float(evento["quota"])
+            except (TypeError, ValueError):
+                return jsonify({"success": False, "error": f"Evento {idx}: quota non valida"}), 400
+            if quota_evento < 1.01:
+                return jsonify({"success": False, "error": f"Evento {idx}: quota minima 1.01"}), 400
 
-        # Calcola quota totale (prodotto)
+            chiave = (str(evento["partita"]).strip().lower(), str(evento["mercato"]))
+            if chiave in visti:
+                return jsonify({"success": False, "error": f"Evento {idx} duplicato nella multipla"}), 400
+            visti.add(chiave)
+
+        try:
+            stake_multipla = float(data["stake"])
+        except (TypeError, ValueError):
+            return jsonify({"success": False, "error": "Stake non valido"}), 400
+        if stake_multipla <= 0:
+            return jsonify({"success": False, "error": "Lo stake deve essere positivo"}), 400
+
+        # Quota totale: prodotto delle quote, oppure quella reale della schedina (es. con bonus multipla)
         quota_totale = 1.0
         for evento in eventi:
             quota_totale *= float(evento["quota"])
+
+        quota_schedina = data.get("quota_totale")
+        if quota_schedina not in (None, ""):
+            try:
+                quota_schedina = float(quota_schedina)
+            except (TypeError, ValueError):
+                return jsonify({"success": False, "error": "Quota totale non valida"}), 400
+            if quota_schedina < 1.01:
+                return jsonify({"success": False, "error": "Quota totale minima 1.01"}), 400
+            quota_totale = quota_schedina
 
         # Prepara dati multipla
         multipla_data = {
             "data": data.get("data", datetime.now().strftime("%Y-%m-%d")),
             "nome": data.get("nome", ""),
             "quota_totale": round(quota_totale, 2),
-            "stake": float(data["stake"]),
+            "stake": stake_multipla,
             "note": data.get("note", ""),
         }
 
@@ -8429,8 +8458,8 @@ def api_calculate_kelly():
 def api_equity_curve():
     """Dati equity curve per grafici - PostgreSQL backed"""
     try:
-        # Carica tutte le bet completate dal database/CSV
-        all_bets = DiarioStorage.get_all_bets()
+        # Singole + multiple (gli eventi delle multiple non sono puntate)
+        all_bets = DiarioStorage.get_accounting_bets()
 
         # Filtra solo WIN/LOSS completate
         completed_bets = [bet for bet in all_bets if bet.get("risultato") in ["WIN", "LOSS"]]

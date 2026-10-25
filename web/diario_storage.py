@@ -11,6 +11,8 @@ from typing import Dict, List, Optional
 import pandas as pd
 import structlog
 
+from database.multipla_rules import esito_multipla
+
 logger = structlog.get_logger()
 
 # Import condizionale database module
@@ -256,35 +258,20 @@ class DiarioStorage:
 
             # Aggiorna tutti gli eventi della multipla
             df_multipla = df[df["group_id"] == group_id]
-            risultati = df_multipla["Risultato"].tolist()
+            gambe = [
+                (str(r), float(df.at[idx, "Quota_Sisal"]))  # type: ignore[arg-type]
+                for idx, r in df_multipla["Risultato"].items()
+            ]
+            quota_totale = 1.0
+            for _, quota in gambe:
+                quota_totale *= quota
+            stake = float(df_multipla.iloc[0]["Stake"])  # type: ignore[arg-type]
 
-            # Logica multipla: basta 1 LOSS → tutta LOSS
-            if risultato in ["LOSS", "SKIP"] or "LOSS" in risultati or "SKIP" in risultati:
-                # Multipla persa
-                stake = float(df_multipla.iloc[0]["Stake"])
-                profit = -stake
+            _, profit = esito_multipla(gambe, quota_totale, stake)
 
-                # Aggiorna tutti gli eventi con profit negativo
-                for idx in df_multipla.index:
-                    df.at[idx, "Profit"] = round(profit, 2)
-
-            elif all(r == "WIN" for r in risultati):
-                # Multipla vinta: calcola profit totale
-                stake = float(df_multipla.iloc[0]["Stake"])  # type: ignore[arg-type]
-                quota_totale = 1.0
-                for idx in df_multipla.index:
-                    quota_totale *= float(df.at[idx, "Quota_Sisal"])  # type: ignore[arg-type]
-
-                profit = stake * (quota_totale - 1)
-
-                # Aggiorna tutti gli eventi con profit positivo
-                for idx in df_multipla.index:
-                    df.at[idx, "Profit"] = round(profit, 2)
-
-            else:
-                # Ancora PENDING
-                profit = 0.0
-                df.at[bet_id, "Profit"] = 0.0
+            # Il profit della multipla e' ripetuto su ogni evento (si conta una volta sola dal gruppo)
+            for idx in df_multipla.index:
+                df.at[idx, "Profit"] = profit
 
         else:
             # Bet singola: calcolo normale
@@ -677,12 +664,17 @@ class DiarioStorage:
 
                 groups = BetGroupModel.get_all(risultato=risultato)
 
-                # Arricchisci ogni multipla con eventi nested
+                # Arricchisci ogni multipla con eventi nested (bet caricate una sola volta)
+                tutte_le_bet = DiarioStorage.get_all_bets()
                 for group in groups:
                     group_id = group["id"]
-                    # Get eventi associati a questa multipla
-                    eventi = [bet for bet in DiarioStorage.get_all_bets() if bet.get("group_id") == group_id]
-                    group["eventi"] = eventi
+                    # bets.group_id e' testo mentre bet_groups.id e' numerico
+                    group["eventi"] = [bet for bet in tutte_le_bet if str(bet.get("group_id")) == str(group_id)]
+
+                tutte_le_multiple = groups if risultato is None else BetGroupModel.get_all()
+                noti = {str(g["id"]) for g in tutte_le_multiple}
+                orfane = DiarioStorage._gruppi_senza_riga(tutte_le_bet, noti)
+                groups += [g for g in orfane if risultato is None or g["risultato"] == risultato]
 
                 logger.info("Multiple recuperate da DB", count=len(groups))
                 return groups
@@ -808,8 +800,21 @@ class DiarioStorage:
 
             group_id = bet["group_id"]
 
-            # Ricalcola risultato multipla
-            profit = BetGroupModel.update_risultato(group_id)
+            # Ricalcola risultato multipla (senza riga in bet_groups: si ricostruisce dalle gambe)
+            try:
+                profit = BetGroupModel.update_risultato(group_id)
+            except ValueError:
+                gruppo = next(
+                    (
+                        g
+                        for g in DiarioStorage._gruppi_senza_riga(DiarioStorage.get_all_bets(), set())
+                        if g["id"] == str(group_id)
+                    ),
+                    None,
+                )
+                if gruppo is None:
+                    raise
+                profit = gruppo["profit"]
 
             logger.info(
                 "Evento multipla aggiornato (DB)",
@@ -845,6 +850,85 @@ class DiarioStorage:
         return profit
 
     @staticmethod
+    def _gruppi_senza_riga(bets: List[Dict], noti: set) -> List[Dict]:
+        """
+        Multiple con eventi ma senza riga in bet_groups (es. nate dal ripiego CSV):
+        ogni evento ripete stake e profit della multipla, quindi si ricostruisce dal gruppo
+        """
+        per_gruppo: Dict[str, List[Dict]] = {}
+        for bet in bets:
+            if bet.get("group_id") and str(bet["group_id"]) not in noti:
+                per_gruppo.setdefault(str(bet["group_id"]), []).append(bet)
+
+        gruppi = []
+        for group_id, gambe in per_gruppo.items():
+            quote = [float(g["quota_sisal"]) for g in gambe]
+            quota_totale = 1.0
+            for quota in quote:
+                quota_totale *= quota
+            try:
+                stake = float(gambe[0]["stake"])
+            except (TypeError, ValueError):
+                stake = 0.0  # MONITOR
+            esito, profit = esito_multipla([(g["risultato"], q) for g, q in zip(gambe, quote)], quota_totale, stake)
+            gruppi.append(
+                {
+                    "id": group_id,
+                    "data": gambe[0]["data"],
+                    "nome": "",
+                    "tipo_multipla": "multipla",
+                    "num_eventi": len(gambe),
+                    "quota_totale": round(quota_totale, 2),
+                    "stake": stake,
+                    "risultato": esito,
+                    "profit": profit,
+                    "note": "",
+                    "eventi": gambe,
+                }
+            )
+        return gruppi
+
+    @staticmethod
+    def get_accounting_bets() -> List[Dict]:
+        """
+        Giocate per statistiche, bankroll ed equity curve: le singole piu' UNA voce per multipla.
+        Gli eventi delle multiple hanno stake virtuale 0 e non contano come puntate:
+        stake, quota ed esito stanno sulla multipla.
+        """
+        bets = DiarioStorage.get_all_bets()
+        singole = [b for b in bets if not b.get("group_id")]
+
+        gruppi: List[Dict] = []
+        if DiarioStorage._use_database():
+            try:
+                from database.bet_group_model import BetGroupModel
+
+                gruppi = BetGroupModel.get_all()
+            except Exception as e:
+                logger.error("Errore lettura multiple per contabilita", error=str(e))
+
+        noti = {str(g["id"]) for g in gruppi}
+        gruppi += DiarioStorage._gruppi_senza_riga(bets, noti)
+
+        multiple = [
+            {
+                "id": f"G{g['id']}",
+                "group_id": g["id"],
+                "tipo_bet": "MULTIPLA",
+                "data": g["data"],
+                "partita": g.get("nome") or f"{str(g['tipo_multipla']).capitalize()} ({g['num_eventi']} eventi)",
+                "mercato": "MULTIPLA",
+                "quota_sisal": g["quota_totale"],
+                "stake": g["stake"],
+                "risultato": g["risultato"],
+                "profit": g["profit"],
+                "note": g.get("note") or "",
+            }
+            for g in gruppi
+        ]
+        return singole + multiple
+
+    @staticmethod
     def delete_multipla(group_id: str) -> bool:
         """Elimina multipla (CASCADE elimina anche eventi)"""
         if DiarioStorage._use_database():
@@ -854,7 +938,7 @@ class DiarioStorage:
         try:
             from database.bet_group_model import BetGroupModel
 
-            return BetGroupModel.delete(int(group_id))  # Convert to int for DB
+            return BetGroupModel.delete(group_id)
         except Exception as e:
             logger.error(
                 "Errore delete multipla DB, fallback to CSV",

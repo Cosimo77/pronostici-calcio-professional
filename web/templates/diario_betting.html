@@ -801,6 +801,12 @@
                             </div>
 
                             <div class="mb-3">
+                                <label for="multipla-quota-reale" class="form-label">Quota reale della schedina (opzionale)</label>
+                                <input type="number" class="form-control" id="multipla-quota-reale" step="0.01" min="1.01" placeholder="lascia vuoto per usare il prodotto delle quote">
+                                <small class="text-muted">Se il bookmaker applica un bonus multipla o arrotonda, inserisci la quota finale della schedina: vincita e profitto useranno questa.</small>
+                            </div>
+
+                            <div class="mb-3">
                                 <label for="multipla-note" class="form-label">Note</label>
                                 <textarea class="form-control" id="multipla-note" rows="2" placeholder="Note sulla multipla"></textarea>
                             </div>
@@ -1825,6 +1831,10 @@
                 }
             });
 
+            // Se e' indicata la quota reale della schedina (es. con bonus), vale quella
+            const quotaReale = parseFloat(document.getElementById('multipla-quota-reale').value);
+            if (quotaReale >= 1.01) quotaTotale = quotaReale;
+
             // Display quota totale
             document.getElementById('quota-totale-display').textContent = quotaTotale.toFixed(2);
 
@@ -1840,6 +1850,7 @@
             if (stakeInput) {
                 stakeInput.addEventListener('input', ricalcolaQuotaTotale);
             }
+            document.getElementById('multipla-quota-reale').addEventListener('input', ricalcolaQuotaTotale);
         });
 
         // Salva multipla
@@ -1859,21 +1870,40 @@
             const eventi = [];
             const eventoRows = document.querySelectorAll('.evento-multipla-row');
 
-            eventoRows.forEach(row => {
+            const incomplete = [];
+            eventoRows.forEach((row, i) => {
                 const partita = row.querySelector('.evento-partita').value.trim();
                 const mercato = row.querySelector('.evento-mercato').value;
                 const quota = parseFloat(row.querySelector('.evento-quota').value);
 
+                if (!partita && !mercato && !quota) return;  // riga vuota: ignorata
+
                 if (partita && mercato && quota >= 1.01) {
                     eventi.push({partita, mercato, quota});
+                } else {
+                    incomplete.push(i + 1);
                 }
             });
+
+            // Una riga a meta' non va scartata in silenzio: cambierebbe il tipo di multipla
+            if (incomplete.length) {
+                alert(`⚠️ Evento ${incomplete.join(', ')} incompleto: servono partita, mercato e quota (min 1.01).\nCompleta o elimina la riga.`);
+                return;
+            }
 
             // Valida almeno 2 eventi
             if (eventi.length < 2) {
                 alert('⚠️ Inserisci almeno 2 eventi per una multipla');
                 return;
             }
+
+            const chiavi = eventi.map(e => e.partita.toLowerCase() + '|' + e.mercato);
+            if (new Set(chiavi).size !== chiavi.length) {
+                alert('⚠️ Lo stesso evento (partita e mercato) compare due volte');
+                return;
+            }
+
+            const quotaRealeInput = parseFloat(document.getElementById('multipla-quota-reale').value);
 
             // Mostra loading
             document.getElementById('add-bet-result').innerHTML = `
@@ -1892,7 +1922,8 @@
                         nome,
                         stake,
                         note,
-                        eventi
+                        eventi,
+                        quota_totale: quotaRealeInput >= 1.01 ? quotaRealeInput : null
                     })
                 });
 
