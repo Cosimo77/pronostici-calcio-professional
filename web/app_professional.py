@@ -8286,6 +8286,57 @@ def api_diario_update_evento_multipla():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@app.route("/api/diario/edit_multipla", methods=["POST"])
+@limiter.limit("30 per minute")
+def api_diario_edit_multipla():
+    """
+    Modifica stake, quota totale, nome o note di una multipla e ricalcola l'esito
+
+    Request body: {"group_id": 5, "stake": 10.0, "quota_totale": 6.2, "nome": "...", "note": "..."}
+    """
+    try:
+        data = request.json or {}
+        if "group_id" not in data:
+            return jsonify({"success": False, "error": "group_id richiesto"}), 400
+
+        group_id = str(data["group_id"])
+        if not group_id.isdigit():
+            return (
+                jsonify({"success": False, "error": "Questa multipla non e' modificabile (eliminala e ricreala)"}),
+                400,
+            )
+
+        updates = {}
+        try:
+            if data.get("stake") not in (None, ""):
+                updates["stake"] = float(data["stake"])
+                if updates["stake"] <= 0:
+                    return jsonify({"success": False, "error": "Lo stake deve essere positivo"}), 400
+            if data.get("quota_totale") not in (None, ""):
+                updates["quota_totale"] = round(float(data["quota_totale"]), 2)
+                if updates["quota_totale"] < 1.01:
+                    return jsonify({"success": False, "error": "Quota totale minima 1.01"}), 400
+        except (TypeError, ValueError):
+            return jsonify({"success": False, "error": "Valore numerico non valido"}), 400
+        for campo in ("nome", "note"):
+            if campo in data:
+                updates[campo] = str(data[campo]).strip()
+
+        if not DiarioStorage._use_database():
+            return jsonify({"success": False, "error": "Modifica multiple disponibile solo con database"}), 501
+
+        from database.bet_group_model import BetGroupModel
+
+        profit = BetGroupModel.update_fields(group_id, updates)
+        return jsonify({"success": True, "profit": round(profit, 2)})
+
+    except ValueError as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+    except Exception as e:
+        logger.error(f"❌ Errore edit multipla: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 @app.route("/api/diario/delete_multipla", methods=["POST"])
 @limiter.limit("30 per minute")
 def api_diario_delete_multipla():

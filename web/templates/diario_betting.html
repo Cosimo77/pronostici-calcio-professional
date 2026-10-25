@@ -1176,6 +1176,10 @@
                         }).join('')}
 
                         <div class="mt-3 text-end">
+                            ${String(multipla.id).match(/^\d+$/) ? `
+                                <button class="btn btn-sm btn-outline-primary me-1" onclick="editMultipla('${multipla.id}', ${multipla.stake}, ${multipla.quota_totale})" title="Modifica stake e quota">
+                                    <i class="bi bi-pencil"></i> Modifica
+                                </button>` : ''}
                             <button class="btn btn-sm btn-outline-danger" onclick="deleteMultipla('${multipla.id}', '${source}')" title="Elimina multipla">
                                 <i class="bi bi-trash"></i> Elimina Multipla
                             </button>
@@ -1994,6 +1998,30 @@
                 if (result.success) {
                     // Nessun alert bloccante: la scheda si aggiorna da sola
                     reloadAllData();
+                } else {
+                    alert('❌ Errore: ' + (result.error || 'Sconosciuto'));
+                }
+            } catch (error) {
+                alert('❌ Errore: ' + error.message);
+            }
+        }
+
+        // Modifica stake e quota totale di una multipla
+        async function editMultipla(groupId, stakeAttuale, quotaAttuale) {
+            const stake = prompt('Nuovo stake (€):', stakeAttuale);
+            if (stake === null) return;
+            const quota = prompt('Quota totale della schedina:', quotaAttuale);
+            if (quota === null) return;
+
+            try {
+                const response = await fetch('/api/diario/edit_multipla', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({group_id: groupId, stake: parseFloat(stake), quota_totale: parseFloat(quota)})
+                });
+                const result = await response.json();
+                if (result.success) {
+                    reloadAllData({ resetCompletedFlag: true });
                 } else {
                     alert('❌ Errore: ' + (result.error || 'Sconosciuto'));
                 }

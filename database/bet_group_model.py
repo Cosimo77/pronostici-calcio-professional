@@ -246,6 +246,25 @@ class BetGroupModel:
             raise
 
     @staticmethod
+    def update_fields(group_id, updates: Dict) -> float:
+        """Modifica nome, stake, quota totale o note e ricalcola l'esito. Restituisce il profit."""
+        campi = {k: v for k, v in updates.items() if k in ("nome", "stake", "quota_totale", "note")}
+        if not campi:
+            raise ValueError("Nessun campo modificabile")
+
+        set_clause = ", ".join(f"{k} = %s" for k in campi)
+        with get_db_connection() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    f"UPDATE bet_groups SET {set_clause}, updated_at = CURRENT_TIMESTAMP WHERE id = %s",
+                    [*campi.values(), int(group_id)],
+                )
+                if cursor.rowcount == 0:
+                    raise ValueError(f"Multipla {group_id} non trovata")
+
+        return BetGroupModel.update_risultato(int(group_id))
+
+    @staticmethod
     def delete(group_id) -> bool:
         """
         Elimina multipla e i suoi eventi
