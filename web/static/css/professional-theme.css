@@ -1685,6 +1685,8 @@ a:focus-visible {
 .text-primary-color {
     color: var(--color-primary) !important;
 }
+
+/* Polish notes:
  * - Animations: fadeIn, slideIn, scale, pulse, shimmer, stagger
  * - Focus states: Enhanced outline with rings
  * - Error/Success/Warning states with icons
@@ -1696,3 +1698,662 @@ a:focus-visible {
  * Ready for production deployment
  * Data: 25 Maggio 2026
  */
+
+/* ============================================================
+   CONTRAST & READABILITY LAYER (WCAG AA)
+   Caricato per ultimo: i selettori html[data-bs-theme] hanno
+   specificita' maggiore degli <style> inline delle pagine.
+   ============================================================ */
+
+:root {
+    --page-bg-dark: linear-gradient(135deg, #0b1020 0%, #1e1b4b 60%, #0f172a 100%);
+    --page-bg-light: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 50%, #f5f3ff 100%);
+    --ink-on-card: #1f2937;
+    --ink-on-card-muted: #4b5563;
+    --ink-on-gold: #111827;
+    --gradient-gold: linear-gradient(45deg, #ffd700, #ff9f1c);
+    --gradient-primary: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%);
+}
+
+/* --- Sfondo pagina e testo base (default = dark, anche prima che JS imposti il tema) --- */
+body {
+    background: var(--page-bg-dark) fixed;
+    color: #f8fafc;
+}
+
+html[data-bs-theme="dark"] {
+    --bg-card: rgba(255, 255, 255, 0.08);
+    --text-primary: #f8fafc;
+    --text-secondary: #cbd5e1;
+    --border-color: rgba(255, 255, 255, 0.22);
+    --bs-body-color: #f1f5f9;
+    --bs-secondary-color: #cbd5e1;
+}
+
+html[data-bs-theme="light"] {
+    --bg-card: rgba(255, 255, 255, 0.95);
+    --text-primary: #111827;
+    --text-secondary: #374151;
+    --border-color: #cbd5e1;
+    --bs-secondary-color: #4b5563;
+}
+
+html[data-bs-theme="dark"] body {
+    background: var(--page-bg-dark) fixed;
+    color: #f1f5f9;
+}
+
+html[data-bs-theme="light"] body {
+    background: var(--page-bg-light) fixed;
+    color: #111827;
+}
+
+/* --- Navbar: sempre scura, con testi ad alto contrasto in entrambi i temi --- */
+html[data-bs-theme] .navbar-professional {
+    background: rgba(15, 23, 42, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    --bs-navbar-color: #e2e8f0;
+    --bs-navbar-hover-color: #ffffff;
+    --bs-navbar-active-color: var(--ink-on-gold);
+}
+
+html[data-bs-theme] .navbar-professional .nav-link {
+    color: #e2e8f0;
+}
+
+html[data-bs-theme] .navbar-professional .nav-link:hover,
+html[data-bs-theme] .navbar-professional .nav-link:focus-visible {
+    color: #ffffff;
+}
+
+html[data-bs-theme] .navbar-professional .nav-link.active,
+html[data-bs-theme] .navbar-professional .nav-link.active:hover {
+    color: var(--ink-on-gold) !important;
+}
+
+html[data-bs-theme] .navbar-brand-text {
+    color: #ffffff;
+}
+
+html[data-bs-theme] .navbar-brand-badge {
+    color: var(--ink-on-gold);
+}
+
+html[data-bs-theme] .navbar-quick-stats,
+html[data-bs-theme] .navbar-quick-stats .text-light-emphasis {
+    color: #f1f5f9 !important;
+}
+
+html[data-bs-theme] .navbar-quick-stats {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+html[data-bs-theme] .navbar-theme-btn {
+    color: #f8fafc;
+    border-color: rgba(248, 250, 252, 0.7);
+}
+
+html[data-bs-theme] .navbar-theme-btn:hover {
+    background: #f8fafc;
+    color: #0f172a;
+}
+
+html[data-bs-theme] .dropdown-menu-professional {
+    background: #0f172a;
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+html[data-bs-theme] .dropdown-menu-professional .dropdown-item {
+    color: #e2e8f0;
+}
+
+html[data-bs-theme] .dropdown-menu-professional .dropdown-item:hover,
+html[data-bs-theme] .dropdown-menu-professional .dropdown-item:focus {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.14) !important;
+}
+
+/* --- Elementi con sfondo oro: testo scuro (il bianco su oro/arancio non e' leggibile) --- */
+html[data-bs-theme] .enterprise-badge,
+html[data-bs-theme] .btn-gradient-gold,
+html[data-bs-theme] .btn-gradient-gold:hover,
+html[data-bs-theme] .btn-gold-gradient,
+html[data-bs-theme] .nav-pills .nav-link.active.gold,
+html[data-bs-theme] .badge-gold,
+html[data-bs-theme] .badge-bet,
+html[data-bs-theme] .badge-fase2,
+html[data-bs-theme] .badge-fase2-inline {
+    color: var(--ink-on-gold) !important;
+}
+
+/* Tab/pill: inattivi leggibili, attivi su oro con testo scuro */
+html[data-bs-theme="dark"] .nav-pills .nav-link:not(.active),
+html[data-bs-theme="dark"] .nav-tabs .nav-link:not(.active) {
+    color: #e2e8f0;
+}
+
+html[data-bs-theme="dark"] .nav-pills .nav-link:not(.active):hover,
+html[data-bs-theme="dark"] .nav-tabs .nav-link:not(.active):hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.12);
+}
+
+html[data-bs-theme="light"] .nav-pills .nav-link:not(.active) {
+    color: #1e293b;
+}
+
+html[data-bs-theme] .tabs-container .nav-pills .nav-link:not(.active),
+html[data-bs-theme] .tabs-container .nav-pills .nav-link:not(.active):hover {
+    color: #1f2937;
+    background: rgba(255, 255, 255, 0.92);
+}
+
+html[data-bs-theme] .nav-pills .nav-link.active {
+    color: var(--ink-on-gold);
+}
+
+/* Le pill del diario hanno gradiente viola con testo bianco: restano bianche */
+html[data-bs-theme] .tabs-container .nav-pills .nav-link.active {
+    color: #ffffff;
+}
+
+/* --- Testi secondari Bootstrap --- */
+html[data-bs-theme="dark"] .text-white-50 {
+    color: rgba(255, 255, 255, 0.78) !important;
+}
+
+html[data-bs-theme="light"] .glass-card .text-white-50,
+html[data-bs-theme="light"] .glass-card .text-white,
+html[data-bs-theme="light"] .glass-card small.text-white-50 {
+    color: var(--ink-on-card-muted) !important;
+}
+
+html[data-bs-theme="light"] .glass-card .text-white {
+    color: var(--ink-on-card) !important;
+}
+
+html[data-bs-theme="dark"] .text-muted {
+    color: #cbd5e1 !important;
+}
+
+html[data-bs-theme="light"] .text-muted {
+    color: #4b5563 !important;
+}
+
+/* Colori semantici: varianti piu' chiare su sfondo scuro, piu' scure su sfondo chiaro */
+html[data-bs-theme="dark"] .text-success { color: #4ade80 !important; }
+html[data-bs-theme="dark"] .text-danger  { color: #fca5a5 !important; }
+html[data-bs-theme="dark"] .text-warning { color: #fcd34d !important; }
+html[data-bs-theme="dark"] .text-info    { color: #67e8f9 !important; }
+html[data-bs-theme="dark"] .text-primary { color: #93c5fd !important; }
+
+html[data-bs-theme="light"] .text-success { color: #166534 !important; }
+html[data-bs-theme="light"] .text-danger  { color: #b91c1c !important; }
+html[data-bs-theme="light"] .text-warning { color: #92400e !important; }
+html[data-bs-theme="light"] .text-info    { color: #0e7490 !important; }
+html[data-bs-theme="light"] .text-primary { color: #1d4ed8 !important; }
+
+/* Badge Bootstrap: testo sempre contrastato con lo sfondo */
+.badge.bg-info,
+.badge.bg-warning,
+.badge.bg-light {
+    color: var(--ink-on-gold) !important;
+}
+
+.badge.bg-success { background-color: #15803d !important; }
+.badge.bg-primary { background-color: #1d4ed8 !important; }
+.badge.bg-secondary { background-color: #4b5563 !important; }
+.badge.bg-danger { background-color: #b91c1c !important; }
+
+/* Pulsanti outline: contorno e testo leggibili sul tema scuro */
+html[data-bs-theme="dark"] .btn-outline-primary {
+    --bs-btn-color: #93c5fd;
+    --bs-btn-border-color: #93c5fd;
+    --bs-btn-hover-color: #0f172a;
+    --bs-btn-hover-bg: #93c5fd;
+    --bs-btn-hover-border-color: #93c5fd;
+}
+
+html[data-bs-theme="dark"] .btn-outline-secondary {
+    --bs-btn-color: #cbd5e1;
+    --bs-btn-border-color: #94a3b8;
+    --bs-btn-hover-color: #0f172a;
+    --bs-btn-hover-bg: #cbd5e1;
+}
+
+html[data-bs-theme="dark"] .btn-outline-danger {
+    --bs-btn-color: #fca5a5;
+    --bs-btn-border-color: #fca5a5;
+    --bs-btn-hover-color: #0f172a;
+    --bs-btn-hover-bg: #fca5a5;
+    --bs-btn-hover-border-color: #fca5a5;
+}
+
+html[data-bs-theme="dark"] .btn-outline-warning {
+    --bs-btn-color: #fcd34d;
+    --bs-btn-border-color: #fcd34d;
+    --bs-btn-hover-color: #0f172a;
+    --bs-btn-hover-bg: #fcd34d;
+    --bs-btn-hover-border-color: #fcd34d;
+}
+
+/* --- Form (dashboard): campi leggibili in entrambi i temi --- */
+html[data-bs-theme="dark"] .form-control,
+html[data-bs-theme="dark"] .form-select {
+    background-color: rgba(15, 23, 42, 0.75);
+    border-color: rgba(255, 255, 255, 0.35);
+    color: #f8fafc;
+}
+
+html[data-bs-theme="dark"] .form-select option {
+    background: #0f172a;
+    color: #f8fafc;
+}
+
+html[data-bs-theme="dark"] .form-control::placeholder {
+    color: #94a3b8;
+}
+
+html[data-bs-theme="light"] .form-control,
+html[data-bs-theme="light"] .form-select {
+    background-color: #ffffff;
+    border-color: #94a3b8;
+    color: #111827;
+}
+
+html[data-bs-theme="light"] .form-select option {
+    background: #ffffff;
+    color: #111827;
+}
+
+html[data-bs-theme] .form-control:focus,
+html[data-bs-theme] .form-select:focus {
+    border-color: #ffd700;
+}
+
+html[data-bs-theme="dark"] .form-control:focus,
+html[data-bs-theme="dark"] .form-select:focus {
+    background-color: rgba(15, 23, 42, 0.9);
+    color: #ffffff;
+}
+
+html[data-bs-theme="light"] .form-control:focus,
+html[data-bs-theme="light"] .form-select:focus {
+    background-color: #ffffff;
+    color: #111827;
+    border-color: #1d4ed8;
+    box-shadow: 0 0 0 0.25rem rgba(29, 78, 216, 0.25);
+}
+
+html[data-bs-theme="light"] .form-label,
+html[data-bs-theme="light"] label {
+    color: #1f2937;
+}
+
+/* --- Dashboard (enterprise_v2): componenti con testo bianco hardcoded --- */
+html[data-bs-theme="light"] .stat-badge,
+html[data-bs-theme="light"] .quote-value,
+html[data-bs-theme="light"] .gauge-value {
+    color: var(--ink-on-card) !important;
+}
+
+html[data-bs-theme="light"] .quote-label,
+html[data-bs-theme="light"] .gauge-labels {
+    color: var(--ink-on-card-muted);
+}
+
+html[data-bs-theme="light"] .stat-badge,
+html[data-bs-theme="light"] .prob-item,
+html[data-bs-theme="light"] .market-card,
+html[data-bs-theme="light"] .quote-badge,
+html[data-bs-theme="light"] .value-betting-card,
+html[data-bs-theme="light"] .pred-history-item {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+    color: var(--ink-on-card);
+}
+
+html[data-bs-theme="light"] .probability-bar {
+    background: #cbd5e1;
+}
+
+html[data-bs-theme] .quote-label {
+    font-size: 0.85rem;
+}
+
+/* Badge predizione: sfondo blu scuro in ogni tema, quindi testi chiari anche nel tema light */
+html[data-bs-theme="light"] .result-prediction-badge,
+html[data-bs-theme="light"] .result-prediction-badge .text-white,
+html[data-bs-theme="light"] .result-prediction-badge .gauge-value {
+    color: #ffffff !important;
+}
+
+html[data-bs-theme="light"] .result-prediction-badge .text-white-50,
+html[data-bs-theme="light"] .result-prediction-badge .gauge-labels {
+    color: rgba(255, 255, 255, 0.85) !important;
+}
+
+html[data-bs-theme="light"] .btn-outline-light {
+    --bs-btn-color: #1e293b;
+    --bs-btn-border-color: #475569;
+    --bs-btn-hover-color: #ffffff;
+    --bs-btn-hover-bg: #1e293b;
+    --bs-btn-hover-border-color: #1e293b;
+}
+
+html[data-bs-theme="dark"] .quote-label,
+html[data-bs-theme="dark"] .gauge-labels {
+    color: #cbd5e1;
+}
+
+html[data-bs-theme="dark"] .stat-accuracy i { color: #fb923c; }
+html[data-bs-theme="dark"] .stat-roi i      { color: #34d399; }
+html[data-bs-theme="dark"] .stat-trade i    { color: #38bdf8; }
+
+/* Badge/barre con sfondo colorato + testo bianco: sfondi piu' scuri (>= 4.5:1) */
+html[data-bs-theme] .prob-badge-success,
+html[data-bs-theme] .value-badge-yes { background: #047857; color: #ffffff; }
+html[data-bs-theme] .prob-badge-warning { background: #c2410c; color: #ffffff; }
+html[data-bs-theme] .prob-badge-danger { background: #b91c1c; color: #ffffff; }
+html[data-bs-theme] .value-badge-no { background: #4b5563; color: #ffffff; }
+html[data-bs-theme] .prob-fill-success { background: linear-gradient(90deg, #047857 0%, #065f46 100%); }
+html[data-bs-theme] .prob-fill-warning { background: linear-gradient(90deg, #c2410c 0%, #9a3412 100%); }
+html[data-bs-theme] .prob-fill-danger { background: linear-gradient(90deg, #b91c1c 0%, #991b1b 100%); }
+html[data-bs-theme] .prob-text,
+html[data-bs-theme] .probability-fill { color: #ffffff; }
+html[data-bs-theme] .value-betting-badge {
+    background: linear-gradient(45deg, #047857, #1d4ed8);
+    color: #ffffff;
+}
+
+html[data-bs-theme="light"] .info-card,
+html[data-bs-theme="light"] [style*="rgba(251, 191, 36, 0.1)"],
+html[data-bs-theme="light"] [style*="rgba(59, 130, 246, 0.1)"] {
+    color: var(--ink-on-card);
+}
+
+/* --- Pagine con card bianche (giornata, automazione, diario): testo ereditato scuro in ogni tema --- */
+html[data-bs-theme] .header,
+html[data-bs-theme] .match-card,
+html[data-bs-theme] .market-box,
+html[data-bs-theme] .stat-box,
+html[data-bs-theme] .status-card,
+html[data-bs-theme] .schedule-info,
+html[data-bs-theme] .dataset-info,
+html[data-bs-theme] .prediction-item,
+html[data-bs-theme] .ou-card,
+html[data-bs-theme] .details-content,
+html[data-bs-theme] .summary-technical,
+html[data-bs-theme] .filter-toggle-label,
+html[data-bs-theme] .info-banner {
+    --bs-body-color: var(--ink-on-card);
+    --bs-secondary-color: var(--ink-on-card-muted);
+    color: var(--ink-on-card);
+}
+
+html[data-bs-theme] .header p,
+html[data-bs-theme] .header .subtitle,
+html[data-bs-theme] .info-row .label,
+html[data-bs-theme] .time-ago,
+html[data-bs-theme] .timestamp .label,
+html[data-bs-theme] .ou-label,
+html[data-bs-theme] .ml-disclaimer,
+html[data-bs-theme] .bookmakers-info {
+    color: var(--ink-on-card-muted);
+}
+
+html[data-bs-theme] .stat-box h4 { color: #4b5563; }
+html[data-bs-theme] .header h1 { color: #4338ca; }
+html[data-bs-theme] .market-box h3 { color: #4338ca; }
+html[data-bs-theme] .stat-box .value { color: #4338ca; }
+html[data-bs-theme] .refresh-btn { color: #4338ca; }
+html[data-bs-theme] .actions-container .refresh-btn { background: #4338ca; color: #ffffff; }
+html[data-bs-theme] .timestamp.never { opacity: 1; }
+html[data-bs-theme] .timestamp.never .value { color: #4b5563; }
+html[data-bs-theme] .timestamp .label { color: #4b5563; }
+html[data-bs-theme] .deploy-btn,
+html[data-bs-theme] .btn-add-to-diario { background: var(--gradient-primary); color: #ffffff; }
+html[data-bs-theme] .deploy-btn:disabled { background: #cbd5e1; color: #1f2937; }
+
+/* Testi che poggiano direttamente sullo sfondo pagina */
+html[data-bs-theme] .loading,
+html[data-bs-theme] .auto-refresh {
+    color: #f8fafc;
+}
+
+html[data-bs-theme="light"] .loading,
+html[data-bs-theme="light"] .auto-refresh {
+    color: #1f2937;
+}
+
+html[data-bs-theme="dark"] .legal-disclaimer {
+    background: rgba(0, 0, 0, 0.45);
+}
+
+html[data-bs-theme="dark"] .disclaimer-title { color: #fdba74; }
+html[data-bs-theme="dark"] .disclaimer-content { color: #e2e8f0; }
+html[data-bs-theme="dark"] .disclaimer-link { color: #fdba74; }
+
+html[data-bs-theme="light"] .legal-disclaimer {
+    background: #ffffff;
+    border-color: #c2410c;
+}
+
+html[data-bs-theme="light"] .disclaimer-title { color: #9a3412; }
+html[data-bs-theme="light"] .disclaimer-content { color: #1f2937; }
+html[data-bs-theme="light"] .disclaimer-link { color: #1d4ed8; }
+
+/* Banner informativi */
+html[data-bs-theme] .info-banner h3,
+html[data-bs-theme] .info-banner p { color: #78350f; }
+html[data-bs-theme] .info-banner-blue h3,
+html[data-bs-theme] .info-banner-blue p,
+html[data-bs-theme] .text-blue-dark { color: #0c3b7a; }
+
+/* Banner con gradienti saturi: tinte piu' scure cosi' il testo bianco e' leggibile */
+html[data-bs-theme] .odds-banner {
+    background: linear-gradient(135deg, #9d174d 0%, #be123c 100%);
+    color: #ffffff;
+}
+
+html[data-bs-theme] .odds-banner h4 { opacity: 1; }
+
+html[data-bs-theme] .odds-banner [style*="grid-column"] {
+    color: #ffffff !important;
+}
+
+/* EV: "pillola" chiara cosi' i colori semantici sono leggibili sul rosa/viola */
+html[data-bs-theme] .ev-display {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    background: #ffffff;
+}
+
+html[data-bs-theme] .ev-positive { color: #166534; font-weight: 700; }
+html[data-bs-theme] .ev-neutral  { color: #854d0e; font-weight: 600; }
+html[data-bs-theme] .ev-negative { color: #b91c1c; font-weight: 600; }
+
+html[data-bs-theme] .value-bet-banner,
+html[data-bs-theme] .value-bet-recommendation,
+html[data-bs-theme] .top3-container {
+    background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+    color: #ffffff;
+}
+
+html[data-bs-theme] .top3-description,
+html[data-bs-theme] .top3-bet-details,
+html[data-bs-theme] .top3-ev-label,
+html[data-bs-theme] .value-bet-market,
+html[data-bs-theme] .value-bet-odds,
+html[data-bs-theme] .value-bet-ev-label,
+html[data-bs-theme] .value-bet-banner .detail { opacity: 1; }
+
+html[data-bs-theme] .top3-ev-value { color: #bbf7d0; }
+
+html[data-bs-theme] .value-bet-content,
+html[data-bs-theme] .top3-card,
+html[data-bs-theme] .top3-counter {
+    background: rgba(0, 0, 0, 0.22);
+}
+
+html[data-bs-theme] .no-validated-warning {
+    background: linear-gradient(135deg, #b45309 0%, #92400e 100%);
+    color: #ffffff;
+}
+
+html[data-bs-theme] .no-value-banner,
+html[data-bs-theme] .skip-banner {
+    background: linear-gradient(135deg, #4b5563 0%, #1f2937 100%);
+    color: #ffffff;
+}
+
+html[data-bs-theme] .no-validated-text,
+html[data-bs-theme] .no-value-text { opacity: 1; }
+
+/* Badge fase (sfondo pieno + testo bianco): tinte >= 4.5:1; FASE2 resta su oro con testo scuro */
+html[data-bs-theme] .badge-fase1,
+html[data-bs-theme] .badge-fase1-inline { background: #047857 !important; color: #ffffff !important; }
+html[data-bs-theme] .badge-fase3,
+html[data-bs-theme] .badge-fase3-inline { background: #6d28d9 !important; color: #ffffff !important; }
+html[data-bs-theme] .badge-fase4,
+html[data-bs-theme] .badge-fase4-inline { background: #fcd34d !important; color: var(--ink-on-gold) !important; }
+html[data-bs-theme] .badge-fase5,
+html[data-bs-theme] .badge-fase5-inline { background: #be185d !important; color: #ffffff !important; }
+html[data-bs-theme] .badge-fase2,
+html[data-bs-theme] .badge-fase2-inline { background: #fbbf24 !important; }
+html[data-bs-theme] .badge-skip { background: #4b5563 !important; color: #ffffff !important; }
+
+html[data-bs-theme] .quota-tag { background: #1e7e34; }
+html[data-bs-theme] .btn-add-inline,
+html[data-bs-theme] .btn-add-inline:hover { background: linear-gradient(135deg, #047857 0%, #065f46 100%); }
+html[data-bs-theme] .match-time,
+html[data-bs-theme] .confidence { background: #4338ca; }
+
+/* Stati automazione */
+html[data-bs-theme] .status-badge.running { background: #15803d; }
+html[data-bs-theme] .status-badge.stopped { background: #b91c1c; }
+html[data-bs-theme] .schedule-item .time { background: #4338ca; }
+html[data-bs-theme] .refresh-btn:hover { background: #3730a3; }
+
+/* --- Diario: box pastello con testo scuro in ogni tema + varianti scure nel tema dark --- */
+html[data-bs-theme] .bet-pending,
+html[data-bs-theme] .bet-win,
+html[data-bs-theme] .bet-loss,
+html[data-bs-theme] .bet-skip,
+html[data-bs-theme] .stat-card,
+html[data-bs-theme] .stake-suggestion-box,
+html[data-bs-theme] .kelly-result-box,
+html[data-bs-theme] .multipla-header,
+html[data-bs-theme] .multipla-eventi,
+html[data-bs-theme] .evento-item,
+html[data-bs-theme] .evento-multipla-row,
+html[data-bs-theme] .bg-light-gray {
+    --bs-body-color: var(--ink-on-card);
+    --bs-secondary-color: var(--ink-on-card-muted);
+    color: var(--ink-on-card);
+}
+
+html[data-bs-theme] .bet-pending .text-muted,
+html[data-bs-theme] .bet-win .text-muted,
+html[data-bs-theme] .bet-loss .text-muted,
+html[data-bs-theme] .bet-skip .text-muted,
+html[data-bs-theme] .stat-card .text-muted,
+html[data-bs-theme] .multipla-header .text-muted,
+html[data-bs-theme] .multipla-eventi .text-muted,
+html[data-bs-theme] .evento-item .text-muted,
+html[data-bs-theme] .evento-multipla-row .text-muted,
+html[data-bs-theme] .bg-light .text-muted,
+html[data-bs-theme] .bg-light-gray .text-muted { color: #4b5563 !important; }
+
+html[data-bs-theme] .bet-pending .text-success,
+html[data-bs-theme] .bet-win .text-success,
+html[data-bs-theme] .bet-loss .text-success,
+html[data-bs-theme] .stat-card .text-success,
+html[data-bs-theme] .evento-item .text-success,
+html[data-bs-theme] .bg-light .text-success { color: #15803d !important; }
+
+html[data-bs-theme] .bet-pending .text-danger,
+html[data-bs-theme] .bet-win .text-danger,
+html[data-bs-theme] .bet-loss .text-danger,
+html[data-bs-theme] .stat-card .text-danger,
+html[data-bs-theme] .evento-item .text-danger,
+html[data-bs-theme] .bg-light .text-danger { color: #b91c1c !important; }
+
+html[data-bs-theme] .bg-light,
+html[data-bs-theme] .bg-light .text-dark { color: var(--ink-on-card) !important; }
+
+html[data-bs-theme] .stake-suggestion-text { color: #0c3b7a; }
+html[data-bs-theme] .kelly-result-text { color: #14532d; }
+html[data-bs-theme] .stat-positive { color: #14532d; }
+html[data-bs-theme] .stat-negative { color: #7f1d1d; }
+html[data-bs-theme] .stat-neutral { color: #1f2937; }
+
+/* Avvisi Bootstrap nel tema scuro: sfondo scuro tinto + testo chiaro */
+html[data-bs-theme="dark"] .alert-info {
+    --bs-alert-color: #bae6fd;
+    --bs-alert-bg: rgba(14, 116, 144, 0.3);
+    --bs-alert-border-color: #0e7490;
+}
+
+html[data-bs-theme="dark"] .alert-success {
+    --bs-alert-color: #bbf7d0;
+    --bs-alert-bg: rgba(21, 128, 61, 0.3);
+    --bs-alert-border-color: #15803d;
+}
+
+html[data-bs-theme="dark"] .alert-warning {
+    --bs-alert-color: #fde68a;
+    --bs-alert-bg: rgba(180, 83, 9, 0.3);
+    --bs-alert-border-color: #b45309;
+}
+
+html[data-bs-theme="dark"] .alert-danger {
+    --bs-alert-color: #fecaca;
+    --bs-alert-bg: rgba(185, 28, 28, 0.3);
+    --bs-alert-border-color: #b91c1c;
+}
+
+/* Contenitore tab del diario */
+html[data-bs-theme="light"] .tabs-container {
+    background: rgba(255, 255, 255, 0.65);
+}
+
+/* Link di default: leggibili sullo sfondo pagina */
+html[data-bs-theme="dark"] a:not(.btn):not(.nav-link):not(.dropdown-item):not(.navbar-brand):not(.refresh-btn) {
+    color: #93c5fd;
+}
+
+html[data-bs-theme="light"] a:not(.btn):not(.nav-link):not(.dropdown-item):not(.navbar-brand):not(.refresh-btn) {
+    color: #1d4ed8;
+}
+
+/* Focus visibile ovunque */
+html[data-bs-theme] :focus-visible {
+    outline: 3px solid #fbbf24;
+    outline-offset: 2px;
+}
+
+html[data-bs-theme="light"] :focus-visible {
+    outline-color: #1d4ed8;
+}
+
+html[data-bs-theme="light"] h1.text-white {
+    color: #111827 !important;
+}
+
+html[data-bs-theme="light"] .btn-outline-primary {
+    --bs-btn-color: #1d4ed8;
+    --bs-btn-border-color: #1d4ed8;
+    --bs-btn-hover-bg: #1d4ed8;
+    --bs-btn-hover-border-color: #1d4ed8;
+}
+
+/* Pulsanti outline dentro intestazioni a gradiente */
+html[data-bs-theme] .card-header .btn-outline-primary {
+    --bs-btn-color: #ffffff;
+    --bs-btn-border-color: #ffffff;
+    --bs-btn-hover-color: #3730a3;
+    --bs-btn-hover-bg: #ffffff;
+    --bs-btn-hover-border-color: #ffffff;
+}
