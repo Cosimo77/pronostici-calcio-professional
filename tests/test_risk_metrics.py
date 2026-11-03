@@ -12,13 +12,14 @@ import web.app_professional as app_mod  # noqa: E402
 
 
 def _bets_dal_db():
-    # Cronologico: -3, -2, +5, -1 (multipla), +4. Dal DB arrivano singole DESC e multiple in coda.
+    # Cronologico: -3, -2, +5, -1 (multipla, stesso giorno), +4. Date GG/MM/AAAA, come nel DB:
+    # "12/10/2026" e "20/10/2026" lette mese-per-primo sarebbero dicembre e un valore non valido.
     cronologico = [
-        {"id": 1, "data": "2026-10-01", "stake": 1, "Profit": -3.0},
-        {"id": 2, "data": "2026-10-02", "stake": 1, "Profit": -2.0},
-        {"id": 3, "data": "2026-10-03", "stake": 2, "Profit": 5.0},
-        {"id": "G1", "data": "2026-10-04", "stake": 1, "Profit": -1.0},
-        {"id": 4, "data": "2026-10-05", "stake": 2, "Profit": 4.0},
+        {"id": 1, "data": "12/10/2026", "stake": 1, "Profit": -3.0},
+        {"id": 2, "data": "20/10/2026", "stake": 1, "Profit": -2.0},
+        {"id": 3, "data": "03/11/2026", "stake": 2, "Profit": 5.0},
+        {"id": "G1", "data": "03/11/2026", "stake": 1, "Profit": -1.0},
+        {"id": 4, "data": "05/11/2026", "stake": 2, "Profit": 4.0},
     ]
     c = cronologico
     return pd.DataFrame([c[4], c[2], c[1], c[0], c[3]])
@@ -37,6 +38,11 @@ def test_sharpe_per_puntata_non_annualizzato(monkeypatch):
     r = app_mod.calculate_risk_metrics(_bets_dal_db())
     rendimenti = np.array([-3, -2, 2.5, -1, 2.0])
     assert r["sharpe_ratio"] == round(rendimenti.mean() / rendimenti.std(ddof=1), 2)
+
+
+def test_ordina_cronologico_stessa_data_per_id():
+    bets = [{"id": "G1", "data": "03/11/2026"}, {"id": 3, "data": "03/11/2026"}, {"id": 9, "data": "20/10/2026"}]
+    assert [b["id"] for b in app_mod.ordina_cronologico(bets)] == [9, 3, "G1"]
 
 
 def test_senza_puntate_restituisce_zeri():

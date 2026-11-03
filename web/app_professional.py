@@ -7514,6 +7514,34 @@ def bankroll_stats_fields(config: Dict) -> Dict:
     }
 
 
+def _data_bet(bet: Dict) -> datetime:
+    """Data di una puntata come datetime (formato DD/MM/YYYY, con ISO come ripiego)"""
+    valore = str(bet.get("data") or "").strip()
+    for formato in ("%d/%m/%Y", "%Y-%m-%d"):
+        try:
+            return datetime.strptime(valore[:10], formato)
+        except ValueError:
+            continue
+    return datetime.min
+
+
+def _id_num_bet(bet: Dict) -> Tuple[int, int]:
+    """Spareggio per le puntate dello stesso giorno: prima le singole, poi le multiple ("G12"),
+    ciascuna per id. Le due numerazioni sono indipendenti e il DB non salva l'orario."""
+    id_str = str(bet.get("id", ""))
+    try:
+        return (1 if id_str.startswith("G") else 0, int(id_str.lstrip("G")))
+    except ValueError:
+        return (0, 0)
+
+
+def ordina_cronologico(bets: list) -> list:
+    """Puntate in ordine cronologico (data, poi singole prima delle multiple, poi id).
+    Il DB le restituisce dalla piu' recente e con le multiple in coda: ogni calcolo
+    su equity curve deve passare da qui."""
+    return sorted(bets, key=lambda b: (_data_bet(b), _id_num_bet(b)))
+
+
 def calculate_risk_metrics(df_completed: pd.DataFrame) -> Dict:
     """
     Calcola metriche di rischio professionali
@@ -7544,12 +7572,10 @@ def calculate_risk_metrics(df_completed: pd.DataFrame) -> Dict:
     if df.empty:
         return vuote
 
-    # Ordine cronologico (data, poi id numerico; "G12" delle multiple -> 12), stabile
     if "data" in df.columns:
-        df["_ordine_data"] = pd.to_datetime(df["data"], errors="coerce")
-        id_num = pd.to_numeric(df["id"].astype(str).str.lstrip("G"), errors="coerce") if "id" in df.columns else 0
-        df["_ordine_id"] = id_num
-        df = df.sort_values(["_ordine_data", "_ordine_id"], kind="mergesort", na_position="last")
+        records = df.to_dict("records")
+        ordine = sorted(range(len(records)), key=lambda i: (_data_bet(records[i]), _id_num_bet(records[i])))
+        df = df.iloc[ordine]
 
     profits = df["Profit"].to_numpy(dtype=float)
 
@@ -8613,10 +8639,8 @@ def api_equity_curve():
                 }
             )
 
-        # Ordina per data (conversione datetime per sort cronologico corretto)
-        # FIX 23 Mag 2026: Sort lessicografico su "DD/MM/YYYY" era buggato
-        # Bug: "25/04/2026" veniva dopo "17/05/2026" (25 > 17 come stringa)
-        completed_bets.sort(key=lambda x: datetime.strptime(x.get("data", "01/01/2000"), "%d/%m/%Y"))
+        # Ordine cronologico (parsing datetime, non lessicografico su "DD/MM/YYYY")
+        completed_bets = ordina_cronologico(completed_bets)
 
         # Calcola equity curve
         config = load_bankroll_config()
@@ -8640,6 +8664,8 @@ def api_equity_curve():
                 {
                     "data": bet.get("data", ""),
                     "partita": bet.get("partita", ""),
+                    "mercato": bet.get("mercato", ""),
+                    "stake": round(float(bet.get("stake") or 0.0), 2),
                     "risultato": bet.get("risultato", ""),
                     "profit": round(profit, 2),
                 }
