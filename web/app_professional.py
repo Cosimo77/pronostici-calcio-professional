@@ -44,11 +44,16 @@ sys.path.insert(0, os.path.dirname(__file__))
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 # Import database module (PostgreSQL)
-import logging
-
 _import_logger = logging.getLogger(__name__)
 try:
-    from database import BetModel, close_db_pool, init_db, is_db_available
+    import database
+
+    # Probe: il modulo deve esporre l'API usata (le funzioni la importano localmente al bisogno)
+    _simboli_mancanti = [
+        n for n in ("BetModel", "close_db_pool", "init_db", "is_db_available") if not hasattr(database, n)
+    ]
+    if _simboli_mancanti:
+        raise ImportError(f"database: simboli mancanti {_simboli_mancanti}")
 
     DATABASE_ENABLED = True
     _import_logger.info("✅ DATABASE MODULE IMPORTED SUCCESSFULLY - DATABASE_ENABLED = True")
@@ -60,10 +65,10 @@ except Exception as e:
     _import_logger.error(f"❌ UNEXPECTED ERROR during database import: {e}", exc_info=True)
 
 # Import cache manager per performance optimization
-from cache_manager import get_cache_manager
+from cache_manager import get_cache_manager  # noqa: E402
 
 # Import diario storage adapter (auto-fallback DB → CSV)
-from diario_storage import DiarioStorage
+from diario_storage import DiarioStorage  # noqa: E402
 
 # Import auto-tracking system per monitoring live accuracy
 try:
@@ -87,7 +92,6 @@ try:
 except ImportError:
     # Fallback: monitoring disabilitato, crea mock objects
     MONITORING_ENABLED = False
-    from typing import Any, Callable
 
     class MockMonitor:
         def get_stats(self, *args: Any, **kwargs: Any) -> dict:
@@ -143,7 +147,7 @@ structlog.configure(
 )
 
 # Setup logging tradizionale con RotatingFileHandler (Max 50MB totali: 5 file x 10MB)
-from logging.handlers import RotatingFileHandler
+from logging.handlers import RotatingFileHandler  # noqa: E402
 
 # Crea handler con rotation automatica
 rotating_handler = RotatingFileHandler(
@@ -173,7 +177,7 @@ app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
 # ==================== CONFIGURAZIONE SICUREZZA SECRETS ====================
 
 # Secret key sicura generata dinamicamente se non in environment
-import secrets
+import secrets  # noqa: E402
 
 default_secret = secrets.token_urlsafe(32)
 
@@ -238,7 +242,10 @@ limiter.init_app(app)
 # Security Headers COMPLETI con Talisman Enterprise (CSP permissivo per dashboard)
 csp = {
     "default-src": "'self'",
-    "script-src": "'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://www.googletagmanager.com",
+    "script-src": (
+        "'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net "
+        "https://www.googletagmanager.com"
+    ),
     "style-src": "'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
     "font-src": "'self' https://fonts.gstatic.com https://cdn.jsdelivr.net",
     "img-src": "'self' data: https:",
@@ -709,7 +716,8 @@ class ProfessionalCalculator:
 
             if n_partite < 30:
                 logger.warning(
-                    f"⚠️ DATI LIMITATI {squadra} ({'casa' if in_casa else 'trasferta'}): {n_partite} partite, smoothing {peso_prior:.0%} (probabilità regolarizzate verso medie campionato)"
+                    f"⚠️ DATI LIMITATI {squadra} ({'casa' if in_casa else 'trasferta'}): {n_partite} partite, "
+                    f"smoothing {peso_prior:.0%} (probabilità regolarizzate verso medie campionato)"
                 )
 
             # Calcola clean sheet rate (partite senza subire gol)
@@ -910,7 +918,8 @@ class ProfessionalCalculator:
             prob_ospite /= totale
 
         logger.info(
-            f"📊 Predizione {squadra_casa} vs {squadra_ospite}: H={prob_casa:.1%} D={prob_pareggio:.1%} A={prob_ospite:.1%} (affidabilità {affidabilita_media:.2f})"
+            f"📊 Predizione {squadra_casa} vs {squadra_ospite}: H={prob_casa:.1%} D={prob_pareggio:.1%} "
+            f"A={prob_ospite:.1%} (affidabilità {affidabilita_media:.2f})"
         )
 
         # Determina predizione
@@ -1102,7 +1111,7 @@ def inizializza_sistema_professionale():
                         # Log ridotto per velocizzare avvio su Render
                         logger.debug(f"✅ {squadra}: {totale_partite} partite nel dataset")
                     else:
-                        logger.debug(f"⚠️ {squadra}: solo {totale_partite} partite nel dataset (soglia {soglia_minima})")
+                        logger.debug(f"⚠️ {squadra}: solo {totale_partite} partite (soglia {soglia_minima})")
                 else:
                     logger.error(f"❌ Dataset non caricato per verificare {squadra}")
             else:
@@ -1433,7 +1442,6 @@ def migrate_csv_to_db_api():
     # 1. Verifica PostgreSQL disponibile
     try:
         from database import BetModel, init_db, is_db_available
-        from web.diario_storage import DiarioStorage
 
         if not is_db_available():
             # Tenta lazy init
@@ -1714,7 +1722,7 @@ def convert_pending_to_wl():
 
     # 1. Verifica database
     try:
-        from database import BetModel, init_db, is_db_available
+        from database import init_db, is_db_available
         from database.connection import get_db_connection
 
         if not is_db_available():
@@ -2494,7 +2502,7 @@ def calcola_shrinkage_adattivo():
         shrinkage = max(0.15, min(0.50, shrinkage))  # Clamp
 
         logger.info(
-            f"✅ Shrinkage adattivo calcolato",
+            "✅ Shrinkage adattivo calcolato",
             n_bet_closed=len(df_valid),
             ev_modello_medio=round(ev_modello_medio, 1),
             roi_reale=round(roi_reale, 2),
@@ -2806,7 +2814,8 @@ def api_predict_enterprise():
                             odds_a = outcomes.get(match_odds["away_team"], 3.0)
                             odds_source = "live_api"
                             logger.info(
-                                f"✅ Quote LIVE: {squadra_casa} {odds_h} - X {odds_d} - {squadra_ospite} {odds_a} ({best_bookmaker})"
+                                f"✅ Quote LIVE: {squadra_casa} {odds_h} - X {odds_d} - {squadra_ospite} {odds_a} "
+                                f"({best_bookmaker})"
                             )
                             break
                 else:
@@ -2980,7 +2989,10 @@ def api_predict_enterprise():
 
         if is_valid_fase1:
             strategy = "FASE1_VALIDATED"
-            reason = f"✅ FASE 1: Pareggio quota {pred_odds:.2f} (range 2.8-3.5), EV {roi_expected * 100:.1f}% (≥25%). Backtest ROI +7.17%"
+            reason = (
+                f"✅ FASE 1: Pareggio quota {pred_odds:.2f} (range 2.8-3.5), "
+                f"EV {roi_expected * 100:.1f}% (≥25%). Backtest ROI +7.17%"
+            )
         else:
             strategy = "FILTERED_OUT"
             filter_reasons = {
@@ -3099,7 +3111,9 @@ def api_predict_enterprise():
             squadra_limitata = squadra_casa if n_partite_casa < 30 else squadra_ospite
             response["warning"] = {
                 "tipo": "dati_insufficienti",
-                "messaggio": f"⚠️ Dati limitati per {squadra_limitata} ({min_partite} partite) - Predizione meno affidabile",
+                "messaggio": (
+                    f"⚠️ Dati limitati per {squadra_limitata} ({min_partite} partite) - Predizione meno affidabile"
+                ),
                 "partite_disponibili": min_partite,
                 "soglia_minima": 30,
                 "confidenza_ridotta": True,
@@ -3107,7 +3121,8 @@ def api_predict_enterprise():
             logger.warning(f"⚠️ Predizione con dati limitati: {squadra_limitata} ({min_partite} partite)")
 
         logger.info(
-            f"✅ Predizione Enterprise + Value Betting: {squadra_casa} vs {squadra_ospite} → {predizione} (ROI: {roi_expected * 100:+.1f}%) [Model: {actual_model}]"
+            f"✅ Predizione Enterprise + Value Betting: {squadra_casa} vs {squadra_ospite} → {predizione} "
+            f"(ROI: {roi_expected * 100:+.1f}%) [Model: {actual_model}]"
         )
 
         # ============================================
@@ -3384,7 +3399,6 @@ def api_batch_generate_predictions():
                 odds_h = match.get("odds_home")
                 odds_d = match.get("odds_draw")
                 odds_a = match.get("odds_away")
-                best_bookmaker = f"{match.get('num_bookmakers', 0)} bookmakers media"
 
                 # Calcola expected value se quote disponibili
                 strategy = "UNKNOWN"
@@ -3394,7 +3408,8 @@ def api_batch_generate_predictions():
                 # Debug: log se quote non estratte
                 if not (odds_h and odds_d and odds_a):
                     logger.warning(
-                        f"⚠️ Quote incomplete: {squadra_casa_norm} vs {squadra_ospite_norm} - h:{odds_h}, d:{odds_d}, a:{odds_a}"
+                        f"⚠️ Quote incomplete: {squadra_casa_norm} vs {squadra_ospite_norm} - "
+                        f"h:{odds_h}, d:{odds_d}, a:{odds_a}"
                     )
 
                 if odds_h and odds_d and odds_a:
@@ -3580,7 +3595,8 @@ def api_upcoming_matches():
                 odds_under_25 = match.get("odds_under_25")
 
                 print(
-                    f"🔍 DEBUG {home} vs {away}: over={odds_over_25}, under={odds_under_25}, keys={list(match.keys())[:10]}"
+                    f"🔍 DEBUG {home} vs {away}: over={odds_over_25}, under={odds_under_25}, "
+                    f"keys={list(match.keys())[:10]}"
                 )
                 logger.info(f"🔍 DEBUG {home} vs {away}: over={odds_over_25}, under={odds_under_25}")
 
@@ -3749,7 +3765,8 @@ def api_upcoming_matches():
                         best_ev = best_candidate["ev"]
                         best_diff = abs(best_candidate["diff"])
                         logger.info(
-                            f"✅ {home} vs {away}: Migliore opportunità {best_outcome} @ {best_odds:.2f} (EV {best_ev * 100:+.1f}%)"
+                            f"✅ {home} vs {away}: Migliore opportunità {best_outcome} @ {best_odds:.2f} "
+                            f"(EV {best_ev * 100:+.1f}%)"
                         )
                     else:
                         # Nessun EV positivo → Fallback a maggiore discrepanza assoluta (per analysis)
@@ -3760,7 +3777,8 @@ def api_upcoming_matches():
                         best_ev = best_candidate["ev"]
                         best_diff = abs(best_candidate["diff"])
                         logger.warning(
-                            f"⚠️ {home} vs {away}: Nessun EV positivo, discrepanza max {best_outcome} (EV {best_ev * 100:+.1f}%)"
+                            f"⚠️ {home} vs {away}: Nessun EV positivo, discrepanza max {best_outcome} "
+                            f"(EV {best_ev * 100:+.1f}%)"
                         )
 
                     # 🎯 VALIDAZIONE FASE 2 (Multi-mercato)
@@ -3785,7 +3803,9 @@ def api_upcoming_matches():
                                     "strategy": "FASE1_PAREGGIO",
                                     "roi_backtest": 7.17,  # ROI reale dal backtest FASE1
                                     "roi_backtest_range": "5-10%",  # FASE1 validata ma range realistico
-                                    "roi_note": "Strategia conservativa. 158 trade backtest, ROI +7.17% su dati storici.",
+                                    "roi_note": (
+                                        "Strategia conservativa. 158 trade backtest, ROI +7.17% su dati storici."
+                                    ),
                                     "ev_warning": ev_warning,
                                 }
                             )
@@ -3911,7 +3931,10 @@ def api_upcoming_matches():
                                     / 2,
                                     2,
                                 ),
-                                "note": "Score 0-1: >0.7=alta affidabilità, 0.5-0.7=media, <0.5=limitata (pochi dati storici)",
+                                "note": (
+                                    "Score 0-1: >0.7=alta affidabilità, 0.5-0.7=media, "
+                                    "<0.5=limitata (pochi dati storici)"
+                                ),
                             },
                         },
                         "analysis": {
@@ -3951,7 +3974,10 @@ def api_upcoming_matches():
                             "best_odds": round(best_odds, 2),
                             "recommendation": ("ANALYZE" if analysis_level != "low_divergence" else "ALIGNED"),
                             # Performance disclaimer
-                            "backtest_note": "Backtest storico: -22% ROI su value betting. Usa solo per analisi, non garanzie di profitto.",
+                            "backtest_note": (
+                                "Backtest storico: -22% ROI su value betting. "
+                                "Usa solo per analisi, non garanzie di profitto."
+                            ),
                         },
                         "value_betting": {
                             "expected_values": {
@@ -4016,7 +4042,9 @@ def api_upcoming_matches():
                             else None
                         ),
                         "has_prediction": False,
-                        "no_prediction_reason": "Una o entrambe le squadre non hanno dati storici sufficienti nel dataset",
+                        "no_prediction_reason": (
+                            "Una o entrambe le squadre non hanno dati storici sufficienti nel dataset"
+                        ),
                         "value_betting": {
                             "fase2_validated": False,
                             "fase2_opportunities": [],
@@ -4322,19 +4350,36 @@ def pagina_consigli():
         <title>Consigli di Scommessa - Pronostici Calcio</title>
         <style>
             body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
-            .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+            .container {
+                max-width: 800px; margin: 0 auto; background: white; padding: 20px;
+                border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            }
             .header { text-align: center; color: #2c3e50; margin-bottom: 30px; }
             .form-group { margin-bottom: 15px; }
             select, button { padding: 10px; font-size: 16px; border: 1px solid #ddd; border-radius: 5px; }
             button { background: #3498db; color: white; border: none; cursor: pointer; width: 100%; }
             button:hover { background: #2980b9; }
             .consigli-section { margin-top: 20px; }
-            .alta-conf { background: #d4edda; border-left: 4px solid #28a745; padding: 15px; margin-bottom: 10px; border-radius: 5px; }
-            .media-conf { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin-bottom: 10px; border-radius: 5px; }
-            .speculativo { background: #f8d7da; border-left: 4px solid #dc3545; padding: 15px; margin-bottom: 10px; border-radius: 5px; }
-            .strategia { background: #e1ecf4; border-left: 4px solid #0c5aa6; padding: 15px; margin-top: 20px; border-radius: 5px; }
+            .alta-conf {
+                background: #d4edda; border-left: 4px solid #28a745;
+                padding: 15px; margin-bottom: 10px; border-radius: 5px;
+            }
+            .media-conf {
+                background: #fff3cd; border-left: 4px solid #ffc107;
+                padding: 15px; margin-bottom: 10px; border-radius: 5px;
+            }
+            .speculativo {
+                background: #f8d7da; border-left: 4px solid #dc3545;
+                padding: 15px; margin-bottom: 10px; border-radius: 5px;
+            }
+            .strategia {
+                background: #e1ecf4; border-left: 4px solid #0c5aa6;
+                padding: 15px; margin-top: 20px; border-radius: 5px;
+            }
             .loading { text-align: center; color: #666; }
-            .consiglio-item { margin-bottom: 10px; padding: 10px; background: rgba(255,255,255,0.7); border-radius: 3px; }
+            .consiglio-item {
+                margin-bottom: 10px; padding: 10px; background: rgba(255,255,255,0.7); border-radius: 3px;
+            }
             .mercato { font-weight: bold; color: #2c3e50; }
             .scommessa { color: #27ae60; font-weight: bold; }
             .probabilita { color: #8e44ad; font-size: 0.9em; }
@@ -4432,7 +4477,10 @@ def pagina_consigli():
                         html += `<div class="consiglio-item">
                             <div class="mercato">${c.mercato}</div>
                             <div class="scommessa">Scommetti: ${c.scommessa}</div>
-                            <div class="probabilita">Probabilità: ${(c.probabilita * 100).toFixed(1)}% | Confidenza: ${(c.confidenza * 100).toFixed(1)}%</div>
+                            <div class="probabilita">
+                                Probabilità: ${(c.probabilita * 100).toFixed(1)}%
+                                | Confidenza: ${(c.confidenza * 100).toFixed(1)}%
+                            </div>
                             <div class="motivazione">${c.motivazione}</div>
                         </div>`;
                     });
@@ -4446,7 +4494,10 @@ def pagina_consigli():
                         html += `<div class="consiglio-item">
                             <div class="mercato">${c.mercato}</div>
                             <div class="scommessa">Scommetti: ${c.scommessa}</div>
-                            <div class="probabilita">Probabilità: ${(c.probabilita * 100).toFixed(1)}% | Confidenza: ${(c.confidenza * 100).toFixed(1)}%</div>
+                            <div class="probabilita">
+                                Probabilità: ${(c.probabilita * 100).toFixed(1)}%
+                                | Confidenza: ${(c.confidenza * 100).toFixed(1)}%
+                            </div>
                             <div class="motivazione">${c.motivazione}</div>
                         </div>`;
                     });
@@ -4460,7 +4511,10 @@ def pagina_consigli():
                         html += `<div class="consiglio-item">
                             <div class="mercato">${c.mercato}</div>
                             <div class="scommessa">Scommetti: ${c.scommessa}</div>
-                            <div class="probabilita">Probabilità: ${(c.probabilita * 100).toFixed(1)}% | Confidenza: ${(c.confidenza * 100).toFixed(1)}%</div>
+                            <div class="probabilita">
+                                Probabilità: ${(c.probabilita * 100).toFixed(1)}%
+                                | Confidenza: ${(c.confidenza * 100).toFixed(1)}%
+                            </div>
                             <div class="motivazione">${c.motivazione}</div>
                         </div>`;
                     });
@@ -4472,7 +4526,8 @@ def pagina_consigli():
                     <h3>📊 Strategia Consigliata</h3>
                     <p>${consigli.riepilogo.strategia_consigliata}</p>
                     ${consigli.riepilogo.migliore_scommessa ?
-                        `<p><strong>Migliore scommessa:</strong> ${consigli.riepilogo.migliore_scommessa.mercato}</p>` : ''}
+                        `<p><strong>Migliore scommessa:</strong>
+                            ${consigli.riepilogo.migliore_scommessa.mercato}</p>` : ''}
                 </div>`;
 
                 document.getElementById('consigli-content').innerHTML = html;
@@ -4585,12 +4640,9 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
     logger.info(f"   DataFrame disponibile: {calculator.df_features is not None}")
     if calculator.df_features is not None:
         logger.info(f"   Righe dataset: {len(calculator.df_features)}")
-        logger.info(
-            f"   Prime 5 colonne: {list(calculator.df_features.columns[:5]) if hasattr(calculator.df_features, 'columns') else 'Nessuna colonna'}"
-        )
-        logger.info(
-            f"   Ha FTHG? {'FTHG' in calculator.df_features.columns if hasattr(calculator.df_features, 'columns') else 'No columns'}"
-        )
+        colonne = getattr(calculator.df_features, "columns", None)
+        logger.info(f"   Prime 5 colonne: {list(colonne[:5]) if colonne is not None else 'Nessuna colonna'}")
+        logger.info(f"   Ha FTHG? {'FTHG' in colonne if colonne is not None else 'No columns'}")
     else:
         logger.info("   DataFrame è None!")
 
@@ -4659,7 +4711,8 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
             gol_previsti_raw = gol_previsti
             gol_previsti = gol_previsti * (1 - shrinkage_gol) + media_campionato * shrinkage_gol
             logger.info(
-                f"🎚️ Calibrazione leggera gol: {min_partite} partite, shrinkage {shrinkage_gol:.0%}, gol {gol_previsti_raw:.2f} → {gol_previsti:.2f}"
+                f"🎚️ Calibrazione leggera gol: {min_partite} partite, shrinkage {shrinkage_gol:.0%}, "
+                f"gol {gol_previsti_raw:.2f} → {gol_previsti:.2f}"
             )
 
         # Over/Under 2.5 - Calcolo dinamico basato sui gol previsti
@@ -5347,11 +5400,6 @@ def _calcola_mercati_deterministici(squadra_casa: str, squadra_ospite: str, prob
     # Basato su aggressività e rivalità con maggiore variabilità
     intensita_match = (aggressivita_casa + aggressivita_ospite) / 2
 
-    # Variabilità deterministica per cartellini
-    _match_seed = int(
-        hashlib.md5(f"{squadra_casa}_{squadra_ospite}_cards".encode()).hexdigest()[:8],
-        16,
-    )  # noqa: F841
     # Base probability realistica (5%-45%)
     prob_rosso = max(0.05, min(0.45, intensita_match * 0.4))
     prob_no_rosso = 1 - prob_rosso
@@ -5473,7 +5521,11 @@ def _genera_consigli_scommessa(mercati: Dict, probabilita_1x2: Dict, confidenza_
         consigli["alta_confidenza"].append(
             {
                 "mercato": "Risultato 1X2",
-                "scommessa": f'{"Vittoria Casa" if risultato_1x2 == "H" else "Pareggio" if risultato_1x2 == "D" else "Vittoria Ospite"}',
+                "scommessa": (
+                    "Vittoria Casa"
+                    if risultato_1x2 == "H"
+                    else "Pareggio" if risultato_1x2 == "D" else "Vittoria Ospite"
+                ),
                 "probabilita": round(max_prob_1x2, 3),
                 "confidenza": round(confidenza_generale, 3),
                 "motivazione": f"Forte indicazione con {max_prob_1x2:.1%} di probabilità",
@@ -5858,7 +5910,9 @@ def api_monitoring_accuracy():
                 {
                     "status": "pending",
                     "status_icon": "⏳",
-                    "status_message": f"{len(df_pending_recent)} predizioni generate negli ultimi 7 giorni - in attesa di risultati",
+                    "status_message": (
+                        f"{len(df_pending_recent)} predizioni generate negli ultimi 7 giorni - in attesa di risultati"
+                    ),
                     "predictions_count": len(df),
                     "pending_predictions": len(df_pending),
                     "pending_recent_7d": len(df_pending_recent),
@@ -5906,7 +5960,9 @@ def api_monitoring_accuracy():
                     {
                         "status": "pending",
                         "status_icon": "⏳",
-                        "status_message": f"{len(df_pending_30d)} predizioni negli ultimi 30 giorni - in attesa di risultati",
+                        "status_message": (
+                            f"{len(df_pending_30d)} predizioni negli ultimi 30 giorni - in attesa di risultati"
+                        ),
                         "days_window": "30 giorni",
                         "accuracy_7d": 0.0,
                         "accuracy_7d_pct": 0.0,
@@ -6155,7 +6211,7 @@ def api_investor_metrics():
 
         # Prova prima con database Neon, fallback su CSV
         try:
-            from database import BetModel, is_db_available
+            from database import is_db_available
 
             if is_db_available():
                 # TODO: Query database Neon per betting reali
@@ -6193,7 +6249,7 @@ def api_investor_metrics():
                     return np.nan
 
                 # Se predizione corretta, profit = (quota - 1) * stake
-                if row.get("Corretto") == True or row.get("Corretto") == 1:
+                if row.get("Corretto") == 1:
                     # Determina quota vincente in base a Best_Bet
                     best_bet = row.get("Best_Bet", "")
                     if best_bet == "Casa" and "Quota_Casa" in df.columns:
@@ -7930,7 +7986,11 @@ def api_diario_add():
                         {
                             "success": False,
                             "error": "duplicate",
-                            "message": f"⚠️ DUPLICATO!\n\n{data['partita']}\n{data['mercato']} è già nel tuo diario.\n\nPuntata esistente:\n• Quota: {bet['quota_sisal']}\n• Stake: {bet['stake']}\n\nVai al diario per modificarla.",
+                            "message": (
+                                f"⚠️ DUPLICATO!\n\n{data['partita']}\n{data['mercato']} è già nel tuo diario.\n\n"
+                                f"Puntata esistente:\n• Quota: {bet['quota_sisal']}\n• Stake: {bet['stake']}\n\n"
+                                "Vai al diario per modificarla."
+                            ),
                             "existing_bet": {
                                 "partita": bet["partita"],
                                 "mercato": bet["mercato"],
