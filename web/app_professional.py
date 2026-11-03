@@ -7462,42 +7462,62 @@ def calculate_risk_metrics(df_completed: pd.DataFrame) -> Dict:
     """
     Calcola metriche di rischio professionali
 
+    - Equity curve in ordine cronologico (le puntate arrivano dal DB in ordine decrescente
+      e con le multiple in coda), partendo dal bankroll iniziale
+    - Sharpe per puntata sui rendimenti (profit/stake), non annualizzato
+    - Max drawdown in euro e in % rispetto al picco di bankroll in cui e' avvenuto
+
     Returns:
         Dict con Sharpe ratio, max drawdown, win/loss ratio, etc.
     """
+    vuote = {
+        "sharpe_ratio": 0.0,
+        "max_drawdown": 0.0,
+        "max_drawdown_pct": 0.0,
+        "win_loss_ratio": 0.0,
+        "avg_win": 0.0,
+        "avg_loss": 0.0,
+        "profit_factor": 0.0,
+    }
     if len(df_completed) == 0:
-        return {
-            "sharpe_ratio": 0.0,
-            "max_drawdown": 0.0,
-            "max_drawdown_pct": 0.0,
-            "win_loss_ratio": 0.0,
-            "avg_win": 0.0,
-            "avg_loss": 0.0,
-            "profit_factor": 0.0,
-        }
+        return vuote
 
-    # Converti profit a numerico
-    df_completed["Profit"] = pd.to_numeric(df_completed["Profit"], errors="coerce")
-    profits = df_completed["Profit"].values
+    df = df_completed.copy()
+    df["Profit"] = pd.to_numeric(df["Profit"], errors="coerce")
+    df = df.dropna(subset=["Profit"])
+    if df.empty:
+        return vuote
 
-    # Sharpe Ratio (annualizzato, assumendo 1 bet/giorno)
-    mean_profit = np.mean(profits)  # type: ignore[arg-type]
-    std_profit = np.std(profits)  # type: ignore[arg-type]
-    sharpe_ratio = (mean_profit / std_profit * np.sqrt(252)) if std_profit > 0 else 0.0
+    # Ordine cronologico (data, poi id numerico; "G12" delle multiple -> 12), stabile
+    if "data" in df.columns:
+        df["_ordine_data"] = pd.to_datetime(df["data"], errors="coerce")
+        id_num = pd.to_numeric(df["id"].astype(str).str.lstrip("G"), errors="coerce") if "id" in df.columns else 0
+        df["_ordine_id"] = id_num
+        df = df.sort_values(["_ordine_data", "_ordine_id"], kind="mergesort", na_position="last")
 
-    # Max Drawdown (equity curve)
-    cumulative = np.cumsum(profits)  # type: ignore[arg-type]
-    running_max = np.maximum.accumulate(cumulative)
-    drawdown = running_max - cumulative
-    max_dd = np.max(drawdown) if len(drawdown) > 0 else 0.0
+    profits = df["Profit"].to_numpy(dtype=float)
 
-    # Max Drawdown %
-    config = load_bankroll_config()
-    max_dd_pct = (max_dd / config["bankroll_iniziale"] * 100) if config["bankroll_iniziale"] > 0 else 0.0
+    # Sharpe per puntata sui rendimenti (profit/stake); deviazione standard campionaria
+    if "stake" in df.columns:
+        stakes = pd.to_numeric(df["stake"], errors="coerce").to_numpy(dtype=float)
+        rendimenti = profits[stakes > 0] / stakes[stakes > 0]
+    else:
+        rendimenti = profits
+    std_rend = np.std(rendimenti, ddof=1) if len(rendimenti) > 1 else 0.0
+    sharpe_ratio = float(np.mean(rendimenti) / std_rend) if std_rend > 0 else 0.0
+
+    # Max Drawdown sull'equity curve (bankroll iniziale + profitti cumulati)
+    bankroll_iniziale = load_bankroll_config()["bankroll_iniziale"]
+    equity = bankroll_iniziale + np.concatenate(([0.0], np.cumsum(profits)))
+    picco = np.maximum.accumulate(equity)
+    drawdown = picco - equity
+    idx_dd = int(np.argmax(drawdown))
+    max_dd = float(drawdown[idx_dd])
+    max_dd_pct = (max_dd / picco[idx_dd] * 100) if picco[idx_dd] > 0 else 0.0
 
     # Win/Loss stats
-    wins = df_completed[df_completed["Profit"] > 0]["Profit"]
-    losses = df_completed[df_completed["Profit"] < 0]["Profit"]
+    wins = df[df["Profit"] > 0]["Profit"]
+    losses = df[df["Profit"] < 0]["Profit"]
 
     avg_win = wins.mean() if len(wins) > 0 else 0.0
     avg_loss = abs(losses.mean()) if len(losses) > 0 else 0.0
