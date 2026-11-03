@@ -1470,6 +1470,22 @@
             return { '1': o.home, 'X': o.draw, '2': o.away, 'OVER_25': t.over_25, 'UNDER_25': t.under_25 }[mercato] || null;
         }
 
+        // Mercati con probabilita' derivata dai dati: codice -> [mercato del modello, esito].
+        // Esclusi di proposito Pari/Dispari, corner, cartellini e primo tempo: il modello li stima con
+        // formule fisse o limitate, quindi non sono probabilita' affidabili per EV e Kelly.
+        const MAPPA_MODELLO = {
+            'UNDER_15': ['mou15', 'under'], 'OVER_15': ['mou15', 'over'],
+            'UNDER_35': ['mou35', 'under'], 'OVER_35': ['mou35', 'over'],
+            'HOME_OVER_05': ['mcasasegna', 'si'], 'HOME_UNDER_05': ['mcasasegna', 'no'],
+            'AWAY_OVER_05': ['mospitesegna', 'si'], 'AWAY_UNDER_05': ['mospitesegna', 'no'],
+            'HOME_SEGNA_NO': ['mcasasegna', 'no'], 'AWAY_SEGNA_NO': ['mospitesegna', 'no'],
+            // Porta inviolata di una squadra = l'avversaria non segna
+            'CS_HOME_SI': ['mospitesegna', 'no'], 'CS_HOME_NO': ['mospitesegna', 'si'],
+            'CS_AWAY_SI': ['mcasasegna', 'no'], 'CS_AWAY_NO': ['mcasasegna', 'si'],
+            '1X_OVER_25': ['mcombo', '1X_Over'], '1X_UNDER_25': ['mcombo', '1X_Under'],
+            '2_OVER_25': ['mcombo', '2_Over'], '2_UNDER_25': ['mcombo', '2_Under']
+        };
+
         // Probabilita' del modello (0-1) ed EV (%) per i mercati che il sistema calcola
         function datiModelloMercato(m, mercato) {
             const p = (m.prediction || {}).probabilities || {};
@@ -1477,12 +1493,19 @@
             const dc = (mercati.mdc || {}).probabilita || {};
             const gg = (mercati.mgg || {}).probabilita || {};
             const ev = (m.analysis || m.value_betting || {}).expected_values || {};
-            return {
+            const base = {
                 '1': { prob: p.H, ev: ev.home }, 'X': { prob: p.D, ev: ev.draw }, '2': { prob: p.A, ev: ev.away },
                 '1X': { prob: dc['1X'] }, 'X2': { prob: dc['X2'] }, '12': { prob: dc['12'] },
                 'OVER_25': { prob: p.over, ev: ev.over }, 'UNDER_25': { prob: p.under, ev: ev.under },
                 'GG': { prob: gg.goal }, 'NG': { prob: gg.nogoal }
-            }[mercato] || {};
+            }[mercato];
+            if (base) return base;
+
+            let percorso = MAPPA_MODELLO[mercato];
+            const esatto = /^RE_(\d)_(\d)$/.exec(mercato);
+            if (!percorso && esatto) percorso = ['mes', `${esatto[1]}-${esatto[2]}`];
+            const prob = percorso ? ((mercati[percorso[0]] || {}).probabilita || {})[percorso[1]] : undefined;
+            return prob != null ? { prob } : {};
         }
 
         // Compila un campo con il valore automatico; se il mercato non ha dato, svuota solo cio' che era automatico
