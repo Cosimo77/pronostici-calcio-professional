@@ -2154,6 +2154,14 @@
         const NOMI_MERCATI = Object.fromEntries(MERCATI_DIARIO.flatMap(g => g.opts));
         const etichettaMercato = codice => NOMI_MERCATI[codice] || (codice === 'MULTIPLA' ? 'Multipla' : codice || '1X2');
 
+        // Famiglia di mercato = gruppo del menu a tendina, senza l'emoji iniziale ("🎯 1X2" -> "1X2")
+        const FAMIGLIE_MERCATI = Object.fromEntries(MERCATI_DIARIO.flatMap(g =>
+            g.opts.map(([codice]) => [codice, g.label.replace(/^[^\p{L}\p{N}]+/u, '')])));
+        const famigliaMercato = codice =>
+            FAMIGLIE_MERCATI[codice] || (codice === 'MULTIPLA' ? 'Multipla' : 'Altri mercati');
+        // Sotto questa soglia il ROI e' dominato dal caso (una puntata vale circa +/-100%)
+        const SOGLIA_CAMPIONE_ROI = 5;
+
         function disegnaEquityCurve(data) {
             if (equityChart) { equityChart.destroy(); equityChart = null; }
             const ctx = mostraGrafico('equityCurveChart', !data.labels || data.labels.length === 0 ? `
@@ -2275,31 +2283,36 @@
                 <small>Completa bet su vari mercati</small>` : null);
             if (!ctx) return;
 
-            // Singole e multiple (queste ultime come "MULTIPLA"); stake e profit reali, niente stake di ripiego
-            const mercati = {};
+            // Raggruppa per famiglia di mercato; singole e multiple con stake e profit reali
+            const famiglie = {};
             bets.forEach(bet => {
-                const m = mercati[bet.mercato || '1X2'] ||= { profit: 0, count: 0, stake: 0 };
-                m.profit += bet.profit;
-                m.stake += bet.stake;
-                m.count += 1;
+                const codice = bet.mercato || '1X2';
+                const f = famiglie[famigliaMercato(codice)] ||= { profit: 0, stake: 0, count: 0, dettagli: {} };
+                f.profit += bet.profit;
+                f.stake += bet.stake;
+                f.count += 1;
+                const d = f.dettagli[codice] ||= { profit: 0, stake: 0, count: 0 };
+                d.profit += bet.profit;
+                d.stake += bet.stake;
+                d.count += 1;
             });
 
-            const voci = Object.entries(mercati)
-                .map(([codice, m]) => ({
-                    label: `${etichettaMercato(codice)} (${m.count} bet)`,
-                    roi: m.stake > 0 ? Math.round(m.profit / m.stake * 1000) / 10 : 0
-                }))
+            const roi = x => x.stake > 0 ? Math.round(x.profit / x.stake * 1000) / 10 : 0;
+            const voci = Object.entries(famiglie)
+                .map(([nome, f]) => ({ nome, count: f.count, roi: roi(f), dettagli: f.dettagli }))
                 .sort((x, y) => y.roi - x.roi);
 
             const c = paletteGrafici();
+            // Campione ridotto: colonna semitrasparente (colori esadecimali + canale alpha)
+            const colore = v => (v.roi >= 0 ? c.verde : c.rosso) + (v.count < SOGLIA_CAMPIONE_ROI ? '80' : '');
             roiPerMercatoChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: voci.map(v => v.label),
+                    labels: voci.map(v => `${v.nome} (${v.count} bet)`),
                     datasets: [{
                         label: 'ROI %',
                         data: voci.map(v => v.roi),
-                        backgroundColor: voci.map(v => v.roi >= 0 ? c.verde : c.rosso),
+                        backgroundColor: voci.map(colore),
                         borderWidth: 0
                     }]
                 },
@@ -2308,8 +2321,17 @@
                     maintainAspectRatio: false,
                     plugins: {
                         legend: { display: false },
-                        title: { display: true, text: 'ROI per Tipo Mercato' },
-                        tooltip: { callbacks: { label: ctx => `ROI: ${ctx.parsed.y}%` } }
+                        title: { display: true, text: `ROI per Famiglia di Mercato (colonne chiare: meno di ${SOGLIA_CAMPIONE_ROI} bet)` },
+                        tooltip: {
+                            callbacks: {
+                                label: t => `ROI: ${t.parsed.y}% su ${voci[t.dataIndex].count} bet`,
+                                afterBody: items => Object.entries(voci[items[0].dataIndex].dettagli)
+                                    .sort((x, y) => y[1].count - x[1].count)
+                                    .map(([codice, d]) => `${etichettaMercato(codice)}: ${d.count} bet, ROI ${roi(d)}%`),
+                                footer: items => voci[items[0].dataIndex].count < SOGLIA_CAMPIONE_ROI
+                                    ? `Campione ridotto (meno di ${SOGLIA_CAMPIONE_ROI} puntate)` : ''
+                            }
+                        }
                     },
                     scales: {
                         y: { beginAtZero: true, ticks: { callback: v => v + '%' } }
