@@ -2157,8 +2157,7 @@
         // Famiglia di mercato = gruppo del menu a tendina, senza l'emoji iniziale ("🎯 1X2" -> "1X2")
         const FAMIGLIE_MERCATI = Object.fromEntries(MERCATI_DIARIO.flatMap(g =>
             g.opts.map(([codice]) => [codice, g.label.replace(/^[^\p{L}\p{N}]+/u, '')])));
-        const famigliaMercato = codice =>
-            FAMIGLIE_MERCATI[codice] || (codice === 'MULTIPLA' ? 'Multipla' : 'Altri mercati');
+        const famigliaMercato = codice => FAMIGLIE_MERCATI[codice] || 'Altri mercati';
         // Sotto questa soglia il ROI e' dominato dal caso (una puntata vale circa +/-100%)
         const SOGLIA_CAMPIONE_ROI = 5;
 
@@ -2276,14 +2275,33 @@
 
         function disegnaRoiPerMercato(data) {
             if (roiPerMercatoChart) { roiPerMercatoChart.destroy(); roiPerMercatoChart = null; }
-            const bets = data.bet_details || [];
+            document.querySelector('.roi-multiple-nota')?.remove();
+            const tutte = data.bet_details || [];
+            // Le multiple hanno quote molto alte: il loro ROI (anche +1000%) schiaccerebbe la scala delle
+            // famiglie, quindi restano fuori dal grafico e si riassumono sotto
+            const bets = tutte.filter(b => b.mercato !== 'MULTIPLA');
+            const multiple = tutte.filter(b => b.mercato === 'MULTIPLA');
+            const stakeMultiple = multiple.reduce((t, b) => t + b.stake, 0);
+            const profitMultiple = multiple.reduce((t, b) => t + b.profit, 0);
+            const riepilogoMultiple = multiple.length === 0 ? '' :
+                `Multiple (fuori dal grafico, ROI troppo volatile): ${multiple.length} bet, ` +
+                `ROI ${stakeMultiple > 0 ? Math.round(profitMultiple / stakeMultiple * 1000) / 10 : 0}%, ` +
+                `profitto ${profitMultiple >= 0 ? '+' : ''}€${profitMultiple.toFixed(2)}`;
+
             const ctx = mostraGrafico('roiPerMercatoChart', bets.length === 0 ? `
                 <i class="bi bi-pie-chart"></i>
-                <p class="mt-2 mb-0">Nessun dato disponibile</p>
-                <small>Completa bet su vari mercati</small>` : null);
+                <p class="mt-2 mb-0">${tutte.length === 0 ? 'Nessun dato disponibile' : 'Nessuna puntata singola completata'}</p>
+                <small>${riepilogoMultiple || 'Completa bet su vari mercati'}</small>` : null);
             if (!ctx) return;
 
-            // Raggruppa per famiglia di mercato; singole e multiple con stake e profit reali
+            if (riepilogoMultiple) {
+                const nota = document.createElement('div');
+                nota.className = 'roi-multiple-nota small text-muted text-center px-3 pb-3';
+                nota.textContent = riepilogoMultiple;
+                document.getElementById('roiPerMercatoChart').closest('.card-body').after(nota);
+            }
+
+            // Raggruppa per famiglia di mercato, con stake e profit reali
             const famiglie = {};
             bets.forEach(bet => {
                 const codice = bet.mercato || '1X2';
