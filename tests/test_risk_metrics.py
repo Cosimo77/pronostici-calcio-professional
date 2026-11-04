@@ -47,3 +47,29 @@ def test_ordina_cronologico_stessa_data_per_id():
 
 def test_senza_puntate_restituisce_zeri():
     assert app_mod.calculate_risk_metrics(pd.DataFrame())["max_drawdown"] == 0.0
+
+
+def test_gambe_multiple_chiuse_solo_eventi_decisi_con_quota_valida():
+    bets = [
+        {
+            "group_id": "7",
+            "mercato": "OVER_25",
+            "quota_sisal": 1.8,
+            "risultato": "WIN",
+            "partita": "A vs B",
+            "data": "01/11/2026",
+        },
+        {
+            "group_id": "7",
+            "mercato": "GG",
+            "quota_sisal": "1.9",
+            "risultato": "LOSS",
+            "partita": "C vs D",
+            "data": "01/11/2026",
+        },
+        {"group_id": "7", "mercato": "1", "quota_sisal": 1.5, "risultato": "PENDING"},
+        {"group_id": "7", "mercato": "X", "quota_sisal": 1.0, "risultato": "WIN"},
+        {"group_id": None, "mercato": "2", "quota_sisal": 2.1, "risultato": "WIN"},
+    ]
+    gambe = app_mod.gambe_multiple_chiuse(bets)
+    assert [(g["mercato"], g["quota"], g["risultato"]) for g in gambe] == [("OVER_25", 1.8, "WIN"), ("GG", 1.9, "LOSS")]

@@ -2277,27 +2277,39 @@
             if (roiPerMercatoChart) { roiPerMercatoChart.destroy(); roiPerMercatoChart = null; }
             document.querySelector('.roi-multiple-nota')?.remove();
             const tutte = data.bet_details || [];
-            // Le multiple hanno quote molto alte: il loro ROI (anche +1000%) schiaccerebbe la scala delle
-            // famiglie, quindi restano fuori dal grafico e si riassumono sotto
-            const bets = tutte.filter(b => b.mercato !== 'MULTIPLA');
+            const singole = tutte.filter(b => b.mercato !== 'MULTIPLA');
             const multiple = tutte.filter(b => b.mercato === 'MULTIPLA');
+            // Le gambe delle multiple misurano il mercato meglio dell'esito complessivo: contano come
+            // puntate singole virtuali da 1 unita' alla quota dell'evento (la multipla, con ROI anche
+            // +1000%, schiaccerebbe la scala e dipende da tutte le gambe insieme)
+            const gambe = (data.eventi_multiple || []).map(g => ({
+                mercato: g.mercato, stake: 1, profit: g.risultato === 'WIN' ? g.quota - 1 : -1, virtuale: true
+            }));
+            const bets = [...singole, ...gambe];
+
             const stakeMultiple = multiple.reduce((t, b) => t + b.stake, 0);
             const profitMultiple = multiple.reduce((t, b) => t + b.profit, 0);
-            const riepilogoMultiple = multiple.length === 0 ? '' :
-                `Multiple (fuori dal grafico, ROI troppo volatile): ${multiple.length} bet, ` +
-                `ROI ${stakeMultiple > 0 ? Math.round(profitMultiple / stakeMultiple * 1000) / 10 : 0}%, ` +
-                `profitto ${profitMultiple >= 0 ? '+' : ''}€${profitMultiple.toFixed(2)}`;
+            const note = [];
+            if (gambe.length) {
+                note.push(`${gambe.length} eventi di multiple contati come puntate singole virtuali da 1 unità alla quota dell'evento.`);
+            }
+            if (multiple.length) {
+                const roiM = stakeMultiple > 0 ? Math.round(profitMultiple / stakeMultiple * 1000) / 10 : 0;
+                note.push(`Multiple reali (fuori dal grafico): ${multiple.length} bet, ROI ${roiM}%, ` +
+                    `profitto ${profitMultiple >= 0 ? '+' : ''}€${profitMultiple.toFixed(2)}.`);
+            }
+            const riepilogo = note.join(' ');
 
             const ctx = mostraGrafico('roiPerMercatoChart', bets.length === 0 ? `
                 <i class="bi bi-pie-chart"></i>
                 <p class="mt-2 mb-0">${tutte.length === 0 ? 'Nessun dato disponibile' : 'Nessuna puntata singola completata'}</p>
-                <small>${riepilogoMultiple || 'Completa bet su vari mercati'}</small>` : null);
+                <small>${riepilogo || 'Completa bet su vari mercati'}</small>` : null);
             if (!ctx) return;
 
-            if (riepilogoMultiple) {
+            if (riepilogo) {
                 const nota = document.createElement('div');
                 nota.className = 'roi-multiple-nota small text-muted text-center px-3 pb-3';
-                nota.textContent = riepilogoMultiple;
+                nota.textContent = riepilogo;
                 document.getElementById('roiPerMercatoChart').closest('.card-body').after(nota);
             }
 
@@ -2309,10 +2321,11 @@
                 f.profit += bet.profit;
                 f.stake += bet.stake;
                 f.count += 1;
-                const d = f.dettagli[codice] ||= { profit: 0, stake: 0, count: 0 };
+                const d = f.dettagli[codice] ||= { profit: 0, stake: 0, count: 0, virtuali: 0 };
                 d.profit += bet.profit;
                 d.stake += bet.stake;
                 d.count += 1;
+                if (bet.virtuale) d.virtuali += 1;
             });
 
             const roi = x => x.stake > 0 ? Math.round(x.profit / x.stake * 1000) / 10 : 0;
@@ -2345,7 +2358,8 @@
                                 label: t => `ROI: ${t.parsed.y}% su ${voci[t.dataIndex].count} bet`,
                                 afterBody: items => Object.entries(voci[items[0].dataIndex].dettagli)
                                     .sort((x, y) => y[1].count - x[1].count)
-                                    .map(([codice, d]) => `${etichettaMercato(codice)}: ${d.count} bet, ROI ${roi(d)}%`),
+                                    .map(([codice, d]) => `${etichettaMercato(codice)}: ${d.count} bet` +
+                                        `${d.virtuali ? ` (${d.virtuali} da multiple)` : ''}, ROI ${roi(d)}%`),
                                 footer: items => voci[items[0].dataIndex].count < SOGLIA_CAMPIONE_ROI
                                     ? `Campione ridotto (meno di ${SOGLIA_CAMPIONE_ROI} puntate)` : ''
                             }

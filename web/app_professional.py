@@ -8617,6 +8617,32 @@ def api_calculate_kelly():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+def gambe_multiple_chiuse(bets: list) -> list:
+    """Eventi delle multiple con esito WIN/LOSS, con la quota dell'evento.
+    Le gambe non hanno stake reale (e' sulla multipla): servono per misurare i mercati,
+    contandole come puntate singole virtuali."""
+    gambe = []
+    for bet in bets:
+        if not bet.get("group_id") or bet.get("risultato") not in ("WIN", "LOSS"):
+            continue
+        try:
+            quota = float(bet.get("quota_sisal") or 0)
+        except (TypeError, ValueError):
+            continue
+        if quota <= 1.0:
+            continue
+        gambe.append(
+            {
+                "data": bet.get("data", ""),
+                "partita": bet.get("partita", ""),
+                "mercato": bet.get("mercato", ""),
+                "quota": round(quota, 2),
+                "risultato": bet["risultato"],
+            }
+        )
+    return gambe
+
+
 @app.route("/api/equity_curve", methods=["GET"])
 @limiter.limit("60 per minute")
 def api_equity_curve():
@@ -8627,6 +8653,7 @@ def api_equity_curve():
 
         # Filtra solo WIN/LOSS completate
         completed_bets = [bet for bet in all_bets if bet.get("risultato") in ["WIN", "LOSS"]]
+        eventi_multiple = gambe_multiple_chiuse(DiarioStorage.get_all_bets())
 
         if len(completed_bets) == 0:
             return jsonify(
@@ -8635,6 +8662,7 @@ def api_equity_curve():
                     "cumulative_profit": [],
                     "bankroll_curve": [],
                     "bet_details": [],
+                    "eventi_multiple": eventi_multiple,
                     "bankroll_iniziale": 100.0,
                 }
             )
@@ -8677,6 +8705,7 @@ def api_equity_curve():
                 "cumulative_profit": cumulative_profit,
                 "bankroll_curve": bankroll_curve,
                 "bet_details": bet_details,
+                "eventi_multiple": eventi_multiple,
                 "bankroll_iniziale": bankroll_iniziale,
             }
         )
