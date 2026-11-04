@@ -3,7 +3,6 @@ Model per gestione scommesse multiple (combo/sistemi)
 Data: 17/02/2026
 """
 
-from datetime import date, datetime
 from typing import Dict, List, Optional
 
 import structlog
@@ -174,10 +173,8 @@ class BetGroupModel:
         Aggiorna risultato multipla basandosi sugli eventi associati
 
         Logica:
-        - Tutti WIN → multipla WIN
-        - Almeno un LOSS → multipla LOSS
-        - Almeno un VOID (senza LOSS) → multipla VOID
-        - Altrimenti → PENDING
+        - Almeno un evento PENDING → multipla PENDING (anche se un altro evento e' gia' LOSS)
+        - Eventi tutti validati: almeno un LOSS → LOSS, tutti WIN → WIN, solo VOID/SKIP → VOID
 
         Returns:
             profit: Profit della multipla
@@ -244,6 +241,44 @@ class BetGroupModel:
         except Exception as e:
             logger.error("Errore update risultato multipla", group_id=group_id, error=str(e))
             raise
+
+    @staticmethod
+    def riallinea_esiti(applica: bool = False) -> List[Dict]:
+        """
+        Multiple il cui esito salvato non coincide con le regole attuali (es. LOSS con eventi
+        ancora in attesa, salvata prima che la multipla si chiudesse solo a eventi tutti validati).
+
+        Args:
+            applica: se True aggiorna le multiple; se False si limita a elencarle
+
+        Returns:
+            Elenco di {id, da, a, profit} per le multiple da riallineare
+        """
+        modifiche: List[Dict] = []
+        with get_db_connection() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT id, risultato, quota_totale, stake FROM bet_groups")
+                for group_id, salvato, quota_totale, stake in cursor.fetchall():
+                    cursor.execute(
+                        "SELECT risultato, quota_sisal FROM bets WHERE group_id = %s",
+                        (str(group_id),),  # bets.group_id e' testo
+                    )
+                    gambe = [(r[0], float(r[1])) for r in cursor.fetchall()]
+                    if not gambe:
+                        continue
+
+                    esito, profit = esito_multipla(gambe, float(quota_totale), float(stake))
+                    if esito == salvato:
+                        continue
+
+                    modifiche.append({"id": group_id, "da": salvato, "a": esito, "profit": round(profit, 2)})
+                    if applica:
+                        cursor.execute(
+                            "UPDATE bet_groups SET risultato = %s, profit = %s, updated_at = CURRENT_TIMESTAMP "
+                            "WHERE id = %s",
+                            (esito, round(profit, 2), group_id),
+                        )
+        return modifiche
 
     @staticmethod
     def update_fields(group_id, updates: Dict) -> float:

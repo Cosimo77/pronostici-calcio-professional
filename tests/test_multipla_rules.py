@@ -12,9 +12,17 @@ from web.diario_storage import DiarioStorage  # noqa: E402
 
 
 class TestEsitoMultipla:
-    def test_una_gamba_persa_perde_subito(self):
+    def test_gamba_persa_con_altre_in_attesa_resta_pending(self):
         gambe = [("WIN", 2.0), ("LOSS", 1.5), ("PENDING", 1.8)]
+        assert esito_multipla(gambe, 5.4, 10.0) == ("PENDING", 0.0)
+
+    def test_gamba_persa_a_gambe_tutte_validate_perde(self):
+        gambe = [("WIN", 2.0), ("LOSS", 1.5), ("WIN", 1.8)]
         assert esito_multipla(gambe, 5.4, 10.0) == ("LOSS", -10.0)
+
+    def test_ultima_gamba_validata_chiude_la_multipla(self):
+        assert esito_multipla([("LOSS", 2.0), ("PENDING", 1.5)], 3.0, 10.0) == ("PENDING", 0.0)
+        assert esito_multipla([("LOSS", 2.0), ("WIN", 1.5)], 3.0, 10.0) == ("LOSS", -10.0)
 
     def test_gambe_in_attesa_restano_pending(self):
         assert esito_multipla([("WIN", 2.0), ("PENDING", 1.5)], 3.0, 10.0) == ("PENDING", 0.0)
@@ -36,7 +44,7 @@ class TestEsitoMultipla:
 
 @pytest.fixture
 def storage_csv(monkeypatch):
-    """Giocate in modalita' CSV: 1 singola vinta + tripla persa (gambe con stake ripetuto)"""
+    """Giocate in modalita' CSV: 1 singola vinta + tripla persa, eventi tutti validati (stake ripetuto sulle gambe)"""
     bets = [
         {
             "id": 0,
@@ -79,7 +87,7 @@ def storage_csv(monkeypatch):
             "mercato": "2",
             "quota_sisal": 1.5,
             "stake": "5",
-            "risultato": "PENDING",
+            "risultato": "WIN",
             "profit": -5.0,
         },
     ]
@@ -99,3 +107,80 @@ class TestContabilita:
         assert multipla["risultato"] == "LOSS"
         assert multipla["profit"] == -5.0
         assert sum(v["profit"] for v in voci) == 5.0  # +10 singola, -5 multipla
+
+    def test_multipla_con_evento_in_attesa_non_e_completata(self, storage_csv):
+        storage_csv[3]["risultato"] = "PENDING"  # un evento ancora da validare, un altro gia' LOSS
+        voci = DiarioStorage.get_accounting_bets()
+        multipla = next(v for v in voci if v["mercato"] == "MULTIPLA")
+        assert multipla["risultato"] == "PENDING"
+        assert multipla["profit"] == 0.0
+        assert sum(v["profit"] for v in voci) == 10.0  # solo la singola: la multipla non incide ancora
+
+
+class _FakeCursor:
+    """Cursore minimo: bet_groups e bets in memoria, registra gli UPDATE"""
+
+    def __init__(self, gruppi, gambe, aggiornamenti):
+        self.gruppi, self.gambe, self.aggiornamenti = gruppi, gambe, aggiornamenti
+        self._ultimo = []
+
+    def execute(self, query, params=None):
+        q = " ".join(query.split())
+        if q.startswith("SELECT id, risultato, quota_totale, stake FROM bet_groups"):
+            self._ultimo = self.gruppi
+        elif q.startswith("SELECT risultato, quota_sisal FROM bets"):
+            self._ultimo = self.gambe[params[0]]
+        elif q.startswith("UPDATE bet_groups"):
+            self.aggiornamenti.append(params)
+
+    def fetchall(self):
+        return self._ultimo
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        return False
+
+
+class _FakeConn:
+    def __init__(self, cursor):
+        self._cursor = cursor
+
+    def cursor(self):
+        return self._cursor
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        return False
+
+
+class TestRiallineaEsiti:
+    @pytest.fixture
+    def db(self, monkeypatch):
+        from database import bet_group_model
+
+        aggiornamenti = []
+        gruppi = [(1, "LOSS", 5.4, 10.0), (2, "LOSS", 3.0, 10.0), (3, "PENDING", 3.0, 10.0)]
+        gambe = {
+            "1": [("WIN", 2.0), ("LOSS", 1.5), ("PENDING", 1.8)],  # salvata LOSS con un evento in attesa
+            "2": [("WIN", 2.0), ("LOSS", 1.5)],  # LOSS corretta
+            "3": [("WIN", 2.0), ("PENDING", 1.5)],  # PENDING corretta
+        }
+        cursor = _FakeCursor(gruppi, gambe, aggiornamenti)
+        monkeypatch.setattr(bet_group_model, "get_db_connection", lambda: _FakeConn(cursor))
+        return aggiornamenti
+
+    def test_elenca_solo_la_multipla_chiusa_in_anticipo(self, db):
+        from database.bet_group_model import BetGroupModel
+
+        assert BetGroupModel.riallinea_esiti() == [{"id": 1, "da": "LOSS", "a": "PENDING", "profit": 0.0}]
+        assert db == []  # senza applica non scrive nulla
+
+    def test_applica_aggiorna_il_database(self, db):
+        from database.bet_group_model import BetGroupModel
+
+        BetGroupModel.riallinea_esiti(applica=True)
+        assert db == [("PENDING", 0.0, 1)]

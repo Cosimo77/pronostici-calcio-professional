@@ -20,17 +20,18 @@ def esito_multipla(gambe: List[Tuple[str, float]], quota_totale: float, stake: f
         stake: importo puntato sulla multipla
 
     Regole:
-        - una gamba LOSS perde subito la multipla (anche con altre in attesa)
-        - con gambe ancora PENDING la multipla resta PENDING
+        - finche' c'e' una gamba PENDING la multipla resta PENDING (anche se un'altra gamba e' LOSS):
+          passa tra le completate solo quando tutti gli eventi sono validati
+        - a gambe tutte validate, una gamba LOSS perde la multipla
         - gambe VOID/SKIP vengono escluse e la quota si ricalcola sulle sole gambe vincenti
         - se tutte le gambe sono VOID/SKIP la multipla e' VOID (stake restituito)
     """
     risultati = [risultato for risultato, _ in gambe]
 
-    if "LOSS" in risultati:
-        return "LOSS", round(-stake, 2)
     if "PENDING" in risultati:
         return "PENDING", 0.0
+    if "LOSS" in risultati:
+        return "LOSS", round(-stake, 2)
 
     quote_vincenti = [quota for risultato, quota in gambe if risultato == "WIN"]
     if not quote_vincenti:
